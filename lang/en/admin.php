@@ -338,6 +338,12 @@ return [
         'reply_placeholder' => 'Write your reply…',
         'internal_note_label' => 'Internal note (not shown to the passenger)',
         'send_reply' => 'Send reply',
+        'assigned_to' => 'Handled by:',
+        'unassigned' => 'Unassigned',
+        'assign_to_me' => 'Assign to me',
+        'assigned' => 'Complaint assigned.',
+        'attachment_count' => ':count attachments',
+        'file_size' => ':size KB',
         'reply_sent' => 'Reply sent.',
     ],
 

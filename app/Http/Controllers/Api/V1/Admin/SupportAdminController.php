@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1\Admin;
 
+use App\Domain\Identity\Models\Role;
 use App\Domain\Identity\Models\User;
 use App\Domain\Support\Enums\ComplaintStatus;
 use App\Domain\Support\Models\Complaint;
@@ -52,7 +53,10 @@ class SupportAdminController extends Controller
                 'name' => $complaint->user?->name,
                 'mobile' => $complaint->user?->mobile,
             ],
-            'assignee' => $complaint->assignee?->name,
+            'assignee' => $complaint->assignee === null ? null : [
+                'uuid' => $complaint->assignee->uuid,
+                'name' => $complaint->assignee->name,
+            ],
             'thread' => $complaint->messages->map(fn ($m) => [
                 'id' => $m->id,
                 'author_type' => $m->author_type,
@@ -78,6 +82,42 @@ class SupportAdminController extends Controller
                 'resolution_minutes' => $complaint->resolutionMinutes(),
             ],
         ]);
+    }
+
+    /**
+     * Who a complaint can be handed to.
+     *
+     * Assignment is by user UUID, and a support agent cannot reach the general
+     * user lookup — nor should they, since it publishes wallet balances. This
+     * answers the narrower question: which colleagues in this city handle
+     * complaints. Super admins are included because they always can.
+     */
+    public function assignees(Request $request): JsonResponse
+    {
+        $city = $this->city();
+
+        $users = User::query()
+            ->whereHas('roles', function ($query) use ($city): void {
+                $query->where(function ($scope) use ($city): void {
+                    // A role may be granted globally or scoped to one city;
+                    // both let that person work this city's queue.
+                    $scope->whereNull('role_user.city_id')->orWhere('role_user.city_id', $city->id);
+                })->where(function ($role): void {
+                    $role->where('name', Role::SUPER_ADMIN)
+                        ->orWhereHas('permissions', fn ($p) => $p->where('name', 'support.manage'));
+                });
+            })
+            ->orderBy('first_name')
+            ->limit(100)
+            ->get();
+
+        return ApiResponse::success(
+            $users->map(fn (User $user) => [
+                'uuid' => $user->uuid,
+                'name' => $user->name,
+                // No mobile: picking a colleague from a list needs a name.
+            ])->values(),
+        );
     }
 
     public function assign(Request $request, Complaint $complaint): JsonResponse

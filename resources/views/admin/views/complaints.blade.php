@@ -28,8 +28,14 @@
                     </div>
                     <p class="mt-1 text-[10px] text-ink-500">
                         <span x-text="$num(item.reference)"></span> ·
-                        <span x-text="item.category_label"></span>
+                        <span x-text="item.category_label"></span> ·
+                        {{-- Whose job this is, on the queue itself: an
+                             unassigned row is the one that gets forgotten. --}}
+                        <span :class="!item.assignee && 'text-amber-400'"
+                              x-text="item.assignee?.name || $t('admin.complaints.unassigned')"></span>
                     </p>
+                    <p x-show="item.attachment_count" class="mt-0.5 text-[10px] text-ink-600"
+                       x-text="$t('admin.complaints.attachment_count', { count: $num(item.attachment_count) })"></p>
                 </button>
             </template>
             <p x-show="!complaints.length" class="py-10 text-center text-sm text-ink-500">{{ __('admin.complaints.empty') }}</p>
@@ -61,6 +67,38 @@
                         <span x-text="selectedComplaint.reporter?.name"></span> ·
                         <span x-text="$num(selectedComplaint.reporter?.mobile)"></span>
                     </p>
+
+                    {{-- An unassigned complaint is nobody's job, which is how
+                         one sits in the queue for a week. --}}
+                    <div class="mt-2 flex flex-wrap items-center gap-2">
+                        <span class="text-[11px] text-ink-500">{{ __('admin.complaints.assigned_to') }}</span>
+                        <select class="field max-w-[12rem] !py-1.5 text-xs"
+                                :value="selectedComplaint.assignee?.uuid ?? ''"
+                                @change="assignComplaint($event.target.value)">
+                            <option value="" x-text="$t('admin.complaints.unassigned')"></option>
+                            <template x-for="agent in assignees" :key="agent.uuid">
+                                <option :value="agent.uuid" x-text="agent.name"></option>
+                            </template>
+                        </select>
+                        <button type="button" class="btn btn-ghost btn-sm"
+                                x-show="user.uuid && selectedComplaint.assignee?.uuid !== user.uuid"
+                                @click="assignComplaint(user.uuid)">{{ __('admin.complaints.assign_to_me') }}</button>
+                    </div>
+                </div>
+
+                {{-- Attachments. A photo is often the whole complaint, and the
+                     agent could not see one until now. --}}
+                <div x-show="selectedComplaint.attachments?.length" x-cloak class="flex flex-wrap gap-2">
+                    <template x-for="file in selectedComplaint.attachments" :key="file.id">
+                        <button type="button"
+                                class="flex items-center gap-2 rounded-xl bg-white/[0.03] px-3 py-2 text-xs hover:bg-white/[0.06]"
+                                @click="viewAttachment(file)">
+                            <span x-text="file.mime_type?.startsWith('image/') ? '🖼' : '📄'"></span>
+                            <span class="max-w-[12rem] truncate" x-text="file.original_name"></span>
+                            <span class="text-[10px] text-ink-500"
+                                  x-text="$t('admin.complaints.file_size', { size: $num(Math.max(1, Math.round(file.size_bytes / 1024))) })"></span>
+                        </button>
+                    </template>
                 </div>
 
                 <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">

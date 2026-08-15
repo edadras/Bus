@@ -74,6 +74,7 @@ Alpine.data('adminShell', () => ({
     merchants: [],
     complaints: [],
     selectedComplaint: null,
+    assignees: [],
     financeSummary: [],
     fareRules: [],
     settlements: [],
@@ -1015,6 +1016,54 @@ Alpine.data('adminShell', () => ({
         try {
             const { data } = await api.get(`/admin/complaints/${complaint.uuid}`);
             this.selectedComplaint = { ...data, uuid: complaint.uuid };
+        } catch (error) {
+            window.toast?.(error.message, 'error');
+        }
+
+        // Fetched once and kept: the roster of colleagues does not change
+        // between two complaints.
+        if (!this.assignees.length) {
+            try {
+                const { data } = await api.get('/admin/complaints/assignees');
+                this.assignees = data;
+            } catch {
+                // Assignment is one action on this screen; losing the roster
+                // must not take the thread down with it.
+            }
+        }
+    },
+
+    async assignComplaint(userUuid) {
+        if (!userUuid) return;
+
+        try {
+            await api.post(`/admin/complaints/${this.selectedComplaint.uuid}/assign`, {
+                user_uuid: userUuid,
+            });
+
+            window.toast?.(t('admin.complaints.assigned'), 'success');
+
+            await Promise.all([
+                this.openComplaint(this.selectedComplaint),
+                this.loadComplaints(),
+            ]);
+        } catch (error) {
+            window.toast?.(error.message, 'error');
+        }
+    },
+
+    /**
+     * Complaint photos sit on the private disk — they routinely show faces,
+     * plates and interiors — so viewing one means asking for a link that
+     * expires rather than following a path anyone could guess.
+     */
+    async viewAttachment(attachment) {
+        try {
+            const { data } = await api.get(
+                `/admin/complaints/${this.selectedComplaint.uuid}/attachments/${attachment.id}`,
+            );
+
+            window.open(data.url, '_blank', 'noopener');
         } catch (error) {
             window.toast?.(error.message, 'error');
         }

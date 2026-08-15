@@ -264,6 +264,8 @@ Route::prefix('v1')->group(function (): void {
 
         Route::prefix('complaints')->middleware('permission:support.manage')->group(function (): void {
             Route::get('/', [SupportAdminController::class, 'index']);
+            // Before the wildcard, or "assignees" is read as a complaint UUID.
+            Route::get('assignees', [SupportAdminController::class, 'assignees']);
             Route::get('{complaint}', [SupportAdminController::class, 'show']);
             Route::post('{complaint}/assign', [SupportAdminController::class, 'assign']);
             Route::post('{complaint}/reply', [SupportAdminController::class, 'reply']);

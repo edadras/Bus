@@ -28,6 +28,13 @@ class ComplaintResource extends JsonResource
             'resolution_note' => $this->resolution_note,
             'satisfaction_rating' => $this->satisfaction_rating,
             'bus_number' => $this->whenLoaded('bus', fn () => $this->bus?->bus_number),
+            // Only ever present on the staff endpoints, which are the ones that
+            // load the relation: a passenger has no business knowing which
+            // named agent is holding their case.
+            'assignee' => $this->whenLoaded('assignee', fn () => $this->assignee === null ? null : [
+                'uuid' => $this->assignee->uuid,
+                'name' => $this->assignee->name,
+            ]),
             'line' => new LineSummaryResource($this->whenLoaded('line')),
             // Passengers only ever receive the non-internal thread.
             'messages' => ComplaintMessageResource::collection($this->whenLoaded('publicMessages')),

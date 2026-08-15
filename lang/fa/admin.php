@@ -338,6 +338,12 @@ return [
         'reply_placeholder' => 'پاسخ خود را بنویسید…',
         'internal_note_label' => 'یادداشت داخلی (برای مسافر نمایش داده نمی‌شود)',
         'send_reply' => 'ارسال پاسخ',
+        'assigned_to' => 'مسئول رسیدگی:',
+        'unassigned' => 'بدون مسئول',
+        'assign_to_me' => 'به من واگذار کن',
+        'assigned' => 'شکایت واگذار شد.',
+        'attachment_count' => ':count پیوست',
+        'file_size' => ':size کیلوبایت',
         'reply_sent' => 'پاسخ ارسال شد.',
     ],
 
