@@ -197,13 +197,14 @@ fleet.manage         GET  /admin/fleet/buses
                      PATCH /admin/fleet/buses/{bus}
                      GET  /admin/fleet/buses/{bus}/qr
                      POST /admin/fleet/buses/{bus}/qr/regenerate   { reason }
-                     POST /admin/fleet/buses/{bus}/assignments
-                     DELETE /admin/assignments/{assignment}
+                     GET|POST /admin/fleet/buses/{bus}/assignments
+                     DELETE /admin/fleet/assignments/{assignment}
 
 drivers.manage       GET|POST /admin/drivers
                      GET|PATCH /admin/drivers/{driver}
                      POST /admin/drivers/{driver}/status           { status, reason? }
-                     POST /admin/drivers/{driver}/documents
+                     POST /admin/drivers/{driver}/documents            multipart
+                     GET  /admin/drivers/{driver}/documents/{id}       signed URL
 
 network.manage       POST|PATCH /admin/network/stops[/{stop}]
                      POST|PATCH /admin/network/lines[/{line}]
@@ -218,12 +219,14 @@ finance.manage       GET  /admin/reports/revenue                   ?from&to
                      GET|POST|PATCH /admin/finance/fare-rules
                      GET|POST /admin/finance/settlements
                      POST /admin/finance/settlements/{s}/approve | /pay | /reject
+                     GET  /admin/users/lookup                      ?q  also users.manage
 
 merchants.manage     GET|POST /admin/merchants
                      GET  /admin/merchants/{merchant}
                      POST /admin/merchants/{merchant}/status | /terminals | /staff
 
 support.manage       GET  /admin/complaints | /{complaint}
+                     GET  /admin/complaints/assignees
                      POST /admin/complaints/{c}/assign | /reply | /status
                      GET  /admin/complaints/{c}/attachments/{id}   signed URL
 ```

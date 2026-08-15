@@ -125,7 +125,7 @@ php artisan webpush:vapid                                         # push key pai
 ## Tests
 
 ```bash
-php artisan test                       # 237 PHP tests
-make apps-test                         # 45 Dart tests
+php artisan test                       # 300 PHP tests
+make apps-test                         # 55 Dart tests
 make apps-analyze                      # static analysis, all four packages
 ```

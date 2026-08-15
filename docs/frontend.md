@@ -100,14 +100,30 @@ practical failure of these devices.
 Dashboard with eight KPI cards and trend charts; live operations map with
 driver detail and a searchable fleet list; **live occupancy** with per-vehicle
 crowding levels; **reports** across transport, drivers, passengers and revenue
-with a selectable period; fleet with rotating QR display and revocation; driver
-approval and suspension; network browser with provenance badges; finance with
-fare rules, transactions and settlement approval; merchant management; and a
-complaint workbench with internal notes and SLA figures.
+with a selectable period; fleet with rotating QR display, revocation and
+bus↔driver assignment; a driver dossier with licence, documents, assignments and
+recent shifts; a network editor with route sequences and offset recalculation;
+finance with a filterable transaction list, reversal, wallet adjustment, the
+ledger integrity check, fare rules and settlements; a merchant dossier with
+tills and staff; and a complaint workbench with assignment, attachments,
+internal notes and SLA figures.
 
 Create and edit flows across fleet, drivers, network, merchants and fare rules
 share one schema-driven modal (`admin/partials/form-modal.blade.php`), so a new
-managed entity is a field list rather than another form.
+managed entity is a field list rather than another form. A form may pass an
+`onDone` callback to own what happens after a successful submit — showing a new
+balance, refreshing one list — instead of the default of reloading the screen.
+
+Three screens deliberately do not use it. Uploading a driver document is
+multipart rather than JSON; a route's stop sequence is a reorderable list,
+because order is the entire content of a route; and both private-file viewers
+ask the server for a signed URL rather than linking to a path.
+
+Files held on the private disk — complaint photos, driver documents — are never
+served from a guessable path. The panel requests a ten-minute signed URL and
+opens that. Those download routes are registered *before* the `/admin/{any}`
+catch-all that lets a bookmarked panel URL reload, since first match wins and a
+download registered after it silently returns the panel's HTML instead.
 
 The occupancy screen is what the specification called a live passenger map. It
 publishes counts per vehicle — "bus 102: 27 of 40" — and never the position or

@@ -1,8 +1,8 @@
 # Testing
 
 ```bash
-php artisan test          # 237 PHP tests
-make apps-test            # 45 Dart tests
+php artisan test          # 300 PHP tests
+make apps-test            # 55 Dart tests
 make apps-analyze         # static analysis across all four Dart packages
 ```
 
@@ -204,6 +204,79 @@ down never becomes a failed sign-in:
 - each provider's own success code is treated as authoritative over the HTTP one
 - an unknown driver name falls back to the log driver rather than breaking auth
 
+### Fleet assignment — `tests/Feature/Api/FleetAssignmentTest.php` (8)
+
+Without an assignment `Driver::mayOperate()` refuses and no shift can start, so
+what the panel shows as in force must be exactly what the server will accept:
+
+- a future assignment is listed but is **not** in force, and an expired one is not
+- revoking one stops the driver operating
+- a driver is addressed by UUID and the numeric id is never published
+- a driver from another city cannot be assigned
+
+### Audit logging — `tests/Feature/Api/AuditLogTest.php` (6)
+
+Written after the logger was found mass-assigning `created_at`, which threw in
+every environment except production and took **every** audited admin write down
+with it — driver approval, QR regeneration, fare changes, wallet adjustments.
+Each test drives an audited path through the API rather than calling the logger,
+and one checks that passwords and national codes are redacted while ordinary
+fields survive: a redacted-everything log is not an audit.
+
+### Finance administration — `tests/Feature/Api/FinanceAdminTest.php` (14)
+
+- reversal writes a mirror and leaves the original row intact and readable
+- an adjustment moves the balance **and** leaves `verify()` reporting balanced —
+  the guarantee that no path writes a balance without a ledger entry
+- a zero adjustment and an unexplained reversal are both refused
+- user lookup matches a mobile in any of the four forms people type it
+- **the mobile is masked** unless the caller holds `users.pii.view`
+- a two-character search is refused rather than matching half the city
+- a support agent reaches neither route
+
+### Driver dossier — `tests/Feature/Api/DriverDossierTest.php` (9)
+
+- the dossier carries documents, assignments and shifts together
+- an expired licence is reported as an answer, not two dates to compare
+- **a document is served only through a signed URL**: stripping the signature
+  returns 403, which is the regression that matters, because the download route
+  had been shadowed by the panel's `/admin/{any}` catch-all and was silently
+  returning HTML with the signature never checked
+- viewing a document is audited; a `.php` upload is refused
+- registering a driver works outside production — it did not, because
+  `mobile_verified_at` is guarded and was being mass-assigned
+
+### Merchant dossier — `tests/Feature/Api/MerchantDossierTest.php` (9)
+
+- a new merchant arrives usable: a default till and the owner as manager
+- **a till's signing secret appears nowhere in the response body**, checked by
+  searching the whole payload rather than one key
+- the IBAN is reduced to its last four digits, and its absence is reported
+  because a settlement cannot be paid without one
+- adding staff reuses an existing account rather than duplicating a person
+- **no staff mobile appears in full anywhere in the payload** — the check that
+  caught `staff.user` being serialised whole beside the masked list
+
+### Complaint workbench — `tests/Feature/Support/ComplaintWorkbenchTest.php` (9)
+
+- attachments are listed, and are reachable **only** through a signed link
+- the assignee roster lists colleagues by permission, not by a hardcoded role
+  list, and publishes no mobile numbers
+- assigning moves a complaint out of `new` and names its owner on the queue
+- **an internal note appears in the staff thread and never in the passenger's**
+
+### Network administration — `tests/Feature/Network/NetworkAdminTest.php` (8)
+
+Every arrival estimate is computed from a stop's distance along its route, so
+these test that those offsets stay honest:
+
+- creating a route numbers its stops, measures them, and takes its ends from the
+  first and last
+- **moving a stop rebuilds the offsets of every route it appears on** — an
+  unchanged offset there means every ETA past that stop is quietly wrong
+- recalculating reports how many stops it touched
+- a one-stop route is refused; another city's stop and line are out of reach
+
 ### Geometry — `tests/Unit/GeoTest.php` (11)
 
 Tested against known distances rather than against itself: haversine against a
@@ -212,6 +285,7 @@ clamping, polyline length and snapping, and that the bounding box never
 under-covers its radius.
 
 ### Localisation, Dart side — `packages/hamsafar_core/test/` (9)
+
 
 Mirrors the server's parity checks, plus the one that keeps it that way:
 
@@ -222,16 +296,23 @@ Mirrors the server's parity checks, plus the one that keeps it that way:
   whoever asked for English
 - **no widget in any of the three apps holds an inline Persian string**
 
-### Flutter (45)
+### Flutter (55)
 
-`packages/hamsafar_core` — formatters (rial→toman, Persian digits and
+`packages/hamsafar_core` (42) — formatters (rial→toman, Persian digits and
 separator, mobile normalisation across six input forms, ETA never showing zero
-minutes), defensive model parsing, and `ApiException` classification including
-the distinction between a QR that needs re-scanning and one that is revoked.
+minutes), defensive model parsing including a journey plan with a malformed
+option and a walk-only answer, and `ApiException` classification including the
+distinction between a QR that needs re-scanning and one that is revoked.
 
 App smoke tests build the real widget tree against an in-memory token store and
 assert the product rules: the passenger map is reachable signed-out, the wallet
 tab is not, and the driver and merchant apps are closed by default.
+
+The journey planner screen (`apps/passenger/test/plan_screen_test.dart`) checks
+that an itinerary renders every leg in order with where to board and get off,
+that the walk at each end is placed rather than only totalled, that every figure
+is labelled an estimate, and that "nothing searched yet", "no stop nearby" and
+"no route found" are three distinct states rather than one blank list.
 
 ## Conventions
 
