@@ -12,4 +12,8 @@ return [
     'meter' => 'm',
     'passengers' => 'passengers',
     'sample_data_warning' => 'This data is sample data and is not an official reference.',
+    'app_description' => 'Smart urban transit: live bus tracking, honest arrival times and one city wallet',
+    'close' => 'Close',
+    'under_a_minute' => 'less than a minute',
+    'minutes_count' => ':count min',
 ];

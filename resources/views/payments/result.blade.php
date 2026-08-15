@@ -1,6 +1,6 @@
 @extends('layouts.base')
 
-@section('title', 'نتیجه پرداخت')
+@section('title', __('web.payment.result_title'))
 
 @section('body')
 @php
@@ -25,7 +25,7 @@
         </span>
 
         <h1 class="mt-5 text-lg font-bold">
-            {{ $succeeded ? 'کیف پول شارژ شد' : ($pending ? 'در انتظار تأیید پرداخت' : 'پرداخت ناموفق بود') }}
+            {{ $succeeded ? __('web.payment.succeeded') : ($pending ? __('web.payment.pending') : __('web.payment.failed')) }}
         </h1>
 
         <p class="mt-3 text-2xl font-bold">{{ $payment->formattedAmount() }}</p>
@@ -36,11 +36,9 @@
 
         <p class="mt-4 font-mono text-[11px] text-ink-500" dir="ltr">{{ $payment->uuid }}</p>
 
-        <p class="mt-6 text-xs leading-6 text-ink-400">
-            می‌توانید این صفحه را ببندید و به اپلیکیشن بازگردید؛ موجودی به‌صورت خودکار به‌روزرسانی می‌شود.
-        </p>
+        <p class="mt-6 text-xs leading-6 text-ink-400">{{ __('web.payment.close_hint') }}</p>
 
-        <a href="{{ route('home') }}" class="btn btn-ghost mt-6 w-full">بازگشت به صفحه اصلی</a>
+        <a href="{{ route('home') }}" class="btn btn-ghost mt-6 w-full">{{ __('web.payment.back_home') }}</a>
     </div>
 </div>
 @endsection

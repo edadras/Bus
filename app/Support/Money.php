@@ -30,7 +30,9 @@ final class Money
             ? intdiv($minorUnits, 10)
             : $minorUnits;
 
-        $formatted = number_format($value);
+        // Persian pages set numbers in Persian digits; the browser already
+        // does this, and the server must agree with it on the same page.
+        $formatted = Digits::number($value);
 
         if (! $withSuffix) {
             return $formatted;

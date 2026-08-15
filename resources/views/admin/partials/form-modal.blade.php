@@ -65,10 +65,10 @@
 
             <div class="mt-2 flex gap-2 sm:col-span-2">
                 <button type="submit" class="btn btn-primary flex-1" :disabled="form.busy">
-                    <span x-show="!form.busy" x-text="form.submitLabel || 'ذخیره'"></span>
-                    <span x-show="form.busy" x-cloak>در حال ذخیره…</span>
+                    <span x-show="!form.busy" x-text="form.submitLabel || $t('admin.common.save')"></span>
+                    <span x-show="form.busy" x-cloak>{{ __('admin.common.saving') }}</span>
                 </button>
-                <button type="button" class="btn btn-ghost" @click="closeForm()">انصراف</button>
+                <button type="button" class="btn btn-ghost" @click="closeForm()">{{ __('admin.common.cancel') }}</button>
             </div>
         </form>
     </div>

@@ -3,6 +3,7 @@
 namespace Tests\Feature\Web;
 
 use App\Domain\Identity\Models\User;
+use App\Support\Money;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Lang;
@@ -34,6 +35,55 @@ class LocalizationTest extends TestCase
         sort($keys);
 
         return $keys;
+    }
+
+    public function test_no_web_view_or_script_holds_an_inline_persian_string(): void
+    {
+        // Externalising copy once is easy; keeping it externalised is the hard
+        // part. This fails the build the moment a Persian string is typed
+        // straight into a Blade view or a JS module instead of a lang file.
+        $offenders = [];
+
+        foreach ([resource_path('views'), resource_path('js')] as $root) {
+            foreach ((new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($root))) as $file) {
+                if (! in_array($file->getExtension(), ['php', 'js'], true)) {
+                    continue;
+                }
+
+                foreach (file($file->getPathname()) as $number => $line) {
+                    if (preg_match('/[\x{0600}-\x{06FF}]/u', $line) === 1) {
+                        $offenders[] = str_replace(resource_path(), '', $file->getPathname()).':'.($number + 1);
+                    }
+                }
+            }
+        }
+
+        $this->assertSame([], $offenders, "Move these strings into lang/:\n".implode("\n", $offenders));
+    }
+
+    public function test_the_admin_shell_ships_the_strings_its_javascript_needs(): void
+    {
+        $user = User::factory()->create(['city_id' => $this->makeCity()->id]);
+        $this->actingAsAdmin($user);
+
+        // The dictionary is rendered into the page rather than fetched, so a
+        // missing group would show dotted keys on first paint.
+        $body = $this->get('/admin')->assertOk()->getContent();
+
+        $this->assertStringContainsString('window.__I18N__', $body);
+        $this->assertStringContainsString(__('admin.nav.dashboard'), $body);
+        $this->assertStringContainsString(__('enums.busstatus.active'), $body);
+    }
+
+    public function test_money_is_formatted_in_the_locales_own_numerals(): void
+    {
+        // The browser formats with Intl in fa-IR; the server must agree with it
+        // on the same page rather than rendering Latin digits beside Persian.
+        app()->setLocale('fa');
+        $this->assertSame('۵۰۰٬۰۰۰ تومان', Money::format(5_000_000));
+
+        app()->setLocale('en');
+        $this->assertSame('500,000 Toman', Money::format(5_000_000));
     }
 
     public function test_persian_is_the_default_locale(): void

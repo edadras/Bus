@@ -12,6 +12,8 @@ return [
     'too_many_attempts' => 'تلاش‌های شما بیش از حد مجاز است. لطفاً کمی صبر کنید.',
     'domain_error' => 'انجام این عملیات ممکن نیست.',
 
+    'unreadable_response' => 'پاسخ سرور قابل خواندن نبود.',
+
     // Authentication
     'invalid_mobile' => 'شماره موبایل وارد شده معتبر نیست.',
     'invalid_credentials' => 'شماره موبایل یا رمز عبور اشتباه است.',

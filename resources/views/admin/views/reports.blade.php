@@ -12,12 +12,12 @@
         </div>
         <div class="ms-auto flex items-center gap-2">
             <input type="date" class="field !w-auto !py-1.5 text-xs" x-model="reportRange.from" @change="loadReport()">
-            <span class="text-xs text-ink-500">تا</span>
+            <span class="text-xs text-ink-500">{{ __('admin.common.to') }}</span>
             <input type="date" class="field !w-auto !py-1.5 text-xs" x-model="reportRange.to" @change="loadReport()">
         </div>
     </div>
 
-    {{-- ── حمل‌ونقل ─────────────────────────────────────────────────── --}}
+    {{-- ── Transport ────────────────────────────────────────────────── --}}
     <template x-if="reportTab === 'transport' && report">
         <div class="flex flex-col gap-3">
             <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -30,48 +30,48 @@
             </div>
 
             <article class="glass card">
-                <h2 class="text-sm font-bold">وقت‌شناسی</h2>
+                <h2 class="text-sm font-bold">{{ __('admin.reports.punctuality') }}</h2>
                 <p class="mt-2 text-[11px] leading-5 text-ink-500">
-                    سفری که بیش از ۲۰٪ طولانی‌تر از زمان اسمی خطش طول کشیده، «با تأخیر» شمرده می‌شود.
-                    خطوطی که زمان اسمی ندارند در این محاسبه وارد نمی‌شوند.
+                    {{ __('admin.reports.punctuality_note_one') }}
+                    {{ __('admin.reports.punctuality_note_two') }}
                 </p>
                 <div class="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
                     <div class="rounded-xl bg-white/[0.03] px-3 py-3">
                         <p class="text-lg font-bold text-brand-300"
                            x-text="report.punctuality.on_time_rate === null
                                 ? '—'
-                                : `${$num(Math.round(report.punctuality.on_time_rate * 100))}٪`"></p>
-                        <p class="stat-label mt-1">به‌موقع</p>
+                                : $t('admin.common.percent', { value: $num(Math.round(report.punctuality.on_time_rate * 100)) })"></p>
+                        <p class="stat-label mt-1">{{ __('admin.reports.on_time') }}</p>
                     </div>
                     <div class="rounded-xl bg-white/[0.03] px-3 py-3">
                         <p class="text-lg font-bold" x-text="$num(report.punctuality.late_trips)"></p>
-                        <p class="stat-label mt-1">سفر با تأخیر</p>
+                        <p class="stat-label mt-1">{{ __('admin.reports.late_trips') }}</p>
                     </div>
                     <div class="rounded-xl bg-white/[0.03] px-3 py-3">
                         <p class="text-lg font-bold"
                            x-text="report.punctuality.avg_delay_minutes === null
                                 ? '—'
-                                : `${$num(report.punctuality.avg_delay_minutes)} دقیقه`"></p>
-                        <p class="stat-label mt-1">متوسط تأخیر</p>
+                                : $t('admin.common.minutes', { count: $num(report.punctuality.avg_delay_minutes) })"></p>
+                        <p class="stat-label mt-1">{{ __('admin.reports.avg_delay') }}</p>
                     </div>
                     <div class="rounded-xl bg-white/[0.03] px-3 py-3">
                         <p class="text-lg font-bold" x-text="$num(report.punctuality.measured_trips)"></p>
-                        <p class="stat-label mt-1">سفر قابل سنجش</p>
+                        <p class="stat-label mt-1">{{ __('admin.reports.measured_trips') }}</p>
                     </div>
                 </div>
             </article>
         </div>
     </template>
 
-    {{-- ── رانندگان ─────────────────────────────────────────────────── --}}
+    {{-- ── Drivers ──────────────────────────────────────────────────── --}}
     <template x-if="reportTab === 'drivers' && report">
         <div class="glass card !p-0">
             <div class="table-scroll">
                 <table class="table">
                     <thead>
                         <tr>
-                            <th>راننده</th><th>شیفت</th><th>ساعات فعالیت</th><th>سفر</th>
-                            <th>مسافر</th><th>مسافر در ساعت</th><th>درآمد</th><th>شکایت</th>
+                            <th>{{ __('admin.reports.driver') }}</th><th>{{ __('admin.reports.shifts') }}</th><th>{{ __('admin.drivers.active_hours') }}</th><th>{{ __('admin.reports.trip') }}</th>
+                            <th>{{ __('admin.reports.tabs.passengers') }}</th><th>{{ __('admin.reports.passengers_per_hour') }}</th><th>{{ __('admin.reports.revenue') }}</th><th>{{ __('admin.reports.complaints') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -82,7 +82,7 @@
                                     <p class="text-[11px] text-ink-500" x-text="row.employee_code || '—'"></p>
                                 </td>
                                 <td class="text-xs" x-text="$num(row.shift_count)"></td>
-                                <td class="text-xs" x-text="`${$num(Math.round(row.active_minutes / 60))} ساعت`"></td>
+                                <td class="text-xs" x-text="$t('admin.common.hours', { count: $num(Math.round(row.active_minutes / 60)) })"></td>
                                 <td class="text-xs" x-text="$num(row.trips)"></td>
                                 <td class="text-xs" x-text="$num(row.passengers)"></td>
                                 <td class="text-xs font-semibold text-brand-300"
@@ -98,12 +98,12 @@
                 </table>
             </div>
             <p x-show="!report.length" class="py-10 text-center text-sm text-ink-500">
-                در این بازه شیفتی ثبت نشده است.
+                {{ __('admin.reports.no_shifts') }}
             </p>
         </div>
     </template>
 
-    {{-- ── مسافران ──────────────────────────────────────────────────── --}}
+    {{-- ── Passengers ───────────────────────────────────────────────── --}}
     <template x-if="reportTab === 'passengers' && report">
         <div class="flex flex-col gap-3">
             <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -117,14 +117,14 @@
 
             <div class="grid gap-3 lg:grid-cols-3">
                 <article class="glass card lg:col-span-2">
-                    <h2 class="text-sm font-bold">توزیع سفر در ساعات شبانه‌روز</h2>
+                    <h2 class="text-sm font-bold">{{ __('admin.reports.hourly_distribution') }}</h2>
                     <div class="mt-4 h-56"><canvas id="chart-by-hour"></canvas></div>
                 </article>
 
                 <article class="glass card">
-                    <h2 class="text-sm font-bold">الگوی استفاده</h2>
+                    <h2 class="text-sm font-bold">{{ __('admin.reports.usage_pattern') }}</h2>
                     <p class="mt-1.5 text-[11px] leading-5 text-ink-500">
-                        تعداد کاربران بر اساس دفعات سفر — بدون نمایش هویت هیچ فردی.
+                        {{ __('admin.reports.usage_note') }}
                     </p>
                     <div class="mt-4 flex flex-col gap-2">
                         <template x-for="row in frequencyRows" :key="row.label">
@@ -139,14 +139,14 @@
         </div>
     </template>
 
-    {{-- ── مالی ─────────────────────────────────────────────────────── --}}
+    {{-- ── Revenue ──────────────────────────────────────────────────── --}}
     <template x-if="reportTab === 'revenue' && report">
         <div class="grid gap-3 lg:grid-cols-2">
             <article class="glass card !p-0">
-                <h2 class="px-4 pt-4 text-sm font-bold">درآمد هر خط</h2>
+                <h2 class="px-4 pt-4 text-sm font-bold">{{ __('admin.reports.revenue_by_line') }}</h2>
                 <div class="table-scroll mt-3">
                     <table class="table">
-                        <thead><tr><th>خط</th><th>سفر</th><th>درآمد</th></tr></thead>
+                        <thead><tr><th>{{ __('admin.reports.line') }}</th><th>{{ __('admin.reports.trip') }}</th><th>{{ __('admin.reports.revenue') }}</th></tr></thead>
                         <tbody>
                             <template x-for="row in report.by_line" :key="row.id">
                                 <tr>
@@ -164,14 +164,14 @@
                         </tbody>
                     </table>
                 </div>
-                <p x-show="!report.by_line?.length" class="py-8 text-center text-sm text-ink-500">داده‌ای نیست.</p>
+                <p x-show="!report.by_line?.length" class="py-8 text-center text-sm text-ink-500">{{ __('admin.common.no_data') }}</p>
             </article>
 
             <article class="glass card !p-0">
-                <h2 class="px-4 pt-4 text-sm font-bold">درآمد هر اتوبوس</h2>
+                <h2 class="px-4 pt-4 text-sm font-bold">{{ __('admin.reports.revenue_by_bus') }}</h2>
                 <div class="table-scroll mt-3">
                     <table class="table">
-                        <thead><tr><th>اتوبوس</th><th>سفر</th><th>درآمد</th></tr></thead>
+                        <thead><tr><th>{{ __('admin.reports.bus') }}</th><th>{{ __('admin.reports.trip') }}</th><th>{{ __('admin.reports.revenue') }}</th></tr></thead>
                         <tbody>
                             <template x-for="row in report.by_bus" :key="row.id">
                                 <tr>
@@ -183,10 +183,10 @@
                         </tbody>
                     </table>
                 </div>
-                <p x-show="!report.by_bus?.length" class="py-8 text-center text-sm text-ink-500">داده‌ای نیست.</p>
+                <p x-show="!report.by_bus?.length" class="py-8 text-center text-sm text-ink-500">{{ __('admin.common.no_data') }}</p>
             </article>
         </div>
     </template>
 
-    <p x-show="!report" class="glass card py-12 text-center text-sm text-ink-500">در حال بارگذاری گزارش…</p>
+    <p x-show="!report" class="glass card py-12 text-center text-sm text-ink-500">{{ __('admin.common.loading_report') }}</p>
 </section>

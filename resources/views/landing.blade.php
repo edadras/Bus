@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'حمل‌ونقل هوشمند شهری')
+@section('title', __('landing.title'))
 
 @section('content')
 
@@ -10,40 +10,39 @@
         <div class="animate-rise">
             <span class="badge badge-success">
                 <span class="live-dot"></span>
-                {{ $city->name }} — هم‌اکنون فعال
+                {{ __('landing.hero.live_badge', ['city' => $city->name]) }}
             </span>
 
             <h1 class="mt-6 text-4xl font-bold leading-[1.25] tracking-tight sm:text-5xl lg:text-6xl lg:leading-[1.2]">
-                حمل‌ونقل هوشمند،<br>
-                <span class="text-gradient">ساده‌تر از همیشه</span>
+                {{ __('landing.hero.heading_line_one') }}<br>
+                <span class="text-gradient">{{ __('landing.hero.heading_line_two') }}</span>
             </h1>
 
             <p class="mt-6 max-w-xl text-base leading-8 text-ink-300 sm:text-lg">
-                ببینید اتوبوس کجاست، چند دقیقه دیگر می‌رسد و کرایه را بدون اسکناس و بلیت
-                پرداخت کنید. همان کیف پول، در استخر، باشگاه و فروشگاه‌های طرف قرارداد هم کار می‌کند.
+                {{ __('landing.hero.body') }}
             </p>
 
             <div class="mt-8 flex flex-wrap gap-3">
                 <a href="{{ route('passenger.app') }}" class="btn btn-primary btn-lg">
                     <svg viewBox="0 0 24 24" class="size-5 fill-current"><path d="M12 2a7 7 0 0 1 7 7c0 5.25-7 13-7 13S5 14.25 5 9a7 7 0 0 1 7-7Zm0 4.5A2.5 2.5 0 1 0 12 11a2.5 2.5 0 0 0 0-4.5Z"/></svg>
-                    شروع سفر
+                    {{ __('landing.hero.start') }}
                 </a>
-                <a href="#live" class="btn btn-ghost btn-lg">مشاهده نقشه زنده</a>
+                <a href="#live" class="btn btn-ghost btn-lg">{{ __('landing.hero.see_map') }}</a>
             </div>
 
             {{-- Live counters, fed by /api/v1/summary --}}
             <dl class="mt-12 grid max-w-lg grid-cols-3 gap-3" x-data="landingStats()" x-init="load()">
                 <div class="glass card !p-4">
-                    <dd class="stat-value text-brand-300" x-text="$num(stats.active_buses)">۰</dd>
-                    <dt class="stat-label mt-1">اتوبوس فعال</dt>
+                    <dd class="stat-value text-brand-300" x-text="$num(stats.active_buses)">{{ \App\Support\Digits::number(0) }}</dd>
+                    <dt class="stat-label mt-1">{{ __('landing.hero.active_buses') }}</dt>
                 </div>
                 <div class="glass card !p-4">
-                    <dd class="stat-value" x-text="$num(stats.lines)">۰</dd>
-                    <dt class="stat-label mt-1">خط فعال</dt>
+                    <dd class="stat-value" x-text="$num(stats.lines)">{{ \App\Support\Digits::number(0) }}</dd>
+                    <dt class="stat-label mt-1">{{ __('landing.hero.active_lines') }}</dt>
                 </div>
                 <div class="glass card !p-4">
-                    <dd class="stat-value" x-text="$num(stats.stops)">۰</dd>
-                    <dt class="stat-label mt-1">ایستگاه</dt>
+                    <dd class="stat-value" x-text="$num(stats.stops)">{{ \App\Support\Digits::number(0) }}</dd>
+                    <dt class="stat-label mt-1">{{ __('landing.hero.stops') }}</dt>
                 </div>
             </dl>
         </div>
@@ -54,18 +53,18 @@
                 <div class="flex items-center justify-between px-3 py-2">
                     <div class="flex items-center gap-2 text-sm font-medium">
                         <span class="live-dot"></span>
-                        نقشه زنده {{ $city->name }}
+                        {{ __('landing.hero.map_title', ['city' => $city->name]) }}
                     </div>
-                    <span class="badge badge-warning text-[10px]">داده نمونه</span>
+                    <span class="badge badge-warning text-[10px]">{{ __('landing.hero.sample_badge') }}</span>
                 </div>
                 <div id="hero-map" class="h-[380px] w-full rounded-2xl sm:h-[440px]"></div>
             </div>
 
             <div class="glass-strong card absolute -bottom-6 inset-inline-start-4 hidden w-64 animate-rise sm:block"
                  style="animation-delay:320ms">
-                <p class="stat-label">نزدیک‌ترین اتوبوس</p>
-                <p class="mt-1 text-2xl font-bold text-brand-300">۴ دقیقه</p>
-                <p class="mt-1 text-xs text-ink-400">خط ۱۰۲ — مقصد دانشگاه هرمزگان</p>
+                <p class="stat-label">{{ __('landing.hero.nearest_bus') }}</p>
+                <p class="mt-1 text-2xl font-bold text-brand-300">{{ __('landing.hero.nearest_bus_eta') }}</p>
+                <p class="mt-1 text-xs text-ink-400">{{ __('landing.hero.nearest_bus_line') }}</p>
             </div>
         </div>
     </div>
@@ -75,31 +74,33 @@
 <section id="features" class="py-20">
     <div class="mx-auto w-full max-w-7xl px-4">
         <div class="max-w-2xl">
-            <h2 class="text-3xl font-bold tracking-tight sm:text-4xl">یک اپلیکیشن، همه‌چیز</h2>
+            <h2 class="text-3xl font-bold tracking-tight sm:text-4xl">{{ __('landing.features.heading') }}</h2>
             <p class="mt-4 text-ink-300 leading-8">
-                از لحظه‌ای که در ایستگاه منتظرید تا وقتی از اتوبوس پیاده می‌شوید — و حتی بعد از آن.
+                {{ __('landing.features.subheading') }}
             </p>
         </div>
 
         <div class="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             @php
+                // Icon paths stay here because they are geometry, not copy;
+                // the words live in lang/*/landing.php with everything else.
                 $features = [
-                    ['ردیابی زنده اتوبوس', 'موقعیت هر اتوبوس روی نقشه، بدون نیاز به تازه‌سازی صفحه. اتصال از طریق WebSocket برقرار می‌ماند.', 'M12 2a7 7 0 0 1 7 7c0 5.25-7 13-7 13S5 14.25 5 9a7 7 0 0 1 7-7Zm0 4.5A2.5 2.5 0 1 0 12 11a2.5 2.5 0 0 0 0-4.5Z'],
-                    ['تخمین هوشمند زمان رسیدن', 'ETA فقط از فاصله محاسبه نمی‌شود؛ سرعت لحظه‌ای، سابقه زمان سفر در همان ساعت و روز، و توقف‌های میان‌راه هم دخیل‌اند.', 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm1 5v5.4l4 2.3-1 1.7-5-2.9V7h2Z'],
-                    ['پرداخت با اسکن QR', 'کد داخل اتوبوس هر ۳۰ ثانیه تغییر می‌کند و امضای رمزنگاری‌شده دارد؛ عکس گرفتن از آن به کار کسی نمی‌آید.', 'M3 3h8v8H3V3Zm2 2v4h4V5H5Zm8-2h8v8h-8V3Zm2 2v4h4V5h-4ZM3 13h8v8H3v-8Zm2 2v4h4v-4H5Zm8 0h2v2h-2v-2Zm4 0h4v2h-2v2h2v4h-4v-2h-2v2h-2v-4h4v-2Z'],
-                    ['کیف پول یکپارچه شهری', 'یک موجودی برای اتوبوس، استخر، باشگاه، پارکینگ و فروشگاه‌های طرف قرارداد.', 'M3 7a3 3 0 0 1 3-3h11a2 2 0 0 1 2 2v1h1a1 1 0 0 1 1 1v10a2 2 0 0 1-2 2H6a3 3 0 0 1-3-3V7Zm14 6.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z'],
-                    ['شمارش زنده مسافران', 'راننده لحظه‌به‌لحظه تعداد مسافران داخل اتوبوس را می‌بیند و مدیریت ناوگان بر اساس شلوغی واقعی تصمیم می‌گیرد.', 'M16 11a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm-8 0a3 3 0 1 0-3-3 3 3 0 0 0 3 3Zm0 2c-2.7 0-6 1.34-6 4v2h7v-2c0-1.1.44-2.2 1.3-3.1A11 11 0 0 0 8 13Zm8 0c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4Z'],
-                    ['پیگیری شکایات', 'ثبت شکایت همراه با عکس، شماره اتوبوس و موقعیت؛ پاسخ کارشناس در همان گفت‌وگو نمایش داده می‌شود.', 'M12 2 2 7l10 5 10-5-10-5Zm0 20-4-2v-6l4 2 4-2v6l-4 2Z'],
+                    'tracking' => 'M12 2a7 7 0 0 1 7 7c0 5.25-7 13-7 13S5 14.25 5 9a7 7 0 0 1 7-7Zm0 4.5A2.5 2.5 0 1 0 12 11a2.5 2.5 0 0 0 0-4.5Z',
+                    'eta' => 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm1 5v5.4l4 2.3-1 1.7-5-2.9V7h2Z',
+                    'qr' => 'M3 3h8v8H3V3Zm2 2v4h4V5H5Zm8-2h8v8h-8V3Zm2 2v4h4V5h-4ZM3 13h8v8H3v-8Zm2 2v4h4v-4H5Zm8 0h2v2h-2v-2Zm4 0h4v2h-2v2h2v4h-4v-2h-2v2h-2v-4h4v-2Z',
+                    'wallet' => 'M3 7a3 3 0 0 1 3-3h11a2 2 0 0 1 2 2v1h1a1 1 0 0 1 1 1v10a2 2 0 0 1-2 2H6a3 3 0 0 1-3-3V7Zm14 6.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z',
+                    'counting' => 'M16 11a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm-8 0a3 3 0 1 0-3-3 3 3 0 0 0 3 3Zm0 2c-2.7 0-6 1.34-6 4v2h7v-2c0-1.1.44-2.2 1.3-3.1A11 11 0 0 0 8 13Zm8 0c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4Z',
+                    'complaints' => 'M12 2 2 7l10 5 10-5-10-5Zm0 20-4-2v-6l4 2 4-2v6l-4 2Z',
                 ];
             @endphp
 
-            @foreach ($features as [$title, $body, $path])
+            @foreach ($features as $key => $path)
                 <article class="glass card card-hover">
                     <span class="grid size-11 place-items-center rounded-xl bg-brand-500/12 text-brand-300">
                         <svg viewBox="0 0 24 24" class="size-6 fill-current"><path d="{{ $path }}"/></svg>
                     </span>
-                    <h3 class="mt-4 text-base font-semibold">{{ $title }}</h3>
-                    <p class="mt-2 text-sm leading-7 text-ink-400">{{ $body }}</p>
+                    <h3 class="mt-4 text-base font-semibold">{{ __("landing.features.items.$key.title") }}</h3>
+                    <p class="mt-2 text-sm leading-7 text-ink-400">{{ __("landing.features.items.$key.body") }}</p>
                 </article>
             @endforeach
         </div>
@@ -112,10 +113,9 @@
         <div class="glass-strong card overflow-hidden !p-0">
             <div class="grid lg:grid-cols-[380px_1fr]">
                 <div class="border-b border-white/5 p-6 lg:border-b-0 lg:border-e">
-                    <h2 class="text-2xl font-bold">اتوبوس‌های در حال حرکت</h2>
+                    <h2 class="text-2xl font-bold">{{ __('landing.live.heading') }}</h2>
                     <p class="mt-3 text-sm leading-7 text-ink-400">
-                        هر نشانگر سبز روی نقشه، یک اتوبوس در سرویس است. با انتخاب هر اتوبوس،
-                        خط، مقصد، ایستگاه بعدی و زمان تخمینی رسیدن نمایش داده می‌شود.
+                        {{ __('landing.live.body') }}
                     </p>
 
                     <div class="mt-6 flex flex-col gap-2" x-data="landingLines()" x-init="load()">
@@ -126,10 +126,10 @@
                                 <span class="truncate text-xs text-ink-400" x-text="line.destination || line.name"></span>
                             </div>
                         </template>
-                        <p x-show="!lines.length" class="text-sm text-ink-500">در حال بارگذاری خطوط…</p>
+                        <p x-show="!lines.length" class="text-sm text-ink-500">{{ __('landing.live.loading_lines') }}</p>
                     </div>
 
-                    <a href="{{ route('passenger.app') }}" class="btn btn-primary mt-6 w-full">باز کردن نقشه کامل</a>
+                    <a href="{{ route('passenger.app') }}" class="btn btn-primary mt-6 w-full">{{ __('landing.live.open_full_map') }}</a>
                 </div>
 
                 <div id="live-map" class="h-[420px] w-full lg:h-[560px]"></div>
@@ -142,26 +142,20 @@
 <section id="wallet" class="py-20">
     <div class="mx-auto grid w-full max-w-7xl items-center gap-12 px-4 lg:grid-cols-2">
         <div>
-            <h2 class="text-3xl font-bold tracking-tight sm:text-4xl">کیف پولی که فقط برای اتوبوس نیست</h2>
+            <h2 class="text-3xl font-bold tracking-tight sm:text-4xl">{{ __('landing.wallet.heading') }}</h2>
             <p class="mt-5 leading-8 text-ink-300">
-                موجودی خود را یک‌بار شارژ کنید و در سراسر شبکه خدمات شهری از آن استفاده کنید.
-                هر تراکنش در دفتر مالی دوطرفه ثبت می‌شود؛ یعنی هر ریال جابه‌جاشده قابل ردیابی و ممیزی است.
+                {{ __('landing.wallet.body') }}
             </p>
 
             <ul class="mt-8 flex flex-col gap-4">
-                @foreach ([
-                    ['پرداخت کرایه با اسکن', 'کد داخل اتوبوس را اسکن کنید؛ کرایه بر اساس قوانین نرخ‌گذاری شهر محاسبه و کسر می‌شود.'],
-                    ['نرخ‌های ویژه', 'تخفیف دانش‌آموزی، سالمندان و جانبازان به‌صورت خودکار روی کرایه اعمال می‌شود.'],
-                    ['سابقه کامل تراکنش‌ها', 'هر پرداخت با مبلغ، خط، زمان و موجودی پس از تراکنش ثبت می‌شود.'],
-                    ['بازگشت وجه', 'در صورت خطا، تراکنش با یک سند معکوس برگشت می‌خورد — سابقه هرگز پاک نمی‌شود.'],
-                ] as [$title, $body])
+                @foreach (['scan', 'concessions', 'history', 'refund'] as $point)
                     <li class="flex gap-4">
                         <span class="mt-1 grid size-7 shrink-0 place-items-center rounded-full bg-brand-500/15 text-brand-300">
                             <svg viewBox="0 0 24 24" class="size-4 fill-current"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2Z"/></svg>
                         </span>
                         <div>
-                            <h3 class="text-sm font-semibold">{{ $title }}</h3>
-                            <p class="mt-1 text-sm leading-7 text-ink-400">{{ $body }}</p>
+                            <h3 class="text-sm font-semibold">{{ __("landing.wallet.points.$point.title") }}</h3>
+                            <p class="mt-1 text-sm leading-7 text-ink-400">{{ __("landing.wallet.points.$point.body") }}</p>
                         </div>
                     </li>
                 @endforeach
@@ -172,20 +166,22 @@
         <div class="relative">
             <div class="glass-strong card mx-auto max-w-sm">
                 <div class="flex items-center justify-between">
-                    <span class="stat-label">موجودی کیف پول</span>
-                    <span class="badge badge-success">فعال</span>
+                    <span class="stat-label">{{ __('landing.wallet.card_balance') }}</span>
+                    <span class="badge badge-success">{{ __('landing.wallet.card_active') }}</span>
                 </div>
-                <p class="mt-3 text-3xl font-bold">۵۰۰٬۰۰۰ <span class="text-base font-medium text-ink-400">تومان</span></p>
+                <p class="mt-3 text-3xl font-bold">{{ \App\Support\Money::format(5_000_000, false) }} <span class="text-base font-medium text-ink-400">{{ __('common.currency_toman') }}</span></p>
 
                 <div class="mt-6 flex flex-col gap-2">
+                    {{-- Illustrative figures, formatted by the same helper as
+                         real money so the mockup cannot drift from the app. --}}
                     @foreach ([
-                        ['پرداخت کرایه — خط ۱۰۲', '−۵٬۰۰۰', 'danger'],
-                        ['استخر ساحل', '−۵۰٬۰۰۰', 'danger'],
-                        ['شارژ کیف پول', '+۲۰۰٬۰۰۰', 'success'],
-                    ] as [$label, $amount, $tone])
+                        ['fare', -50_000, 'danger'],
+                        ['pool', -500_000, 'danger'],
+                        ['topup', 2_000_000, 'success'],
+                    ] as [$row, $amount, $tone])
                         <div class="flex items-center justify-between rounded-xl bg-white/[0.03] px-3 py-2.5">
-                            <span class="text-xs text-ink-300">{{ $label }}</span>
-                            <span class="text-xs font-semibold {{ $tone === 'success' ? 'text-brand-300' : 'text-ink-200' }}">{{ $amount }}</span>
+                            <span class="text-xs text-ink-300">{{ __("landing.wallet.sample_rows.$row") }}</span>
+                            <span class="text-xs font-semibold {{ $tone === 'success' ? 'text-brand-300' : 'text-ink-200' }}" dir="ltr">{{ $amount > 0 ? '+' : '−' }}{{ \App\Support\Money::format(abs($amount), false) }}</span>
                         </div>
                     @endforeach
                 </div>
@@ -197,33 +193,18 @@
 {{-- ═════════════════════════════════════ AUDIENCES ══════════════════════ --}}
 <section class="py-20">
     <div class="mx-auto w-full max-w-7xl px-4">
-        <h2 class="text-3xl font-bold tracking-tight sm:text-4xl">برای هر کسی که در شهر نقشی دارد</h2>
+        <h2 class="text-3xl font-bold tracking-tight sm:text-4xl">{{ __('landing.audiences.heading') }}</h2>
 
         <div class="mt-10 grid gap-4 md:grid-cols-3">
             @foreach ([
-                ['مسافران', 'brand', [
-                    'دیدن اتوبوس‌های نزدیک و زمان رسیدن',
-                    'پرداخت کرایه بدون پول نقد',
-                    'مشاهده تاریخچه سفرها و تراکنش‌ها',
-                    'ثبت شکایت با عکس و پیگیری پاسخ',
-                ]],
-                ['رانندگان', 'info', [
-                    'شروع شیفت با اسکن کد داخل اتوبوس',
-                    'مشاهده مسیر، ایستگاه بعدی و مقصد',
-                    'شمارش زنده مسافران و درآمد شیفت',
-                    'ارسال هوشمند موقعیت با مصرف کم باتری',
-                ]],
-                ['کسب‌وکارها', 'warning', [
-                    'دریافت پرداخت با QR اختصاصی صندوق',
-                    'گزارش فروش روزانه و ماهانه',
-                    'بازگشت وجه با سطح دسترسی مشخص',
-                    'تسویه حساب دوره‌ای و شفاف',
-                ]],
-            ] as [$audience, $tone, $items])
+                'passengers' => 'brand',
+                'drivers' => 'info',
+                'businesses' => 'warning',
+            ] as $audience => $tone)
                 <article class="glass card card-hover">
-                    <span class="badge badge-{{ $tone }}">{{ $audience }}</span>
+                    <span class="badge badge-{{ $tone }}">{{ __("landing.audiences.$audience.title") }}</span>
                     <ul class="mt-5 flex flex-col gap-3">
-                        @foreach ($items as $item)
+                        @foreach (__("landing.audiences.$audience.items") as $item)
                             <li class="flex gap-2.5 text-sm leading-7 text-ink-300">
                                 <span class="mt-2.5 size-1.5 shrink-0 rounded-full bg-brand-400"></span>
                                 {{ $item }}
@@ -242,20 +223,22 @@
         <div class="glass-strong card">
             <div class="grid items-center gap-10 lg:grid-cols-[1fr_auto]">
                 <div>
-                    <h2 class="text-3xl font-bold tracking-tight">پذیرندگان خارج از شبکه اتوبوس</h2>
+                    <h2 class="text-3xl font-bold tracking-tight">{{ __('landing.merchants.heading') }}</h2>
                     <p class="mt-4 max-w-2xl leading-8 text-ink-300">
-                        هر کسب‌وکاری می‌تواند به شبکه پرداخت شهری بپیوندد. مشتری کد صندوق را اسکن می‌کند،
-                        مبلغ از کیف پول او کسر و پس از کسر کارمزد به حساب پذیرنده منتقل می‌شود — همه در یک سند مالی واحد.
+                        {{ __('landing.merchants.body') }}
                     </p>
 
                     <div class="mt-8 flex flex-wrap gap-2">
-                        @foreach (['استخر', 'باشگاه بدنسازی', 'مجموعه ورزشی', 'مرکز تفریحی', 'رستوران', 'فروشگاه', 'سینما', 'پارکینگ'] as $type)
-                            <span class="badge badge-neutral">{{ $type }}</span>
+                        {{-- Merchant categories come from the enum, so the badges here
+                             can never drift from what a merchant can actually be. --}}
+                        @foreach (\App\Domain\Merchant\Enums\MerchantType::options() as $type)
+                            @continue($type['value'] === 'other')
+                            <span class="badge badge-neutral">{{ $type['label'] }}</span>
                         @endforeach
                     </div>
                 </div>
 
-                <a href="{{ route('merchant.app') }}" class="btn btn-primary btn-lg shrink-0">اپلیکیشن پذیرنده</a>
+                <a href="{{ route('merchant.app') }}" class="btn btn-primary btn-lg shrink-0">{{ __('landing.merchants.cta') }}</a>
             </div>
         </div>
     </div>
@@ -264,9 +247,9 @@
 {{-- ══════════════════════════════════════ CITIES ════════════════════════ --}}
 <section id="cities" class="py-20">
     <div class="mx-auto w-full max-w-7xl px-4">
-        <h2 class="text-3xl font-bold tracking-tight sm:text-4xl">شهرهای تحت پوشش</h2>
+        <h2 class="text-3xl font-bold tracking-tight sm:text-4xl">{{ __('landing.cities.heading') }}</h2>
         <p class="mt-4 max-w-2xl text-ink-300 leading-8">
-            سامانه از ابتدا چندشهری طراحی شده است؛ افزودن شهر تازه نیازی به تغییر معماری ندارد.
+            {{ __('landing.cities.body') }}
         </p>
 
         <div class="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
@@ -275,7 +258,7 @@
                     <h3 class="text-base font-semibold">{{ $item->name }}</h3>
                     <p class="mt-1 text-xs text-ink-500">{{ $item->province }}</p>
                     <span class="badge mt-3 {{ $item->is_launched ? 'badge-success' : 'badge-neutral' }}">
-                        {{ $item->is_launched ? 'فعال' : 'به‌زودی' }}
+                        {{ $item->is_launched ? __('landing.cities.launched') : __('landing.cities.soon') }}
                     </span>
                 </article>
             @endforeach
@@ -286,39 +269,24 @@
 {{-- ═══════════════════════════════════════ FAQ ══════════════════════════ --}}
 <section id="faq" class="py-20">
     <div class="mx-auto w-full max-w-3xl px-4">
-        <h2 class="text-center text-3xl font-bold tracking-tight sm:text-4xl">پرسش‌های متداول</h2>
+        <h2 class="text-center text-3xl font-bold tracking-tight sm:text-4xl">{{ __('landing.faq.heading') }}</h2>
 
         <div class="mt-10 flex flex-col gap-3" x-data="{ open: 0 }">
-            @php
-                $faqs = [
-                    ['برای دیدن نقشه و زمان رسیدن باید ثبت‌نام کنم؟',
-                     'خیر. مشاهده ایستگاه‌ها، خطوط، اتوبوس‌های در حال حرکت و زمان تخمینی رسیدن برای همه آزاد است. ثبت‌نام فقط برای استفاده از کیف پول، پرداخت کرایه، تاریخچه سفر و ثبت شکایت لازم است.'],
-                    ['زمان رسیدن اتوبوس چقدر دقیق است؟',
-                     'محاسبه بر پایه موقعیت لحظه‌ای اتوبوس، سرعت فعلی، میانگین زمان طی‌شده همان مسیر در همان ساعت و روز هفته، و زمان توقف در ایستگاه‌های میانی انجام می‌شود. هر تخمین همراه با میزان اطمینان ارائه می‌شود؛ اگر ارتباط اتوبوس قطع شده باشد، این موضوع به شما اعلام می‌گردد.'],
-                    ['اگر کسی از کد QR داخل اتوبوس عکس بگیرد چه می‌شود؟',
-                     'کد نمایش‌داده‌شده هر ۳۰ ثانیه تغییر می‌کند و با کلید اختصاصی همان اتوبوس امضا می‌شود. هر کد فقط یک‌بار قابل استفاده است، بنابراین عکس یا اسکرین‌شات آن پس از چند ثانیه بی‌اثر می‌شود.'],
-                    ['اگر اشتباهی کرایه دو بار کسر شود؟',
-                     'ساختار پرداخت طوری طراحی شده که کسر دوباره رخ ندهد: هر اسکن یک شناسه یکتا دارد و تلاش دوباره با همان شناسه، همان تراکنش قبلی را برمی‌گرداند. در صورت بروز هر مشکل، از بخش شکایات پیگیری کنید؛ برگشت وجه با ثبت سند معکوس انجام می‌شود.'],
-                    ['موقعیت مکانی من ذخیره می‌شود؟',
-                     'ارسال موقعیت مسافر اختیاری است و تنها برای تشخیص پیاده شدن از اتوبوس در طول همان سفر استفاده می‌شود. این داده‌ها حداکثر تا ۲۴ ساعت نگهداری و سپس حذف می‌شوند و در اختیار سایر کاربران قرار نمی‌گیرند.'],
-                    ['داده‌های خطوط و ایستگاه‌ها رسمی است؟',
-                     'در نسخه فعلی، داده‌های شبکه بندرعباس «نمونه» هستند و با برچسب مشخص نمایش داده می‌شوند. پس از دریافت داده رسمی از سازمان اتوبوس‌رانی، همان داده‌ها از طریق سامانه ورود اطلاعات جایگزین و به‌عنوان داده رسمی علامت‌گذاری می‌شوند.'],
-                ];
-            @endphp
+            @php($faqs = ['signup', 'accuracy', 'qr_photo', 'double_charge', 'location', 'official_data'])
 
-            @foreach ($faqs as $index => [$question, $answer])
+            @foreach ($faqs as $index => $faq)
                 <article class="glass card !py-0">
                     <button type="button" class="flex w-full items-center gap-4 py-5 text-start"
                             @click="open = open === {{ $index }} ? null : {{ $index }}"
                             :aria-expanded="open === {{ $index }}">
-                        <span class="flex-1 text-sm font-semibold sm:text-base">{{ $question }}</span>
+                        <span class="flex-1 text-sm font-semibold sm:text-base">{{ __("landing.faq.items.$faq.question") }}</span>
                         <span class="grid size-7 shrink-0 place-items-center rounded-full bg-white/5 transition-transform duration-300"
                               :class="open === {{ $index }} && 'rotate-45'">
                             <svg viewBox="0 0 24 24" class="size-4 fill-current"><path d="M11 5h2v14h-2z"/><path d="M5 11h14v2H5z"/></svg>
                         </span>
                     </button>
                     <div x-show="open === {{ $index }}" x-collapse x-cloak>
-                        <p class="pb-5 text-sm leading-8 text-ink-400">{{ $answer }}</p>
+                        <p class="pb-5 text-sm leading-8 text-ink-400">{{ __("landing.faq.items.$faq.answer") }}</p>
                     </div>
                 </article>
             @endforeach
@@ -330,14 +298,13 @@
 <section class="py-20">
     <div class="mx-auto w-full max-w-7xl px-4">
         <div class="glass-strong card overflow-hidden text-center !py-14">
-            <h2 class="text-3xl font-bold tracking-tight sm:text-4xl">همین حالا شروع کنید</h2>
+            <h2 class="text-3xl font-bold tracking-tight sm:text-4xl">{{ __('landing.cta.heading') }}</h2>
             <p class="mx-auto mt-4 max-w-xl leading-8 text-ink-300">
-                اپلیکیشن مسافر بدون نصب، مستقیماً در مرورگر اجرا می‌شود. می‌توانید آن را
-                به صفحه اصلی گوشی اضافه کنید تا مانند یک اپلیکیشن معمولی باز شود.
+                {{ __('landing.cta.body') }}
             </p>
             <div class="mt-8 flex flex-wrap justify-center gap-3">
-                <a href="{{ route('passenger.app') }}" class="btn btn-primary btn-lg">باز کردن اپلیکیشن مسافر</a>
-                <a href="{{ route('driver.app') }}" class="btn btn-ghost btn-lg">ورود رانندگان</a>
+                <a href="{{ route('passenger.app') }}" class="btn btn-primary btn-lg">{{ __('landing.cta.passenger') }}</a>
+                <a href="{{ route('driver.app') }}" class="btn btn-ghost btn-lg">{{ __('landing.cta.driver') }}</a>
             </div>
         </div>
     </div>

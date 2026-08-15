@@ -6,6 +6,8 @@
  * in a single ApiError type, never in transport details.
  */
 
+import { t } from './i18n.js';
+
 const TOKEN_KEY = 'hamsafar.token';
 const CITY_KEY = 'hamsafar.city';
 
@@ -81,7 +83,7 @@ async function request(method, path, { body, query, signal, headers = {} } = {})
     try {
         payload = await response.json();
     } catch {
-        throw new ApiError('server_error', 'پاسخ سرور قابل خواندن نبود.', response.status);
+        throw new ApiError('server_error', t('errors.unreadable_response'), response.status);
     }
 
     if (!response.ok || payload.success === false) {
@@ -118,7 +120,7 @@ export function formatMoney(minorUnits, { withSuffix = true } = {}) {
     const value = unit === 'toman' ? Math.trunc(minorUnits / 10) : minorUnits;
     const formatted = new Intl.NumberFormat('fa-IR').format(value);
 
-    return withSuffix ? `${formatted} ${unit === 'toman' ? 'تومان' : 'ریال'}` : formatted;
+    return withSuffix ? `${formatted} ${t(`common.currency_${unit}`)}` : formatted;
 }
 
 export function formatNumber(value) {
@@ -127,9 +129,9 @@ export function formatNumber(value) {
 
 export function formatMinutes(seconds) {
     if (seconds === null || seconds === undefined) return '—';
-    if (seconds < 60) return 'کمتر از یک دقیقه';
+    if (seconds < 60) return t('common.under_a_minute');
 
-    return `${formatNumber(Math.round(seconds / 60))} دقیقه`;
+    return t('common.minutes_count', { count: formatNumber(Math.round(seconds / 60)) });
 }
 
 export function formatTime(iso) {

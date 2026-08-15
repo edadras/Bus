@@ -15,14 +15,9 @@
             </a>
 
             <ul class="ms-6 hidden items-center gap-1 text-sm lg:flex">
-                @foreach ([
-                    '#features' => 'امکانات',
-                    '#live' => 'نقشه زنده',
-                    '#wallet' => 'کیف پول',
-                    '#merchants' => 'پذیرندگان',
-                    '#cities' => 'شهرها',
-                    '#faq' => 'پرسش‌های متداول',
-                ] as $href => $label)
+                @foreach (['features', 'live', 'wallet', 'merchants', 'cities', 'faq'] as $section)
+                    @php($href = '#'.$section)
+                    @php($label = __('web.nav.'.$section))
                     <li>
                         <a href="{{ $href }}"
                            class="rounded-full px-3 py-2 text-ink-300 transition hover:bg-white/5 hover:text-ink-50">{{ $label }}</a>
@@ -32,11 +27,11 @@
 
             <div class="ms-auto flex items-center gap-2">
                 <a href="{{ route('passenger.app') }}" class="btn btn-primary btn-sm hidden sm:inline-flex">
-                    ورود به اپلیکیشن
+                    {{ __('web.nav.open_app') }}
                 </a>
 
                 <button type="button" class="btn btn-ghost btn-sm lg:hidden" @click="open = !open"
-                        :aria-expanded="open" aria-label="منو">
+                        :aria-expanded="open" aria-label="{{ __('web.nav.menu') }}">
                     <svg viewBox="0 0 24 24" class="size-5 stroke-current fill-none" stroke-width="2">
                         <path x-show="!open" d="M4 7h16M4 12h16M4 17h16" stroke-linecap="round"/>
                         <path x-show="open" x-cloak d="M6 6l12 12M18 6L6 18" stroke-linecap="round"/>
@@ -48,15 +43,14 @@
         <div x-show="open" x-cloak x-transition.opacity
              class="glass card mt-2 lg:hidden">
             <ul class="flex flex-col gap-1 text-sm">
-                @foreach ([
-                    '#features' => 'امکانات', '#live' => 'نقشه زنده', '#wallet' => 'کیف پول',
-                    '#merchants' => 'پذیرندگان', '#cities' => 'شهرها', '#faq' => 'پرسش‌های متداول',
-                ] as $href => $label)
+                @foreach (['features', 'live', 'wallet', 'merchants', 'cities', 'faq'] as $section)
+                    @php($href = '#'.$section)
+                    @php($label = __('web.nav.'.$section))
                     <li><a href="{{ $href }}" @click="open = false"
                            class="block rounded-xl px-3 py-2.5 text-ink-200 hover:bg-white/5">{{ $label }}</a></li>
                 @endforeach
                 <li class="pt-2">
-                    <a href="{{ route('passenger.app') }}" class="btn btn-primary w-full">ورود به اپلیکیشن</a>
+                    <a href="{{ route('passenger.app') }}" class="btn btn-primary w-full">{{ __('web.nav.open_app') }}</a>
                 </li>
             </ul>
         </div>

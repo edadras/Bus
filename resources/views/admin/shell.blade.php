@@ -1,6 +1,6 @@
 @extends('layouts.base')
 
-@section('title', 'پنل مدیریت')
+@section('title', __('admin.title'))
 
 @section('body')
 <div x-data="adminShell()" x-init="boot()" class="flex min-h-dvh">
@@ -15,7 +15,7 @@
                 </span>
                 <div class="min-w-0">
                     <p class="truncate text-sm font-bold">{{ __('common.app_name') }}</p>
-                    <p class="truncate text-[10px] text-ink-400">پنل مدیریت</p>
+                    <p class="truncate text-[10px] text-ink-400">{{ __('admin.title') }}</p>
                 </div>
             </a>
 
@@ -45,12 +45,12 @@
             <div class="mt-4 border-t border-white/5 pt-4">
                 <div class="flex items-center gap-2.5 px-2">
                     <span class="grid size-9 shrink-0 place-items-center rounded-xl bg-white/5 text-sm font-bold"
-                          x-text="(user.name || '؟').charAt(0)"></span>
+                          x-text="(user.name || $t('admin.shell.unknown_initial')).charAt(0)"></span>
                     <div class="min-w-0 flex-1">
                         <p class="truncate text-xs font-semibold" x-text="user.name"></p>
-                        <p class="truncate text-[10px] text-ink-500" x-text="(user.roles || []).join('، ')"></p>
+                        <p class="truncate text-[10px] text-ink-500" x-text="(user.roles || []).join($t('admin.shell.role_separator'))"></p>
                     </div>
-                    <button type="button" class="text-ink-400 hover:text-danger" @click="signOut()" title="خروج">
+                    <button type="button" class="text-ink-400 hover:text-danger" @click="signOut()" title="{{ __('admin.shell.sign_out') }}">
                         <svg viewBox="0 0 24 24" class="size-[18px] fill-current"><path d="M10 17v-2h4v-2h-4v-2l-4 3 4 3Zm2-15a10 10 0 1 1 0 20 10 10 0 0 1 0-20Zm0 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16Z"/></svg>
                     </button>
                 </div>
@@ -72,7 +72,7 @@
 
             <span class="badge badge-success hidden sm:inline-flex">
                 <span class="live-dot"></span>
-                <span x-text="realtimeConnected ? 'اتصال زنده' : 'به‌روزرسانی دوره‌ای'"></span>
+                <span x-text="realtimeConnected ? $t('admin.shell.realtime_connected') : $t('admin.shell.realtime_polling')"></span>
             </span>
 
             <button type="button" class="btn btn-ghost btn-sm" @click="refresh()" :disabled="loading">
@@ -99,6 +99,18 @@
     @include('admin.partials.form-modal')
 </div>
 @endsection
+
+@push('i18n')
+    {{-- The panel's own strings, plus the enum labels it renders in tables.
+         Same keys as the server uses, so a string can move between a Blade
+         view and a JS component without being renamed. --}}
+    <script>
+        Object.assign(window.__I18N__, @json(
+            ['admin' => __('admin'), 'enums' => __('enums')],
+            JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE,
+        ));
+    </script>
+@endpush
 
 @push('scripts')
     @vite('resources/js/admin.js')

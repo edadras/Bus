@@ -1,6 +1,6 @@
 @extends('layouts.pwa')
 
-@section('title', 'نقشه زنده و زمان رسیدن')
+@section('title', __('web.viewer.title'))
 
 @section('app')
 <div x-data="webViewer()" x-init="boot()" class="flex flex-1 flex-col">
@@ -12,7 +12,7 @@
             </a>
             <div class="min-w-0 flex-1">
                 <p class="truncate text-sm font-bold">{{ __('common.app_name') }}</p>
-                <p class="truncate text-[11px] text-ink-400">{{ $city->name }} — نمای عمومی</p>
+                <p class="truncate text-[11px] text-ink-400">{{ $city->name }} — {{ __('web.viewer.public_view') }}</p>
             </div>
             <span class="badge badge-success">
                 <span class="live-dot"></span>
@@ -25,12 +25,12 @@
         <div class="glass card relative overflow-hidden !p-1.5">
             <div id="viewer-map" class="h-[44vh] w-full rounded-2xl"></div>
             <div class="absolute top-3 inset-inline-start-3">
-                <span class="badge badge-warning !text-[10px]">داده نمونه</span>
+                <span class="badge badge-warning !text-[10px]">{{ __('web.viewer.sample_badge') }}</span>
             </div>
         </div>
 
         <div class="mt-3">
-            <label class="field-label">انتخاب ایستگاه</label>
+            <label class="field-label">{{ __('web.viewer.choose_stop') }}</label>
             <select class="field text-sm" x-model.number="selectedStopId" @change="loadArrivals()">
                 <template x-for="stop in stops" :key="stop.id">
                     <option :value="stop.id" x-text="stop.name"></option>
@@ -47,33 +47,30 @@
                     <div class="min-w-0 flex-1">
                         <p class="truncate text-sm font-semibold" x-text="arrival.destination || arrival.line_name"></p>
                         <p class="mt-0.5 text-[11px] text-ink-400"
-                           x-text="`اتوبوس ${$num(arrival.bus_number)} · ${$num(arrival.passenger_count)} مسافر`"></p>
+                           x-text="$t('viewer.bus_with_passengers', { bus: $num(arrival.bus_number), count: $num(arrival.passenger_count) })"></p>
                     </div>
                     <div class="text-end">
                         <p class="text-lg font-bold leading-none"
                            :class="arrival.eta.reliable ? 'text-brand-300' : 'text-ink-300'"
                            x-text="$num(arrival.eta.minutes)"></p>
-                        <p class="text-[10px] text-ink-400">دقیقه</p>
-                        <p x-show="!arrival.eta.reliable" class="text-[9px] text-amber-400">تقریبی</p>
+                        <p class="text-[10px] text-ink-400">{{ __('web.viewer.minutes') }}</p>
+                        <p x-show="!arrival.eta.reliable" class="text-[9px] text-amber-400">{{ __('web.viewer.approximate') }}</p>
                     </div>
                 </article>
             </template>
 
             <p x-show="!arrivals.length && !loading" class="glass card text-center text-sm text-ink-400">
-                در حال حاضر اتوبوسی به این ایستگاه نزدیک نیست.
+                {{ __('web.viewer.no_arrivals') }}
             </p>
         </div>
 
         {{-- The web viewer is deliberately read-only; anything that moves money
              lives in the native app, which can hold a token securely. --}}
         <div class="glass-strong card my-4">
-            <h2 class="text-sm font-bold">پرداخت کرایه و کیف پول</h2>
-            <p class="mt-2 text-xs leading-6 text-ink-400">
-                برای پرداخت کرایه با اسکن QR، شارژ کیف پول، مشاهده تاریخچه سفر و ثبت شکایت،
-                اپلیکیشن همسفر را نصب کنید.
-            </p>
+            <h2 class="text-sm font-bold">{{ __('web.viewer.wallet_heading') }}</h2>
+            <p class="mt-2 text-xs leading-6 text-ink-400">{{ __('web.viewer.wallet_body') }}</p>
             <a href="{{ url('/downloads/hamsafar-passenger.apk') }}" class="btn btn-primary mt-4 w-full">
-                دریافت اپلیکیشن اندروید
+                {{ __('web.viewer.download_app') }}
             </a>
         </div>
     </section>

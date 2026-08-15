@@ -2,15 +2,15 @@
     <div class="glass card flex flex-col">
         <div class="flex flex-wrap items-center gap-2">
             <select class="field !py-2 text-xs" x-model="filters.complaints.status" @change="loadComplaints()">
-                <option value="">همه</option>
-                <option value="new">جدید</option>
-                <option value="reviewing">در حال بررسی</option>
-                <option value="in_progress">در حال رسیدگی</option>
-                <option value="resolved">حل‌شده</option>
+                <option value="">{{ __('admin.common.all') }}</option>
+                <option value="new">{{ __('enums.complaintstatus.new') }}</option>
+                <option value="reviewing">{{ __('enums.complaintstatus.reviewing') }}</option>
+                <option value="in_progress">{{ __('enums.complaintstatus.in_progress') }}</option>
+                <option value="resolved">{{ __('enums.complaintstatus.resolved') }}</option>
             </select>
             <label class="flex items-center gap-1.5 text-xs text-ink-400">
                 <input type="checkbox" x-model="filters.complaints.mine" @change="loadComplaints()">
-                فقط موارد من
+                {{ __('admin.complaints.only_mine') }}
             </label>
         </div>
 
@@ -32,13 +32,13 @@
                     </p>
                 </button>
             </template>
-            <p x-show="!complaints.length" class="py-10 text-center text-sm text-ink-500">شکایتی یافت نشد.</p>
+            <p x-show="!complaints.length" class="py-10 text-center text-sm text-ink-500">{{ __('admin.complaints.empty') }}</p>
         </div>
     </div>
 
     <div class="glass card">
         <template x-if="!selectedComplaint">
-            <p class="py-24 text-center text-sm text-ink-500">برای مشاهده جزئیات، یک شکایت را انتخاب کنید.</p>
+            <p class="py-24 text-center text-sm text-ink-500">{{ __('admin.complaints.select_prompt') }}</p>
         </template>
 
         <template x-if="selectedComplaint">
@@ -49,11 +49,11 @@
                         <select class="field max-w-[10rem] !py-1.5 text-xs"
                                 :value="selectedComplaint.complaint?.status"
                                 @change="changeComplaintStatus($event.target.value)">
-                            <option value="new">جدید</option>
-                            <option value="reviewing">در حال بررسی</option>
-                            <option value="in_progress">در حال رسیدگی</option>
-                            <option value="resolved">حل‌شده</option>
-                            <option value="closed">بسته‌شده</option>
+                            <option value="new">{{ __('enums.complaintstatus.new') }}</option>
+                            <option value="reviewing">{{ __('enums.complaintstatus.reviewing') }}</option>
+                            <option value="in_progress">{{ __('enums.complaintstatus.in_progress') }}</option>
+                            <option value="resolved">{{ __('enums.complaintstatus.resolved') }}</option>
+                            <option value="closed">{{ __('enums.complaintstatus.closed') }}</option>
                         </select>
                     </div>
                     <p class="mt-1.5 text-[11px] text-ink-500">
@@ -65,10 +65,10 @@
 
                 <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
                     <template x-for="[label, value] in Object.entries({
-                        'اتوبوس': selectedComplaint.context?.bus_number,
-                        'راننده': selectedComplaint.context?.driver_name,
-                        'خط': selectedComplaint.context?.line,
-                        'زمان پاسخ': selectedComplaint.sla?.first_response_minutes,
+                        [$t('admin.complaints.context_bus')]: selectedComplaint.context?.bus_number,
+                        [$t('admin.complaints.context_driver')]: selectedComplaint.context?.driver_name,
+                        [$t('admin.complaints.context_line')]: selectedComplaint.context?.line,
+                        [$t('admin.complaints.context_response_time')]: selectedComplaint.sla?.first_response_minutes,
                     })" :key="label">
                         <div class="rounded-xl bg-white/[0.03] px-3 py-2">
                             <p class="text-[10px] text-ink-500" x-text="label"></p>
@@ -86,8 +86,8 @@
                                  'bg-white/[0.02] text-center': message.author_type === 'system',
                              }">
                             <p class="text-[10px] text-ink-500">
-                                <span x-text="message.author_name || (message.author_type === 'system' ? 'سیستم' : '')"></span>
-                                <span x-show="message.is_internal" class="text-amber-400"> — یادداشت داخلی</span>
+                                <span x-text="message.author_name || (message.author_type === 'system' ? $t('admin.complaints.system_author') : '')"></span>
+                                <span x-show="message.is_internal" class="text-amber-400" x-text="$t('admin.complaints.internal_note_tag')"></span>
                             </p>
                             <p class="mt-1 whitespace-pre-line text-sm leading-7" x-text="message.body"></p>
                             <p class="mt-1 text-[10px] text-ink-600" x-text="$time(message.created_at)"></p>
@@ -96,14 +96,14 @@
                 </div>
 
                 <form class="flex flex-col gap-2" @submit.prevent="replyToComplaint()">
-                    <textarea class="field text-sm" rows="3" placeholder="پاسخ خود را بنویسید…"
+                    <textarea class="field text-sm" rows="3" placeholder="{{ __('admin.complaints.reply_placeholder') }}"
                               x-model="reply.body" required></textarea>
                     <div class="flex items-center gap-3">
                         <label class="flex items-center gap-1.5 text-xs text-ink-400">
                             <input type="checkbox" x-model="reply.internal">
-                            یادداشت داخلی (برای مسافر نمایش داده نمی‌شود)
+                            {{ __('admin.complaints.internal_note_label') }}
                         </label>
-                        <button type="submit" class="btn btn-primary btn-sm ms-auto" :disabled="busy">ارسال پاسخ</button>
+                        <button type="submit" class="btn btn-primary btn-sm ms-auto" :disabled="busy">{{ __('admin.complaints.send_reply') }}</button>
                     </div>
                 </form>
             </div>

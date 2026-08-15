@@ -17,6 +17,7 @@ import QRCode from 'qrcode';
 import { api, auth, formatNumber } from './lib/api.js';
 import { createMap, busIcon, MarkerLayer } from './lib/map.js';
 import { subscribe } from './lib/realtime.js';
+import { t } from './lib/i18n.js';
 
 Chart.register(...registerables);
 
@@ -28,16 +29,16 @@ Chart.defaults.plugins.legend.labels.boxWidth = 10;
 Chart.defaults.plugins.legend.labels.usePointStyle = true;
 
 const NAV = [
-    { id: 'dashboard', label: 'داشبورد', permission: 'dashboard.view', icon: 'M3 13h8V3H3v10Zm0 8h8v-6H3v6Zm10 0h8V11h-8v10Zm0-18v6h8V3h-8Z' },
-    { id: 'live', label: 'نقشه زنده', permission: 'operations.live_map', icon: 'M12 2a7 7 0 0 1 7 7c0 5.25-7 13-7 13S5 14.25 5 9a7 7 0 0 1 7-7Zm0 4.5A2.5 2.5 0 1 0 12 11a2.5 2.5 0 0 0 0-4.5Z' },
-    { id: 'occupancy', label: 'شلوغی زنده', permission: 'operations.live_map', icon: 'M16 11a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm-8 0a3 3 0 1 0-3-3 3 3 0 0 0 3 3Zm0 2c-2.7 0-6 1.34-6 4v2h7v-2c0-1.1.44-2.2 1.3-3.1A11 11 0 0 0 8 13Zm8 0c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4Z' },
-    { id: 'reports', label: 'گزارش‌ها', permission: 'dashboard.view', icon: 'M3 13h2v8H3v-8Zm4-5h2v13H7V8Zm4-6h2v19h-2V2Zm4 9h2v10h-2V11Zm4-4h2v14h-2V7Z' },
-    { id: 'fleet', label: 'ناوگان', permission: 'fleet.manage', icon: 'M4 16V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10h-1.2a2.5 2.5 0 0 1-4.6 0H9.8a2.5 2.5 0 0 1-4.6 0H4Zm2-9v4h12V7H6Z' },
-    { id: 'drivers', label: 'رانندگان', permission: 'drivers.manage', icon: 'M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Zm0 2c-4.42 0-8 2.24-8 5v3h16v-3c0-2.76-3.58-5-8-5Z' },
-    { id: 'network', label: 'خطوط و ایستگاه‌ها', permission: 'network.manage', icon: 'M4 6h16v2H4V6Zm0 5h16v2H4v-2Zm0 5h10v2H4v-2Z' },
-    { id: 'finance', label: 'مالی', permission: 'finance.manage', icon: 'M3 7a3 3 0 0 1 3-3h11a2 2 0 0 1 2 2v1h1a1 1 0 0 1 1 1v10a2 2 0 0 1-2 2H6a3 3 0 0 1-3-3V7Zm14 6.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z' },
-    { id: 'merchants', label: 'پذیرندگان', permission: 'merchants.manage', icon: 'M4 4h16l-1 5H5L4 4Zm1 7h14v9H5v-9Zm3 2v5h8v-5H8Z' },
-    { id: 'complaints', label: 'شکایات', permission: 'support.manage', icon: 'M12 2 2 7l10 5 10-5-10-5Zm0 20-4-2v-6l4 2 4-2v6l-4 2Z' },
+    { id: 'dashboard', label: t('admin.nav.dashboard'), permission: 'dashboard.view', icon: 'M3 13h8V3H3v10Zm0 8h8v-6H3v6Zm10 0h8V11h-8v10Zm0-18v6h8V3h-8Z' },
+    { id: 'live', label: t('admin.nav.live'), permission: 'operations.live_map', icon: 'M12 2a7 7 0 0 1 7 7c0 5.25-7 13-7 13S5 14.25 5 9a7 7 0 0 1 7-7Zm0 4.5A2.5 2.5 0 1 0 12 11a2.5 2.5 0 0 0 0-4.5Z' },
+    { id: 'occupancy', label: t('admin.nav.occupancy'), permission: 'operations.live_map', icon: 'M16 11a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm-8 0a3 3 0 1 0-3-3 3 3 0 0 0 3 3Zm0 2c-2.7 0-6 1.34-6 4v2h7v-2c0-1.1.44-2.2 1.3-3.1A11 11 0 0 0 8 13Zm8 0c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4Z' },
+    { id: 'reports', label: t('admin.nav.reports'), permission: 'dashboard.view', icon: 'M3 13h2v8H3v-8Zm4-5h2v13H7V8Zm4-6h2v19h-2V2Zm4 9h2v10h-2V11Zm4-4h2v14h-2V7Z' },
+    { id: 'fleet', label: t('admin.nav.fleet'), permission: 'fleet.manage', icon: 'M4 16V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10h-1.2a2.5 2.5 0 0 1-4.6 0H9.8a2.5 2.5 0 0 1-4.6 0H4Zm2-9v4h12V7H6Z' },
+    { id: 'drivers', label: t('admin.nav.drivers'), permission: 'drivers.manage', icon: 'M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Zm0 2c-4.42 0-8 2.24-8 5v3h16v-3c0-2.76-3.58-5-8-5Z' },
+    { id: 'network', label: t('admin.nav.network'), permission: 'network.manage', icon: 'M4 6h16v2H4V6Zm0 5h16v2H4v-2Zm0 5h10v2H4v-2Z' },
+    { id: 'finance', label: t('admin.nav.finance'), permission: 'finance.manage', icon: 'M3 7a3 3 0 0 1 3-3h11a2 2 0 0 1 2 2v1h1a1 1 0 0 1 1 1v10a2 2 0 0 1-2 2H6a3 3 0 0 1-3-3V7Zm14 6.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z' },
+    { id: 'merchants', label: t('admin.nav.merchants'), permission: 'merchants.manage', icon: 'M4 4h16l-1 5H5L4 4Zm1 7h14v9H5v-9Zm3 2v5h8v-5H8Z' },
+    { id: 'complaints', label: t('admin.nav.complaints'), permission: 'support.manage', icon: 'M12 2 2 7l10 5 10-5-10-5Zm0 20-4-2v-6l4 2 4-2v6l-4 2Z' },
 ];
 
 Alpine.data('adminShell', () => ({
@@ -55,10 +56,10 @@ Alpine.data('adminShell', () => ({
     kpis: {},
     range: 'week',
     ranges: [
-        { value: 'today', label: 'امروز' },
-        { value: 'week', label: 'هفته' },
-        { value: 'month', label: 'ماه' },
-        { value: 'year', label: 'سال' },
+        { value: 'today', label: t('admin.range.today') },
+        { value: 'week', label: t('admin.range.week') },
+        { value: 'month', label: t('admin.range.month') },
+        { value: 'year', label: t('admin.range.year') },
     ],
     busiestLines: [],
     busiestStops: [],
@@ -97,10 +98,10 @@ Alpine.data('adminShell', () => ({
     report: null,
     reportRange: { from: '', to: '' },
     reportTabs: [
-        { id: 'transport', label: 'حمل‌ونقل' },
-        { id: 'drivers', label: 'رانندگان' },
-        { id: 'passengers', label: 'مسافران' },
-        { id: 'revenue', label: 'مالی' },
+        { id: 'transport', label: t('admin.reports.tabs.transport') },
+        { id: 'drivers', label: t('admin.reports.tabs.drivers') },
+        { id: 'passengers', label: t('admin.reports.tabs.passengers') },
+        { id: 'revenue', label: t('admin.reports.tabs.revenue') },
     ],
 
     // One generic modal serves every entity; a form is a descriptor, not a
@@ -139,14 +140,14 @@ Alpine.data('adminShell', () => ({
         const k = this.kpis;
 
         return [
-            { label: 'اتوبوس در حال حرکت', value: formatNumber(k.buses_moving), tone: 'brand-500', live: true, icon: NAV[2].icon, caption: `از ${formatNumber(k.total_buses)} اتوبوس` },
-            { label: 'مسافر داخل اتوبوس‌ها', value: formatNumber(k.passengers_on_board), tone: 'brand-500', live: true, icon: NAV[3].icon },
-            { label: 'سفر امروز', value: formatNumber(k.trips_today), tone: 'white/5', icon: NAV[4].icon },
-            { label: 'سوار شدن امروز', value: formatNumber(k.boardings_today), tone: 'white/5', icon: NAV[3].icon, caption: `${formatNumber(k.unique_passengers_today)} مسافر یکتا` },
-            { label: 'راننده فعال', value: formatNumber(k.active_drivers), tone: 'white/5', icon: NAV[3].icon, caption: `${formatNumber(k.drivers_on_shift)} در شیفت` },
-            { label: 'درآمد کرایه امروز', value: this.$money(k.fare_revenue_today), tone: 'brand-500', icon: NAV[5].icon },
-            { label: 'شارژ کیف پول امروز', value: this.$money(k.topup_amount_today), tone: 'white/5', icon: NAV[5].icon },
-            { label: 'شکایت باز', value: formatNumber(k.open_complaints), tone: 'white/5', icon: NAV[7].icon, caption: `${formatNumber(k.complaints_today)} امروز` },
+            { label: t('admin.dashboard.kpi.buses_moving'), value: formatNumber(k.buses_moving), tone: 'brand-500', live: true, icon: NAV[2].icon, caption: t('admin.dashboard.kpi.buses_moving_caption', { total: formatNumber(k.total_buses) }) },
+            { label: t('admin.dashboard.kpi.passengers_on_board'), value: formatNumber(k.passengers_on_board), tone: 'brand-500', live: true, icon: NAV[3].icon },
+            { label: t('admin.dashboard.kpi.trips_today'), value: formatNumber(k.trips_today), tone: 'white/5', icon: NAV[4].icon },
+            { label: t('admin.dashboard.kpi.boardings_today'), value: formatNumber(k.boardings_today), tone: 'white/5', icon: NAV[3].icon, caption: t('admin.dashboard.kpi.boardings_today_caption', { count: formatNumber(k.unique_passengers_today) }) },
+            { label: t('admin.dashboard.kpi.active_drivers'), value: formatNumber(k.active_drivers), tone: 'white/5', icon: NAV[3].icon, caption: t('admin.dashboard.kpi.active_drivers_caption', { count: formatNumber(k.drivers_on_shift) }) },
+            { label: t('admin.dashboard.kpi.fare_revenue_today'), value: this.$money(k.fare_revenue_today), tone: 'brand-500', icon: NAV[5].icon },
+            { label: t('admin.dashboard.kpi.topup_today'), value: this.$money(k.topup_amount_today), tone: 'white/5', icon: NAV[5].icon },
+            { label: t('admin.dashboard.kpi.open_complaints'), value: formatNumber(k.open_complaints), tone: 'white/5', icon: NAV[7].icon, caption: t('admin.dashboard.kpi.open_complaints_caption', { count: formatNumber(k.complaints_today) }) },
         ];
     },
 
@@ -297,7 +298,7 @@ Alpine.data('adminShell', () => ({
                 labels,
                 datasets: [
                     {
-                        label: 'سفر',
+                        label: t('admin.dashboard.series.trips'),
                         data: series.map((row) => row.trips),
                         borderColor: '#32d583',
                         backgroundColor: 'rgba(50,213,131,.12)',
@@ -307,7 +308,7 @@ Alpine.data('adminShell', () => ({
                         borderWidth: 2,
                     },
                     {
-                        label: 'مسافر',
+                        label: t('admin.dashboard.series.passengers'),
                         data: series.map((row) => row.boardings),
                         borderColor: '#2e90fa',
                         backgroundColor: 'rgba(46,144,250,.10)',
@@ -331,7 +332,7 @@ Alpine.data('adminShell', () => ({
             data: {
                 labels,
                 datasets: [{
-                    label: 'کرایه',
+                    label: t('admin.dashboard.series.fares'),
                     // The API returns rial; the chart shows toman, like the rest
                     // of the interface.
                     data: series.map((row) => Math.trunc(row.fare_revenue / 10)),
@@ -385,11 +386,11 @@ Alpine.data('adminShell', () => ({
                     stale: bus.is_off_route,
                 }),
                 popupFor: (bus) => `
-                    <strong>اتوبوس ${bus.bus_number ?? '—'}</strong><br>
-                    <span style="color:#9db2b9;font-size:12px">راننده: ${bus.driver_name ?? '—'}</span><br>
-                    <span style="color:#9db2b9;font-size:12px">خط ${bus.line_code ?? '—'} — ${bus.destination ?? ''}</span><br>
-                    <span style="color:#32d583;font-size:12px">${bus.passenger_count ?? 0} مسافر · ${Math.round(bus.speed ?? 0)} km/h</span><br>
-                    <span style="color:#9db2b9;font-size:12px">ایستگاه بعدی: ${bus.next_stop ?? '—'}</span>`,
+                    <strong>${t('admin.live.bus_number', { number: bus.bus_number ?? '—' })}</strong><br>
+                    <span style="color:#9db2b9;font-size:12px">${t('admin.live.popup_driver', { name: bus.driver_name ?? '—' })}</span><br>
+                    <span style="color:#9db2b9;font-size:12px">${t('admin.live.popup_line', { code: bus.line_code ?? '—', destination: bus.destination ?? '' })}</span><br>
+                    <span style="color:#32d583;font-size:12px">${t('admin.live.popup_load', { count: bus.passenger_count ?? 0, speed: Math.round(bus.speed ?? 0) })}</span><br>
+                    <span style="color:#9db2b9;font-size:12px">${t('admin.live.popup_next_stop', { stop: bus.next_stop ?? '—' })}</span>`,
             });
 
             this._busLayer.sync(this.liveBuses, (bus) => bus.trip_uuid);
@@ -475,17 +476,17 @@ Alpine.data('adminShell', () => ({
     },
 
     async regenerateQr() {
-        if (!confirm('کد فعلی باطل می‌شود و برچسب نصب‌شده در اتوبوس دیگر کار نخواهد کرد. ادامه می‌دهید؟')) {
+        if (!confirm(t('admin.fleet.qr_confirm'))) {
             return;
         }
 
-        const reason = prompt('دلیل ابطال کد:');
+        const reason = prompt(t('admin.fleet.qr_reason_prompt'));
 
         if (!reason) return;
 
         try {
             await api.post(`/admin/fleet/buses/${this.qrModal.bus_uuid ?? ''}/qr/regenerate`, { reason });
-            window.toast?.('کد جدید صادر شد. برچسب تازه را چاپ و نصب کنید.', 'success');
+            window.toast?.(t('admin.fleet.qr_regenerated'), 'success');
             this.qrModal = null;
             await this.loadFleet();
         } catch (error) {
@@ -500,13 +501,13 @@ Alpine.data('adminShell', () => ({
     },
 
     async changeDriverStatus(driver, status) {
-        const reason = status === 'suspended' ? prompt('دلیل تعلیق:') : null;
+        const reason = status === 'suspended' ? prompt(t('admin.drivers.suspend_reason_prompt')) : null;
 
         if (status === 'suspended' && !reason) return;
 
         try {
             await api.post(`/admin/drivers/${driver.uuid}/status`, { status, reason });
-            window.toast?.('وضعیت راننده به‌روزرسانی شد.', 'success');
+            window.toast?.(t('admin.drivers.status_updated'), 'success');
             await this.loadDrivers();
         } catch (error) {
             window.toast?.(error.message, 'error');
@@ -541,11 +542,11 @@ Alpine.data('adminShell', () => ({
     },
 
     async approveSettlement(settlement) {
-        if (!confirm(`تسویه ${settlement.reference} تأیید و از کیف پول پذیرنده کسر شود؟`)) return;
+        if (!confirm(t('admin.finance.settlement_confirm', { reference: settlement.reference }))) return;
 
         try {
             await api.post(`/admin/finance/settlements/${settlement.uuid}/approve`);
-            window.toast?.('تسویه تأیید شد.', 'success');
+            window.toast?.(t('admin.finance.settlement_approved'), 'success');
             await this.loadSettlements();
         } catch (error) {
             window.toast?.(error.message, 'error');
@@ -553,13 +554,13 @@ Alpine.data('adminShell', () => ({
     },
 
     async paySettlement(settlement) {
-        const reference = prompt('شماره پیگیری انتقال بانکی:');
+        const reference = prompt(t('admin.finance.transfer_reference_prompt'));
 
         if (!reference) return;
 
         try {
             await api.post(`/admin/finance/settlements/${settlement.uuid}/pay`, { payment_reference: reference });
-            window.toast?.('پرداخت ثبت شد.', 'success');
+            window.toast?.(t('admin.finance.payment_recorded'), 'success');
             await this.loadSettlements();
         } catch (error) {
             window.toast?.(error.message, 'error');
@@ -575,7 +576,7 @@ Alpine.data('adminShell', () => ({
     async changeMerchantStatus(merchant, status) {
         try {
             await api.post(`/admin/merchants/${merchant.uuid}/status`, { status });
-            window.toast?.('وضعیت پذیرنده به‌روزرسانی شد.', 'success');
+            window.toast?.(t('admin.merchants.status_updated'), 'success');
             await this.loadMerchants();
         } catch (error) {
             window.toast?.(error.message, 'error');
@@ -616,7 +617,7 @@ Alpine.data('adminShell', () => ({
 
             this.reply.body = '';
             await this.openComplaint(this.selectedComplaint);
-            window.toast?.('پاسخ ارسال شد.', 'success');
+            window.toast?.(t('admin.complaints.reply_sent'), 'success');
         } catch (error) {
             window.toast?.(error.message, 'error');
         } finally {
@@ -660,7 +661,9 @@ Alpine.data('adminShell', () => ({
     },
 
     crowdingLabel(level) {
-        return { full: 'پر', crowded: 'شلوغ', moderate: 'متوسط', light: 'خلوت' }[level] ?? '—';
+        return t(`admin.occupancy.crowding.${level}`, {}) === `admin.occupancy.crowding.${level}`
+                ? '—'
+                : t(`admin.occupancy.crowding.${level}`);
     },
 
     // ── reports (spec 25) ───────────────────────────────────────────────
@@ -668,17 +671,17 @@ Alpine.data('adminShell', () => ({
         const r = this.report ?? {};
 
         return [
-            { label: 'تعداد سفر', value: formatNumber(r.trips) },
-            { label: 'تعداد سوار شدن', value: formatNumber(r.boardings) },
-            { label: 'متوسط مسافر هر سفر', value: formatNumber(r.avg_passengers_per_trip) },
-            { label: 'اتوبوس به‌کاررفته', value: formatNumber(r.buses_used) },
-            { label: 'راننده فعال', value: formatNumber(r.drivers_used) },
-            { label: 'مسافت طی‌شده', value: `${formatNumber(Math.round((r.distance_meters ?? 0) / 1000))} کیلومتر` },
-            { label: 'متوسط سرعت', value: r.avg_speed_kmh === null || r.avg_speed_kmh === undefined
+            { label: t('admin.reports.transport_cards.trips'), value: formatNumber(r.trips) },
+            { label: t('admin.reports.transport_cards.boardings'), value: formatNumber(r.boardings) },
+            { label: t('admin.reports.transport_cards.avg_passengers'), value: formatNumber(r.avg_passengers_per_trip) },
+            { label: t('admin.reports.transport_cards.buses_used'), value: formatNumber(r.buses_used) },
+            { label: t('admin.reports.transport_cards.drivers_used'), value: formatNumber(r.drivers_used) },
+            { label: t('admin.reports.transport_cards.distance'), value: t('admin.common.kilometres', { count: formatNumber(Math.round((r.distance_meters ?? 0) / 1000)) }) },
+            { label: t('admin.reports.transport_cards.avg_speed'), value: r.avg_speed_kmh === null || r.avg_speed_kmh === undefined
                 ? '—' : `${formatNumber(r.avg_speed_kmh)} km/h` },
-            { label: 'متوسط تأخیر', value: r.punctuality?.avg_delay_minutes === null ||
+            { label: t('admin.reports.transport_cards.avg_delay'), value: r.punctuality?.avg_delay_minutes === null ||
                 r.punctuality?.avg_delay_minutes === undefined
-                ? '—' : `${formatNumber(r.punctuality.avg_delay_minutes)} دقیقه` },
+                ? '—' : t('admin.common.minutes', { count: formatNumber(r.punctuality.avg_delay_minutes) }) },
         ];
     },
 
@@ -686,10 +689,10 @@ Alpine.data('adminShell', () => ({
         const r = this.report ?? {};
 
         return [
-            { label: 'کاربران فعال', value: formatNumber(r.active_users) },
-            { label: 'کاربران جدید', value: formatNumber(r.new_users) },
-            { label: 'تعداد سفر', value: formatNumber(r.rides) },
-            { label: 'متوسط سفر هر کاربر', value: formatNumber(r.avg_rides_per_user) },
+            { label: t('admin.reports.passenger_cards.active_users'), value: formatNumber(r.active_users) },
+            { label: t('admin.reports.passenger_cards.new_users'), value: formatNumber(r.new_users) },
+            { label: t('admin.reports.passenger_cards.rides'), value: formatNumber(r.rides) },
+            { label: t('admin.reports.passenger_cards.avg_rides'), value: formatNumber(r.avg_rides_per_user) },
         ];
     },
 
@@ -697,10 +700,10 @@ Alpine.data('adminShell', () => ({
         const f = this.report?.frequency ?? {};
 
         return [
-            { label: 'فقط یک سفر', value: f.once ?? 0 },
-            { label: '۲ تا ۵ سفر', value: f.occasional ?? 0 },
-            { label: '۶ تا ۲۰ سفر', value: f.regular ?? 0 },
-            { label: 'بیش از ۲۰ سفر', value: f.frequent ?? 0 },
+            { label: t('admin.reports.frequency.once'), value: f.once ?? 0 },
+            { label: t('admin.reports.frequency.occasional'), value: f.occasional ?? 0 },
+            { label: t('admin.reports.frequency.regular'), value: f.regular ?? 0 },
+            { label: t('admin.reports.frequency.frequent'), value: f.frequent ?? 0 },
         ];
     },
 
@@ -728,7 +731,7 @@ Alpine.data('adminShell', () => ({
             data: {
                 labels: Array.from({ length: 24 }, (_, hour) => formatNumber(hour)),
                 datasets: [{
-                    label: 'سفر',
+                    label: t('admin.dashboard.series.trips'),
                     data: Array.from({ length: 24 }, (_, hour) => byHour.get(hour) ?? 0),
                     backgroundColor: 'rgba(50,213,131,.6)',
                     borderRadius: 5,
@@ -750,7 +753,7 @@ Alpine.data('adminShell', () => ({
             errors: {},
             error: null,
             busy: false,
-            submitLabel: 'ذخیره',
+            submitLabel: t('admin.common.save'),
             hint: '',
             ...config,
             data: { ...(config.data ?? {}) },
@@ -770,7 +773,7 @@ Alpine.data('adminShell', () => ({
             await this.form.submit(this.form.data);
 
             this.form.open = false;
-            window.toast?.('با موفقیت ذخیره شد.', 'success');
+            window.toast?.(t('admin.common.saved'), 'success');
 
             await this.load(this.view, { force: true });
         } catch (error) {
@@ -778,7 +781,7 @@ Alpine.data('adminShell', () => ({
             // non-validation failure is shown once at the foot of the form.
             if (error.isValidation) {
                 this.form.errors = error.details ?? {};
-                this.form.error = 'برخی فیلدها معتبر نیستند.';
+                this.form.error = t('admin.common.invalid_fields');
             } else {
                 this.form.error = error.message;
             }
@@ -789,26 +792,26 @@ Alpine.data('adminShell', () => ({
 
     openBusForm(bus = null) {
         this.openForm({
-            title: bus ? `ویرایش اتوبوس ${bus.bus_number}` : 'افزودن اتوبوس',
-            hint: bus ? null : 'با ثبت اتوبوس، یک کد QR اختصاصی به‌صورت خودکار صادر می‌شود.',
+            title: bus ? t('admin.forms.bus.edit', { number: bus.bus_number }) : t('admin.forms.bus.add'),
+            hint: bus ? null : t('admin.forms.bus.hint'),
             fields: [
-                { name: 'bus_number', label: 'شماره اتوبوس', required: !bus, type: 'text' },
-                { name: 'plate', label: 'پلاک', type: 'text' },
-                { name: 'model', label: 'مدل', type: 'text' },
-                { name: 'manufacture_year', label: 'سال ساخت', type: 'number' },
-                { name: 'capacity_seated', label: 'ظرفیت نشسته', type: 'number', required: true },
-                { name: 'capacity_standing', label: 'ظرفیت ایستاده', type: 'number', required: true },
-                { name: 'status', label: 'وضعیت', type: 'select', options: [
-                    { value: 'idle', label: 'آماده به کار' },
-                    { value: 'active', label: 'فعال' },
-                    { value: 'maintenance', label: 'در تعمیرگاه' },
-                    { value: 'out_of_service', label: 'خارج از سرویس' },
+                { name: 'bus_number', label: t('admin.forms.bus.bus_number'), required: !bus, type: 'text' },
+                { name: 'plate', label: t('admin.forms.bus.plate'), type: 'text' },
+                { name: 'model', label: t('admin.forms.bus.model'), type: 'text' },
+                { name: 'manufacture_year', label: t('admin.forms.bus.manufacture_year'), type: 'number' },
+                { name: 'capacity_seated', label: t('admin.forms.bus.capacity_seated'), type: 'number', required: true },
+                { name: 'capacity_standing', label: t('admin.forms.bus.capacity_standing'), type: 'number', required: true },
+                { name: 'status', label: t('admin.common.status'), type: 'select', options: [
+                    { value: 'idle', label: t('enums.busstatus.idle') },
+                    { value: 'active', label: t('enums.busstatus.active') },
+                    { value: 'maintenance', label: t('enums.busstatus.maintenance') },
+                    { value: 'out_of_service', label: t('enums.busstatus.out_of_service') },
                 ] },
-                { name: 'default_line_id', label: 'خط پیش‌فرض', type: 'select',
+                { name: 'default_line_id', label: t('admin.forms.bus.default_line'), type: 'select',
                   options: this.lines.map((line) => ({ value: line.id, label: `${line.code} — ${line.name}` })) },
-                { name: 'has_air_conditioning', label: 'تهویه مطبوع', type: 'checkbox' },
-                { name: 'is_accessible', label: 'مناسب معلولان', type: 'checkbox' },
-                { name: 'notes', label: 'یادداشت', type: 'textarea', wide: true },
+                { name: 'has_air_conditioning', label: t('admin.forms.bus.air_conditioning'), type: 'checkbox' },
+                { name: 'is_accessible', label: t('admin.forms.bus.accessible'), type: 'checkbox' },
+                { name: 'notes', label: t('admin.forms.bus.notes'), type: 'textarea', wide: true },
             ],
             data: bus
                 ? {
@@ -826,20 +829,20 @@ Alpine.data('adminShell', () => ({
 
     openDriverForm() {
         this.openForm({
-            title: 'افزودن راننده',
-            hint: 'راننده پس از ثبت در وضعیت «در انتظار تأیید» قرار می‌گیرد و تا زمان تأیید نمی‌تواند شیفت باز کند.',
+            title: t('admin.forms.driver.add'),
+            hint: t('admin.forms.driver.hint'),
             fields: [
-                { name: 'first_name', label: 'نام', required: true },
-                { name: 'last_name', label: 'نام خانوادگی', required: true },
-                { name: 'mobile', label: 'شماره موبایل', required: true, placeholder: '۰۹۱۲۳۴۵۶۷۸۹' },
-                { name: 'national_code', label: 'کد ملی', required: true },
-                { name: 'license_number', label: 'شماره گواهینامه', required: true },
-                { name: 'license_class', label: 'نوع گواهینامه', placeholder: 'پایه یکم' },
-                { name: 'license_expires_at', label: 'تاریخ انقضای گواهینامه', type: 'date' },
-                { name: 'employee_code', label: 'کد پرسنلی' },
-                { name: 'hired_at', label: 'تاریخ شروع همکاری', type: 'date' },
-                { name: 'contract_ends_at', label: 'تاریخ پایان قرارداد', type: 'date' },
-                { name: 'notes', label: 'یادداشت', type: 'textarea', wide: true },
+                { name: 'first_name', label: t('admin.forms.driver.first_name'), required: true },
+                { name: 'last_name', label: t('admin.forms.driver.last_name'), required: true },
+                { name: 'mobile', label: t('admin.forms.driver.mobile'), required: true, placeholder: t('admin.forms.driver.mobile_placeholder') },
+                { name: 'national_code', label: t('admin.forms.driver.national_code'), required: true },
+                { name: 'license_number', label: t('admin.forms.driver.license_number'), required: true },
+                { name: 'license_class', label: t('admin.forms.driver.license_class'), placeholder: t('admin.forms.driver.license_class_placeholder') },
+                { name: 'license_expires_at', label: t('admin.forms.driver.license_expires_at'), type: 'date' },
+                { name: 'employee_code', label: t('admin.forms.driver.employee_code') },
+                { name: 'hired_at', label: t('admin.forms.driver.hired_at'), type: 'date' },
+                { name: 'contract_ends_at', label: t('admin.forms.driver.contract_ends_at'), type: 'date' },
+                { name: 'notes', label: t('admin.forms.bus.notes'), type: 'textarea', wide: true },
             ],
             submit: (data) => api.post('/admin/drivers', data),
         });
@@ -847,21 +850,21 @@ Alpine.data('adminShell', () => ({
 
     openStopForm() {
         this.openForm({
-            title: 'افزودن ایستگاه',
-            hint: 'ایستگاه ثبت‌شده از این طریق با برچسب «داده رسمی» ذخیره می‌شود.',
+            title: t('admin.forms.stop.add'),
+            hint: t('admin.forms.stop.hint'),
             fields: [
-                { name: 'code', label: 'کد ایستگاه', required: true },
-                { name: 'name', label: 'نام', required: true },
-                { name: 'name_en', label: 'نام لاتین' },
-                { name: 'lat', label: 'عرض جغرافیایی', required: true, type: 'number', step: 'any' },
-                { name: 'lng', label: 'طول جغرافیایی', required: true, type: 'number', step: 'any' },
-                { name: 'geofence_radius', label: 'شعاع تشخیص (متر)', type: 'number',
-                  help: 'فاصله‌ای که اتوبوس در آن «رسیده به ایستگاه» شمرده می‌شود.' },
-                { name: 'address', label: 'آدرس', wide: true },
-                { name: 'is_terminal', label: 'پایانه است', type: 'checkbox' },
-                { name: 'is_accessible', label: 'مناسب معلولان', type: 'checkbox' },
-                { name: 'has_shelter', label: 'سرپناه دارد', type: 'checkbox' },
-                { name: 'description', label: 'توضیحات', type: 'textarea', wide: true },
+                { name: 'code', label: t('admin.forms.stop.code'), required: true },
+                { name: 'name', label: t('admin.forms.stop.name'), required: true },
+                { name: 'name_en', label: t('admin.forms.stop.name_en') },
+                { name: 'lat', label: t('admin.forms.stop.lat'), required: true, type: 'number', step: 'any' },
+                { name: 'lng', label: t('admin.forms.stop.lng'), required: true, type: 'number', step: 'any' },
+                { name: 'geofence_radius', label: t('admin.forms.stop.geofence_radius'), type: 'number',
+                  help: t('admin.forms.stop.geofence_help') },
+                { name: 'address', label: t('admin.forms.stop.address'), wide: true },
+                { name: 'is_terminal', label: t('admin.forms.stop.is_terminal'), type: 'checkbox' },
+                { name: 'is_accessible', label: t('admin.forms.bus.accessible'), type: 'checkbox' },
+                { name: 'has_shelter', label: t('admin.forms.stop.has_shelter'), type: 'checkbox' },
+                { name: 'description', label: t('admin.forms.line.description'), type: 'textarea', wide: true },
             ],
             data: { geofence_radius: 60 },
             submit: (data) => api.post('/admin/network/stops', data),
@@ -870,18 +873,18 @@ Alpine.data('adminShell', () => ({
 
     openLineForm(line = null) {
         this.openForm({
-            title: line ? `ویرایش خط ${line.code}` : 'افزودن خط',
+            title: line ? t('admin.forms.line.edit', { code: line.code }) : t('admin.forms.line.add'),
             fields: [
-                { name: 'code', label: 'کد خط', required: !line },
-                { name: 'name', label: 'نام خط', required: true },
-                { name: 'color', label: 'رنگ', type: 'color' },
-                { name: 'origin_label', label: 'مبدأ' },
-                { name: 'destination_label', label: 'مقصد' },
-                { name: 'typical_duration_minutes', label: 'زمان تقریبی سفر (دقیقه)', type: 'number' },
-                { name: 'headway_minutes', label: 'سرفاصله حرکت (دقیقه)', type: 'number' },
-                { name: 'service_start', label: 'شروع سرویس', type: 'time' },
-                { name: 'service_end', label: 'پایان سرویس', type: 'time' },
-                { name: 'description', label: 'توضیحات', type: 'textarea', wide: true },
+                { name: 'code', label: t('admin.forms.line.code'), required: !line },
+                { name: 'name', label: t('admin.forms.line.name'), required: true },
+                { name: 'color', label: t('admin.forms.line.color'), type: 'color' },
+                { name: 'origin_label', label: t('admin.forms.line.origin') },
+                { name: 'destination_label', label: t('admin.forms.line.destination') },
+                { name: 'typical_duration_minutes', label: t('admin.forms.line.typical_duration'), type: 'number' },
+                { name: 'headway_minutes', label: t('admin.forms.line.headway'), type: 'number' },
+                { name: 'service_start', label: t('admin.forms.line.service_start'), type: 'time' },
+                { name: 'service_end', label: t('admin.forms.line.service_end'), type: 'time' },
+                { name: 'description', label: t('admin.forms.line.description'), type: 'textarea', wide: true },
             ],
             data: line
                 ? {
@@ -899,37 +902,37 @@ Alpine.data('adminShell', () => ({
 
     openMerchantForm() {
         this.openForm({
-            title: 'افزودن پذیرنده',
-            hint: 'برای مالک، حساب کاربری و کیف پول و یک صندوق پیش‌فرض به‌صورت خودکار ساخته می‌شود.',
+            title: t('admin.forms.merchant.add'),
+            hint: t('admin.forms.merchant.hint'),
             fields: [
-                { name: 'name', label: 'نام پذیرنده', required: true },
-                { name: 'legal_name', label: 'نام حقوقی' },
-                { name: 'type', label: 'نوع', required: true, type: 'select', options: [
-                    { value: 'swimming_pool', label: 'استخر' },
-                    { value: 'gym', label: 'باشگاه بدنسازی' },
-                    { value: 'sports_center', label: 'مجموعه ورزشی' },
-                    { value: 'entertainment', label: 'مرکز تفریحی' },
-                    { value: 'restaurant', label: 'رستوران' },
-                    { value: 'store', label: 'فروشگاه' },
-                    { value: 'cinema', label: 'سینما' },
-                    { value: 'parking', label: 'پارکینگ' },
-                    { value: 'other', label: 'سایر' },
+                { name: 'name', label: t('admin.forms.merchant.name'), required: true },
+                { name: 'legal_name', label: t('admin.forms.merchant.legal_name') },
+                { name: 'type', label: t('admin.forms.merchant.type'), required: true, type: 'select', options: [
+                    { value: 'swimming_pool', label: t('enums.merchanttype.swimming_pool') },
+                    { value: 'gym', label: t('enums.merchanttype.gym') },
+                    { value: 'sports_center', label: t('enums.merchanttype.sports_center') },
+                    { value: 'entertainment', label: t('enums.merchanttype.entertainment') },
+                    { value: 'restaurant', label: t('enums.merchanttype.restaurant') },
+                    { value: 'store', label: t('enums.merchanttype.store') },
+                    { value: 'cinema', label: t('enums.merchanttype.cinema') },
+                    { value: 'parking', label: t('enums.merchanttype.parking') },
+                    { value: 'other', label: t('enums.merchanttype.other') },
                 ] },
-                { name: 'owner_first_name', label: 'نام مالک', required: true },
-                { name: 'owner_last_name', label: 'نام خانوادگی مالک', required: true },
-                { name: 'owner_mobile', label: 'موبایل مالک', required: true },
-                { name: 'phone', label: 'تلفن' },
-                { name: 'email', label: 'ایمیل', type: 'email' },
-                { name: 'commission_bps', label: 'کارمزد (صدم درصد)', type: 'number',
-                  help: '۱۵۰ یعنی ۱٫۵ درصد.' },
-                { name: 'settlement_cycle', label: 'دوره تسویه', type: 'select', options: [
-                    { value: 'daily', label: 'روزانه' },
-                    { value: 'weekly', label: 'هفتگی' },
-                    { value: 'monthly', label: 'ماهانه' },
+                { name: 'owner_first_name', label: t('admin.forms.merchant.owner_first_name'), required: true },
+                { name: 'owner_last_name', label: t('admin.forms.merchant.owner_last_name'), required: true },
+                { name: 'owner_mobile', label: t('admin.forms.merchant.owner_mobile'), required: true },
+                { name: 'phone', label: t('admin.forms.merchant.phone') },
+                { name: 'email', label: t('admin.forms.merchant.email'), type: 'email' },
+                { name: 'commission_bps', label: t('admin.forms.merchant.commission_bps'), type: 'number',
+                  help: t('admin.forms.merchant.commission_help') },
+                { name: 'settlement_cycle', label: t('admin.forms.merchant.settlement_cycle'), type: 'select', options: [
+                    { value: 'daily', label: t('admin.forms.merchant.cycles.daily') },
+                    { value: 'weekly', label: t('admin.forms.merchant.cycles.weekly') },
+                    { value: 'monthly', label: t('admin.forms.merchant.cycles.monthly') },
                 ] },
-                { name: 'iban', label: 'شماره شبا' },
-                { name: 'bank_account_holder', label: 'صاحب حساب' },
-                { name: 'address', label: 'آدرس', wide: true },
+                { name: 'iban', label: t('admin.forms.merchant.iban') },
+                { name: 'bank_account_holder', label: t('admin.forms.merchant.account_holder') },
+                { name: 'address', label: t('admin.forms.stop.address'), wide: true },
             ],
             data: { type: 'other', commission_bps: 150, settlement_cycle: 'weekly' },
             submit: (data) => api.post('/admin/merchants', data),
@@ -938,30 +941,30 @@ Alpine.data('adminShell', () => ({
 
     openFareRuleForm(rule = null) {
         this.openForm({
-            title: rule ? `ویرایش قانون ${rule.code}` : 'افزودن قانون کرایه',
-            hint: 'مبالغ به ریال وارد می‌شوند. وقتی چند قانون همزمان صدق کنند، بالاترین اولویت اعمال می‌شود.',
+            title: rule ? t('admin.forms.fare_rule.edit', { code: rule.code }) : t('admin.forms.fare_rule.add'),
+            hint: t('admin.forms.fare_rule.hint'),
             fields: [
-                { name: 'name', label: 'نام قانون', required: true },
-                ...(rule ? [] : [{ name: 'code', label: 'کد یکتا', required: true }]),
-                ...(rule ? [] : [{ name: 'context', label: 'حوزه', required: true, type: 'select', options: [
-                    { value: 'bus', label: 'اتوبوس' },
-                    { value: 'merchant', label: 'پذیرنده' },
+                { name: 'name', label: t('admin.forms.fare_rule.name'), required: true },
+                ...(rule ? [] : [{ name: 'code', label: t('admin.forms.fare_rule.code'), required: true }]),
+                ...(rule ? [] : [{ name: 'context', label: t('admin.forms.fare_rule.context'), required: true, type: 'select', options: [
+                    { value: 'bus', label: t('admin.forms.fare_rule.context_bus') },
+                    { value: 'merchant', label: t('admin.forms.fare_rule.context_merchant') },
                 ] }]),
-                ...(rule ? [] : [{ name: 'passenger_type', label: 'نوع مسافر', type: 'select', options: [
-                    { value: 'regular', label: 'عادی' },
-                    { value: 'student', label: 'دانش‌آموز/دانشجو' },
-                    { value: 'senior', label: 'سالمند' },
-                    { value: 'disabled', label: 'جانباز/معلول' },
-                    { value: 'child', label: 'کودک' },
+                ...(rule ? [] : [{ name: 'passenger_type', label: t('admin.forms.fare_rule.passenger_type'), type: 'select', options: [
+                    { value: 'regular', label: t('admin.forms.fare_rule.passenger_types.regular') },
+                    { value: 'student', label: t('admin.forms.fare_rule.passenger_types.student') },
+                    { value: 'senior', label: t('admin.forms.fare_rule.passenger_types.senior') },
+                    { value: 'disabled', label: t('admin.forms.fare_rule.passenger_types.disabled') },
+                    { value: 'child', label: t('admin.forms.fare_rule.passenger_types.child') },
                 ] }]),
-                { name: 'base_fare', label: 'کرایه پایه (ریال)', type: 'number', required: true },
-                { name: 'per_km_fare', label: 'کرایه هر کیلومتر (ریال)', type: 'number' },
-                { name: 'min_fare', label: 'حداقل کرایه (ریال)', type: 'number' },
-                { name: 'max_fare', label: 'حداکثر کرایه (ریال)', type: 'number' },
-                { name: 'multiplier', label: 'ضریب', type: 'number', step: '0.01',
-                  help: '۰٫۵ یعنی نصف کرایه.' },
-                { name: 'priority', label: 'اولویت', type: 'number' },
-                ...(rule ? [{ name: 'is_active', label: 'فعال', type: 'checkbox' }] : []),
+                { name: 'base_fare', label: t('admin.forms.fare_rule.base_fare'), type: 'number', required: true },
+                { name: 'per_km_fare', label: t('admin.forms.fare_rule.per_km_fare'), type: 'number' },
+                { name: 'min_fare', label: t('admin.forms.fare_rule.min_fare'), type: 'number' },
+                { name: 'max_fare', label: t('admin.forms.fare_rule.max_fare'), type: 'number' },
+                { name: 'multiplier', label: t('admin.forms.fare_rule.multiplier'), type: 'number', step: '0.01',
+                  help: t('admin.forms.fare_rule.multiplier_help') },
+                { name: 'priority', label: t('admin.forms.fare_rule.priority'), type: 'number' },
+                ...(rule ? [{ name: 'is_active', label: t('admin.forms.fare_rule.is_active'), type: 'checkbox' }] : []),
             ],
             data: rule
                 ? {

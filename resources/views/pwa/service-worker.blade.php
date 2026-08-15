@@ -95,7 +95,7 @@ self.addEventListener('push', (event) => {
     }
 
     event.waitUntil(
-        self.registration.showNotification(payload.title || 'همسفر', {
+        self.registration.showNotification(payload.title || @json(__('common.app_name')), {
             body: payload.body,
             icon: '/icons/icon-192.png',
             badge: '/icons/icon-192.png',

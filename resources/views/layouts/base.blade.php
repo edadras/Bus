@@ -9,7 +9,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>@yield('title', __('common.app_name')) — {{ __('common.app_tagline') }}</title>
-    <meta name="description" content="@yield('description', 'سامانه هوشمند حمل‌ونقل شهری، ردیابی زنده اتوبوس و کیف پول یکپارچه شهری')">
+    <meta name="description" content="@yield('description', __('common.app_description'))">
 
     <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="/icons/icon-192.png">
@@ -36,6 +36,22 @@
         window.__REVERB__ = @json($reverb);
     </script>
 
+    {{-- Strings for the JavaScript surfaces, rendered rather than fetched so
+         the first paint is already in the right language. `@stack('i18n')`
+         lets a page add its own groups — the admin shell adds `admin`. --}}
+    @php
+        $strings = ['common' => __('common'), 'web' => __('web')];
+        // The HEX flags are Blade's own @json defaults and must be kept: they
+        // are what stops a translated string containing "</script>" from
+        // closing this tag. UNESCAPED_UNICODE is added on top because the page
+        // is UTF-8 and \uXXXX escapes would triple the size of Persian copy.
+        $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE;
+    @endphp
+    <script>
+        window.__I18N__ = @json($strings, $jsonFlags);
+    </script>
+    @stack('i18n')
+
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('head')
 </head>
@@ -61,7 +77,7 @@
                       }"></span>
                 <p class="flex-1 text-sm leading-6" x-text="item.message"></p>
                 <button type="button" class="text-ink-400 hover:text-ink-100"
-                        @click="$store.toasts.dismiss(item.id)" aria-label="بستن">✕</button>
+                        @click="$store.toasts.dismiss(item.id)" aria-label="{{ __('common.close') }}">✕</button>
             </div>
         </template>
     </div>

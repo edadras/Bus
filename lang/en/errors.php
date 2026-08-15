@@ -12,6 +12,8 @@ return [
     'too_many_attempts' => 'Too many attempts. Please wait a moment.',
     'domain_error' => 'This action cannot be completed.',
 
+    'unreadable_response' => 'The server response could not be read.',
+
     // Authentication
     'invalid_mobile' => 'That mobile number is not valid.',
     'invalid_credentials' => 'The mobile number or password is incorrect.',

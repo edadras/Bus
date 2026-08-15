@@ -24,7 +24,7 @@
     <div class="grid gap-3 lg:grid-cols-3">
         <article class="glass card lg:col-span-2">
             <div class="flex items-center justify-between">
-                <h2 class="text-sm font-bold">روند سفر و مسافر</h2>
+                <h2 class="text-sm font-bold">{{ __('admin.dashboard.trips_and_passengers') }}</h2>
                 <div class="flex gap-1">
                     <template x-for="option in ranges" :key="option.value">
                         <button type="button" class="rounded-full px-3 py-1 text-xs transition"
@@ -40,14 +40,14 @@
         </article>
 
         <article class="glass card">
-            <h2 class="text-sm font-bold">درآمد</h2>
+            <h2 class="text-sm font-bold">{{ __('admin.dashboard.revenue') }}</h2>
             <div class="mt-4 h-64"><canvas id="chart-revenue"></canvas></div>
         </article>
     </div>
 
     <div class="grid gap-3 lg:grid-cols-2">
         <article class="glass card">
-            <h2 class="text-sm font-bold">شلوغ‌ترین خطوط</h2>
+            <h2 class="text-sm font-bold">{{ __('admin.dashboard.busiest_lines') }}</h2>
             <div class="mt-4 flex flex-col gap-2">
                 <template x-for="line in busiestLines" :key="line.id">
                     <div class="flex items-center gap-3 rounded-xl bg-white/[0.03] px-3 py-2.5">
@@ -55,24 +55,24 @@
                         <span class="text-sm font-semibold" x-text="$num(line.code)"></span>
                         <span class="truncate text-xs text-ink-400" x-text="line.name"></span>
                         <span class="ms-auto shrink-0 text-xs font-semibold text-brand-300"
-                              x-text="`${$num(line.boardings)} مسافر`"></span>
+                              x-text="$t('admin.common.passengers', { count: $num(line.boardings) })"></span>
                     </div>
                 </template>
-                <p x-show="!busiestLines.length" class="py-6 text-center text-sm text-ink-500">داده‌ای موجود نیست.</p>
+                <p x-show="!busiestLines.length" class="py-6 text-center text-sm text-ink-500">{{ __('admin.common.no_data') }}</p>
             </div>
         </article>
 
         <article class="glass card">
-            <h2 class="text-sm font-bold">پرترددترین ایستگاه‌ها</h2>
+            <h2 class="text-sm font-bold">{{ __('admin.dashboard.busiest_stops') }}</h2>
             <div class="mt-4 flex flex-col gap-2">
                 <template x-for="stop in busiestStops" :key="stop.id">
                     <div class="flex items-center gap-3 rounded-xl bg-white/[0.03] px-3 py-2.5">
                         <span class="truncate text-sm" x-text="stop.name"></span>
                         <span class="ms-auto shrink-0 text-xs font-semibold text-brand-300"
-                              x-text="`${$num(stop.boardings)} سوار`"></span>
+                              x-text="$t('admin.common.boardings', { count: $num(stop.boardings) })"></span>
                     </div>
                 </template>
-                <p x-show="!busiestStops.length" class="py-6 text-center text-sm text-ink-500">داده‌ای موجود نیست.</p>
+                <p x-show="!busiestStops.length" class="py-6 text-center text-sm text-ink-500">{{ __('admin.common.no_data') }}</p>
             </div>
         </article>
     </div>

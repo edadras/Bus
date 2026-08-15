@@ -10,6 +10,7 @@ import Alpine from 'alpinejs';
 import { api } from './lib/api.js';
 import { createMap, busIcon, stopIcon, MarkerLayer } from './lib/map.js';
 import { subscribe } from './lib/realtime.js';
+import { t } from './lib/i18n.js';
 
 Alpine.data('webViewer', () => ({
     buses: [],
@@ -74,8 +75,8 @@ Alpine.data('webViewer', () => ({
                 label: bus.line_code,
             }),
             popupFor: (bus) => `
-                <strong>اتوبوس ${bus.bus_number ?? '—'}</strong><br>
-                <span style="color:#9db2b9;font-size:12px">خط ${bus.line_code ?? '—'} — ${bus.destination ?? ''}</span>`,
+                <strong>${t('web.viewer.bus_number', { number: bus.bus_number ?? '—' })}</strong><br>
+                <span style="color:#9db2b9;font-size:12px">${t('web.viewer.popup_line', { code: bus.line_code ?? '—', destination: bus.destination ?? '' })}</span>`,
         });
     },
 

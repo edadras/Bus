@@ -10,6 +10,7 @@ import collapse from '@alpinejs/collapse';
 import { api } from './lib/api.js';
 import { createMap, busIcon, stopIcon, MarkerLayer } from './lib/map.js';
 import { subscribe } from './lib/realtime.js';
+import { t } from './lib/i18n.js';
 
 Alpine.plugin(collapse);
 
@@ -65,9 +66,9 @@ async function bootMap(elementId, { withStops = false } = {}) {
         const busLayer = new MarkerLayer(map, {
             iconFor: (bus) => busIcon({ heading: bus.heading ?? 0, color: bus.line_color || '#12b76a', label: bus.line_code }),
             popupFor: (bus) => `
-                <strong>اتوبوس ${bus.bus_number ?? ''}</strong><br>
-                <span style="color:#9db2b9;font-size:12px">خط ${bus.line_code ?? '—'} — ${bus.destination ?? ''}</span><br>
-                <span style="color:#32d583;font-size:12px">ایستگاه بعدی: ${bus.next_stop ?? '—'}</span>`,
+                <strong>${t('web.viewer.bus_number', { number: bus.bus_number ?? '' })}</strong><br>
+                <span style="color:#9db2b9;font-size:12px">${t('web.viewer.popup_line', { code: bus.line_code ?? '—', destination: bus.destination ?? '' })}</span><br>
+                <span style="color:#32d583;font-size:12px">${t('web.viewer.popup_next_stop', { stop: bus.next_stop ?? '—' })}</span>`,
         });
 
         const refresh = async () => {
@@ -87,7 +88,7 @@ async function bootMap(elementId, { withStops = false } = {}) {
         setInterval(refresh, live.connected ? 30_000 : 12_000);
     } catch (error) {
         element.innerHTML = `<div style="display:grid;place-items:center;height:100%;color:#6b8892;font-size:14px">
-            نقشه در دسترس نیست</div>`;
+            ${t('web.viewer.map_unavailable')}</div>`;
     }
 }
 
