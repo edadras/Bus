@@ -111,6 +111,15 @@ final arrivalsProvider = FutureProvider.autoDispose<List<Arrival>>((ref) async {
   return ref.watch(transitApiProvider).arrivals(stop.id);
 });
 
+/// When one live bus reaches one stop.
+///
+/// Auto-disposed and keyed by the pair, so closing the sheet stops the work and
+/// two buses watched in turn do not read each other's estimate.
+final stopEtaProvider =
+    FutureProvider.autoDispose.family<StopEta?, ({String tripUuid, int stopId})>(
+  (ref, key) => ref.watch(transitApiProvider).tripEta(key.tripUuid, key.stopId),
+);
+
 final walletProvider = FutureProvider<Wallet>(
   (ref) => ref.watch(transitApiProvider).wallet(),
 );

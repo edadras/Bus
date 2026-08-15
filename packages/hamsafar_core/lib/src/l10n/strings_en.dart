@@ -392,4 +392,6 @@ const enStrings = <String, String>{
   'lines.no_routes': 'No route has been defined for this line.',
   'lines.line_named': 'Line :code',
   'lines.stop_count': ':count stops · :distance',
+  'trip.eta_at_stop': 'Reaches :stop',
+  'trip.eta_passed': 'Already past this stop',
 };

@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../models/models.dart';
 import 'api_client.dart';
+import 'api_exception.dart';
 
 /// Typed calls onto the platform API.
 ///
@@ -107,6 +108,23 @@ class TransitApi {
     final result = await _client.get('/routes/$id');
 
     return RouteDetail.fromJson(result.asMap);
+  }
+
+  /// When this particular bus reaches this particular stop.
+  ///
+  /// Null when the server has no estimate to give — the bus has already passed
+  /// the stop, or the trip is not live. That is an answer, not a failure, so it
+  /// is returned rather than thrown.
+  Future<StopEta?> tripEta(String tripUuid, int stopId) async {
+    try {
+      final result = await _client.get('/trips/$tripUuid/eta/$stopId');
+
+      return StopEta.fromJson(result.asMap);
+    } on ApiException catch (error) {
+      if (error.code == 'eta_unavailable') return null;
+
+      rethrow;
+    }
   }
 
   Future<List<Arrival>> arrivals(int stopId, {int? lineId, int limit = 10}) async {

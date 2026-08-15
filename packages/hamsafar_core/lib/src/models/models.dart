@@ -844,3 +844,31 @@ class RouteStop extends Equatable {
   @override
   List<Object?> get props => [sequence, stop.id];
 }
+
+/// An estimate of when one bus reaches one stop.
+class StopEta extends Equatable {
+  const StopEta({
+    required this.seconds,
+    required this.minutes,
+    required this.stopsAway,
+    this.isReliable = false,
+  });
+
+  final int seconds;
+  final int minutes;
+  final int stopsAway;
+
+  /// Below the server's confidence threshold the figure is shown as
+  /// approximate rather than dropped: "about 12 minutes" beats a blank.
+  final bool isReliable;
+
+  factory StopEta.fromJson(Map<String, dynamic> json) => StopEta(
+        seconds: _int(json['seconds']) ?? 0,
+        minutes: _int(json['minutes']) ?? 0,
+        stopsAway: _int(json['stops_away']) ?? 0,
+        isReliable: json['reliable'] == true,
+      );
+
+  @override
+  List<Object?> get props => [seconds, stopsAway, isReliable];
+}

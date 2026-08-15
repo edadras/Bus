@@ -395,4 +395,6 @@ const faStrings = <String, String>{
   'lines.no_routes': 'برای این خط مسیری ثبت نشده است.',
   'lines.line_named': 'خط :code',
   'lines.stop_count': ':count ایستگاه · :distance',
+  'trip.eta_at_stop': 'رسیدن به :stop',
+  'trip.eta_passed': 'از این ایستگاه گذشته',
 };

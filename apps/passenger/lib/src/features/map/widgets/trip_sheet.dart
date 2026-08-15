@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hamsafar_core/hamsafar_core.dart';
+
+import '../../../providers.dart';
 
 /// Detail sheet for a bus tapped on the map.
 void showTripSheet(BuildContext context, LiveBus bus) {
@@ -10,14 +13,15 @@ void showTripSheet(BuildContext context, LiveBus bus) {
   );
 }
 
-class _TripSheet extends StatelessWidget {
+class _TripSheet extends ConsumerWidget {
   const _TripSheet({required this.bus});
 
   final LiveBus bus;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final selectedStop = ref.watch(selectedStopProvider);
 
     return Container(
       decoration: const BoxDecoration(
@@ -138,6 +142,12 @@ class _TripSheet extends StatelessWidget {
                 ),
               ),
             ],
+            // "When does it reach the stop I am standing at" is the question
+            // the next-stop ETA above does not answer.
+            if (selectedStop != null) ...[
+              const SizedBox(height: AppSpacing.lg),
+              _StopEta(tripUuid: bus.tripUuid, stop: selectedStop),
+            ],
             const SizedBox(height: AppSpacing.lg),
             Text(
               Format.tr('trip.last_update', {'when': Format.relative(bus.updatedAt)}),
@@ -146,6 +156,59 @@ class _TripSheet extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// This bus's arrival at the stop the passenger is watching.
+class _StopEta extends ConsumerWidget {
+  const _StopEta({required this.tripUuid, required this.stop});
+
+  final String tripUuid;
+  final BusStop stop;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final eta = ref.watch(stopEtaProvider((tripUuid: tripUuid, stopId: stop.id)));
+    final theme = Theme.of(context);
+
+    return GlassCard(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Row(
+        children: [
+          const Icon(Icons.schedule_rounded, size: 18, color: AppColors.ink400),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              Format.tr('trip.eta_at_stop', {'stop': stop.name}),
+              style: theme.textTheme.bodySmall,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          eta.when(
+            loading: () => const SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.brand300),
+            ),
+            error: (_, __) => Text('—', style: theme.textTheme.bodySmall),
+            // A null estimate is an answer: the bus has already been past, or
+            // the trip is not live. Saying so beats showing a dash.
+            data: (value) => value == null
+                ? Text(
+                    Format.tr('trip.eta_passed'),
+                    style: theme.textTheme.labelSmall,
+                  )
+                : Text(
+                    Format.tr('unit.minutes', {'count': Format.number(value.minutes)}),
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      color: value.isReliable ? AppColors.brand300 : AppColors.ink300,
+                    ),
+                  ),
+          ),
+        ],
       ),
     );
   }
