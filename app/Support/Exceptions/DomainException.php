@@ -18,7 +18,26 @@ class DomainException extends RuntimeException
         protected int $httpStatus = 422,
         protected array $context = [],
     ) {
-        parent::__construct($message !== '' ? $message : __('errors.'.$errorCode));
+        parent::__construct($message !== '' ? $message : self::translate($errorCode));
+    }
+
+    /**
+     * Resolve the human message, tolerating a container that has no translator
+     * bound. A domain failure thrown during boot, in a console context, or in a
+     * pure unit test must still surface its code rather than being masked by a
+     * "Target class [translator] does not exist" resolution error.
+     */
+    private static function translate(string $errorCode): string
+    {
+        $key = 'errors.'.$errorCode;
+
+        try {
+            $message = __($key);
+        } catch (\Throwable) {
+            return $errorCode;
+        }
+
+        return is_string($message) && $message !== $key ? $message : $errorCode;
     }
 
     /** @param array<string, mixed> $context */

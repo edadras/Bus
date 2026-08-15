@@ -1,0 +1,27 @@
+name: hamsafar_merchant
+description: اپلیکیشن پذیرنده همسفر — دریافت پرداخت، گزارش فروش و تسویه
+publish_to: none
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.5.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  hamsafar_core:
+    path: ../../packages/hamsafar_core
+
+  flutter_riverpod: ^2.6.1
+  qr_flutter: ^4.1.0
+  wakelock_plus: ^1.2.10
+  intl: ^0.20.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true

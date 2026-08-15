@@ -25,3 +25,20 @@ yarn-error.log
 /database/*.sqlite
 /storage/app/import/*
 !/storage/app/import/.gitkeep
+
+# Flutter
+apps/*/build/
+apps/*/.dart_tool/
+apps/*/android/.gradle/
+apps/*/android/local.properties
+apps/*/ios/Pods/
+apps/*/ios/.symlinks/
+apps/*/ios/Flutter/Flutter.framework
+apps/*/ios/Flutter/Flutter.podspec
+apps/*/ios/Flutter/Generated.xcconfig
+apps/*/ios/Flutter/flutter_export_environment.sh
+apps/*/*.iml
+packages/*/.dart_tool/
+packages/*/build/
+.flutter-plugins
+.flutter-plugins-dependencies

@@ -59,6 +59,7 @@ class AlightingService
             return ['status' => $passengerTrip->status->value, 'confidence' => 1.0, 'closed' => true];
         }
 
+        $passengerTrip->loadMissing(['trip.route']);
         $trip = $passengerTrip->trip;
         $busPosition = $trip?->position();
 
@@ -216,6 +217,12 @@ class AlightingService
             return $passengerTrip;
         }
 
+        // The caller may hand us a PassengerTrip loaded without its relations
+        // (TripService iterates a bare query), so pull what we need explicitly
+        // rather than depending on lazy loading, which is disabled outside
+        // production precisely to catch this.
+        $passengerTrip->loadMissing(['trip.route']);
+
         return DB::transaction(function () use ($passengerTrip, $source, $confidence, $stopId): PassengerTrip {
             $trip = $passengerTrip->trip;
 
@@ -258,6 +265,8 @@ class AlightingService
     /** Passenger-initiated "I've got off" from the app. Always authoritative. */
     public function closeManually(PassengerTrip $passengerTrip, ?Coordinate $position = null): PassengerTrip
     {
+        $passengerTrip->loadMissing(['trip.route']);
+
         $stopId = $position !== null ? $this->nearestPassedStop($passengerTrip->trip, $position) : null;
 
         return $this->close($passengerTrip, AlightingSource::Manual, 1.0, $stopId);
@@ -274,7 +283,7 @@ class AlightingService
         $stale = PassengerTrip::query()
             ->open()
             ->where('boarded_at', '<=', $cutoff)
-            ->with('trip')
+            ->with('trip.route')
             ->limit(500)
             ->get();
 

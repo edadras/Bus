@@ -54,12 +54,12 @@ class NetworkController extends Controller
 
             $stops = $query->near($center, $radius)->limit(200)->get()
                 ->map(function (BusStop $stop) use ($center) {
-                    $stop->additional = ['distance' => round($stop->distanceTo($center))];
+                    $stop->setAttribute('distance_meters', (int) round($stop->distanceTo($center)));
 
                     return $stop;
                 })
-                ->filter(fn (BusStop $stop) => $stop->additional['distance'] <= $radius)
-                ->sortBy(fn (BusStop $stop) => $stop->additional['distance'])
+                ->filter(fn (BusStop $stop) => $stop->distance_meters <= $radius)
+                ->sortBy(fn (BusStop $stop) => $stop->distance_meters)
                 ->take($limit)
                 ->values();
 
@@ -190,6 +190,7 @@ class NetworkController extends Controller
             return ApiResponse::success([
                 'options' => [],
                 'reason' => 'no_stop_within_walking_distance',
+                'supports_transfers' => false,
             ]);
         }
 

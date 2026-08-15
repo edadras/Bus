@@ -91,7 +91,9 @@ class TripService
                 'status' => BusStatus::Active,
             ])->save();
 
-            return $shift;
+            // Counters (trip_count, revenue_minor, ...) are database defaults,
+            // so the in-memory instance would report them as null until reread.
+            return $shift->refresh();
         });
     }
 
@@ -219,7 +221,7 @@ class TripService
         }
 
         return DB::transaction(function () use ($trip): Trip {
-            foreach ($trip->activePassengerTrips()->get() as $passengerTrip) {
+            foreach ($trip->activePassengerTrips()->with('trip.route')->get() as $passengerTrip) {
                 $this->alighting->close(
                     $passengerTrip,
                     AlightingSource::TripEnded,
@@ -265,7 +267,7 @@ class TripService
     public function cancel(Trip $trip, string $reason): Trip
     {
         return DB::transaction(function () use ($trip, $reason): Trip {
-            foreach ($trip->activePassengerTrips()->get() as $passengerTrip) {
+            foreach ($trip->activePassengerTrips()->with('trip.route')->get() as $passengerTrip) {
                 $this->alighting->close($passengerTrip, AlightingSource::TripEnded, 1.0);
             }
 

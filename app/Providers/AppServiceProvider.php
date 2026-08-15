@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Domain\Identity\Models\User;
 use App\Domain\Mapping\Contracts\MapProvider;
 use App\Domain\Mapping\Providers\TileMapProvider;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\URL;
@@ -21,6 +22,13 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Models live under App\Domain\<Module>\Models, so the default
+        // convention would look for Database\Factories\Domain\...\XFactory.
+        // Factories are kept flat instead, one per model class name.
+        Factory::guessFactoryNamesUsing(
+            static fn (string $model) => 'Database\\Factories\\'.class_basename($model).'Factory',
+        );
+
         // Fail loudly in development when a relation is used without eager
         // loading, rather than shipping an N+1 to production unnoticed.
         Model::preventLazyLoading(! $this->app->isProduction());

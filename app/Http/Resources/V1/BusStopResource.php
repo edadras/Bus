@@ -26,7 +26,10 @@ class BusStopResource extends JsonResource
             // as if it were the published network.
             'provenance' => $this->provenance->value,
             'is_verified_data' => $this->provenance->isVerified(),
-            'distance_meters' => $this->whenNotNull($this->additional['distance'] ?? null),
+            // Set by the "stops near me" query. Note this must not be called
+            // `additional`: JsonResource declares its own $additional property,
+            // which would shadow a model attribute of that name.
+            'distance_meters' => $this->whenNotNull($this->resource->distance_meters ?? null),
             'lines' => LineSummaryResource::collection($this->whenLoaded('lines')),
         ];
     }

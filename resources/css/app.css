@@ -1,11 +1,420 @@
 @import 'tailwindcss';
 
-@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
-@source '../../storage/framework/views/*.php';
-@source '../**/*.blade.php';
-@source '../**/*.js';
+@source '../views/**/*.blade.php';
+@source '../js/**/*.js';
+
+/*
+|--------------------------------------------------------------------------
+| Design System — «همسفر»
+|--------------------------------------------------------------------------
+|
+| One token set drives the landing page, the admin panel and all three PWAs,
+| so a colour or radius changed here changes everywhere.
+|
+| The palette is green-led on a very dark neutral ground. Green carries
+| meaning in this product (a moving bus, a successful payment), so the
+| interface reserves saturated green for live and affirmative states and
+| keeps everything else quiet.
+|
+| Glass surfaces are built from three ingredients that must stay in step: a
+| translucent fill, a light top border to fake a lit edge, and a blur. Used
+| without the border they read as muddy rather than glassy.
+|
+*/
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+  /* Brand green — 500 is the interactive default, 400 the "live" accent. */
+  --color-brand-50:  #ecfdf3;
+  --color-brand-100: #d1fadf;
+  --color-brand-200: #a6f4c5;
+  --color-brand-300: #6ce9a6;
+  --color-brand-400: #32d583;
+  --color-brand-500: #12b76a;
+  --color-brand-600: #039855;
+  --color-brand-700: #027a48;
+  --color-brand-800: #05603a;
+  --color-brand-900: #054f31;
+
+  /* Neutral ground: near-black with a faint green cast, not pure grey. */
+  --color-ink-950: #05090b;
+  --color-ink-900: #0a1114;
+  --color-ink-850: #0e171b;
+  --color-ink-800: #131f24;
+  --color-ink-700: #1b2b31;
+  --color-ink-600: #2a3f47;
+  --color-ink-500: #43606a;
+  --color-ink-400: #6b8892;
+  --color-ink-300: #9db2b9;
+  --color-ink-200: #c6d5d9;
+  --color-ink-100: #e4ecee;
+  --color-ink-50:  #f4f8f9;
+
+  /* Semantic */
+  --color-success: #12b76a;
+  --color-warning: #f79009;
+  --color-danger:  #f04438;
+  --color-info:    #2e90fa;
+
+  --font-sans: 'Vazirmatn', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --radius-card: 1.25rem;
+  --radius-pill: 999px;
+
+  /* Elevation is subtle by design: on a dark ground, heavy shadows read as
+     dirt. Depth comes from the border highlight instead. */
+  --shadow-glass: 0 8px 32px -8px rgb(0 0 0 / 0.45);
+  --shadow-glow: 0 0 0 1px rgb(18 183 106 / 0.35), 0 8px 32px -8px rgb(18 183 106 / 0.25);
+
+  --blur-glass: 18px;
 }
+
+/* ---------------------------------------------------------------- fonts */
+
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('/fonts/Vazirmatn-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('/fonts/Vazirmatn-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('/fonts/Vazirmatn-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('/fonts/Vazirmatn-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+
+/* ---------------------------------------------------------------- base */
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    /* Persian numerals throughout: the product is Persian-first. */
+    font-feature-settings: 'ss02';
+  }
+
+  body {
+    background-color: var(--color-ink-950);
+    color: var(--color-ink-100);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Ambient field behind everything: two soft green pools plus a fine grid.
+     It gives the glass something to refract instead of flat black. */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(58rem 40rem at 82% -8%, rgb(18 183 106 / 0.16), transparent 62%),
+      radial-gradient(46rem 34rem at 6% 104%, rgb(50 213 131 / 0.10), transparent 60%),
+      linear-gradient(180deg, var(--color-ink-950), var(--color-ink-900));
+  }
+
+  ::selection {
+    background: var(--color-brand-500);
+    color: #fff;
+  }
+
+  /* Focus is always visible; this is a transit app used one-handed, outdoors. */
+  :focus-visible {
+    outline: 2px solid var(--color-brand-400);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: color-mix(in oklab, var(--color-ink-600) 70%, transparent);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover { background-color: var(--color-ink-500); }
+}
+
+/* ------------------------------------------------------------ components */
+
+@layer components {
+
+  /* The core surface. Fill + lit edge + blur, always together. */
+  .glass {
+    background: linear-gradient(160deg, rgb(255 255 255 / 0.07), rgb(255 255 255 / 0.025));
+    border: 1px solid rgb(255 255 255 / 0.10);
+    backdrop-filter: blur(var(--blur-glass)) saturate(1.4);
+    -webkit-backdrop-filter: blur(var(--blur-glass)) saturate(1.4);
+    box-shadow: var(--shadow-glass);
+  }
+
+  .glass-strong {
+    background: linear-gradient(160deg, rgb(255 255 255 / 0.11), rgb(255 255 255 / 0.045));
+    border: 1px solid rgb(255 255 255 / 0.16);
+    backdrop-filter: blur(24px) saturate(1.5);
+    -webkit-backdrop-filter: blur(24px) saturate(1.5);
+    box-shadow: var(--shadow-glass);
+  }
+
+  .card {
+    border-radius: var(--radius-card);
+    padding: 1.25rem;
+  }
+
+  .card-hover {
+    transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+                border-color 260ms ease,
+                box-shadow 260ms ease;
+  }
+  .card-hover:hover {
+    transform: translateY(-3px);
+    border-color: rgb(18 183 106 / 0.35);
+    box-shadow: var(--shadow-glow);
+  }
+
+  /* Buttons ------------------------------------------------------------ */
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: var(--radius-pill);
+    padding: 0.625rem 1.25rem;
+    font-weight: 600;
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: transform 160ms ease, background-color 160ms ease, opacity 160ms ease;
+  }
+  .btn:active { transform: scale(0.975); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  .btn-primary {
+    background: linear-gradient(180deg, var(--color-brand-400), var(--color-brand-600));
+    color: #fff;
+    box-shadow: 0 6px 20px -6px rgb(18 183 106 / 0.6);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: linear-gradient(180deg, var(--color-brand-300), var(--color-brand-500));
+  }
+
+  .btn-ghost {
+    background: rgb(255 255 255 / 0.06);
+    border: 1px solid rgb(255 255 255 / 0.12);
+    color: var(--color-ink-100);
+  }
+  .btn-ghost:hover:not(:disabled) { background: rgb(255 255 255 / 0.11); }
+
+  .btn-danger {
+    background: color-mix(in oklab, var(--color-danger) 88%, black);
+    color: #fff;
+  }
+
+  .btn-lg { padding: 0.875rem 1.75rem; font-size: 1rem; }
+  .btn-sm { padding: 0.375rem 0.875rem; font-size: 0.8125rem; }
+
+  /* Form controls ------------------------------------------------------- */
+
+  .field {
+    width: 100%;
+    border-radius: 0.875rem;
+    background: rgb(255 255 255 / 0.05);
+    border: 1px solid rgb(255 255 255 / 0.12);
+    padding: 0.7rem 1rem;
+    color: var(--color-ink-50);
+    transition: border-color 160ms ease, background-color 160ms ease;
+  }
+  .field::placeholder { color: var(--color-ink-400); }
+  .field:focus {
+    outline: none;
+    border-color: var(--color-brand-400);
+    background: rgb(255 255 255 / 0.08);
+  }
+  .field-label {
+    display: block;
+    margin-bottom: 0.375rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--color-ink-300);
+  }
+  .field-error { margin-top: 0.375rem; font-size: 0.8125rem; color: var(--color-danger); }
+
+  /* Badges -------------------------------------------------------------- */
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    border-radius: var(--radius-pill);
+    padding: 0.1875rem 0.625rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border: 1px solid transparent;
+  }
+  .badge-success { background: rgb(18 183 106 / 0.15); color: var(--color-brand-300); border-color: rgb(18 183 106 / 0.3); }
+  .badge-warning { background: rgb(247 144 9 / 0.15); color: #fdb022; border-color: rgb(247 144 9 / 0.3); }
+  .badge-danger  { background: rgb(240 68 56 / 0.15); color: #fda29b; border-color: rgb(240 68 56 / 0.3); }
+  .badge-info    { background: rgb(46 144 250 / 0.15); color: #84caff; border-color: rgb(46 144 250 / 0.3); }
+  .badge-neutral { background: rgb(255 255 255 / 0.07); color: var(--color-ink-300); border-color: rgb(255 255 255 / 0.12); }
+
+  /* Tables -------------------------------------------------------------- */
+
+  .table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.875rem; }
+  .table th {
+    text-align: right;
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    font-size: 0.8125rem;
+    color: var(--color-ink-400);
+    border-bottom: 1px solid rgb(255 255 255 / 0.08);
+    white-space: nowrap;
+  }
+  .table td {
+    padding: 0.875rem 1rem;
+    border-bottom: 1px solid rgb(255 255 255 / 0.05);
+    vertical-align: middle;
+  }
+  .table tbody tr { transition: background-color 140ms ease; }
+  .table tbody tr:hover { background: rgb(255 255 255 / 0.035); }
+
+  /* Wide tables must scroll inside their own container, never the page. */
+  .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* Live indicator ------------------------------------------------------ */
+
+  .live-dot {
+    position: relative;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 999px;
+    background: var(--color-brand-400);
+  }
+  .live-dot::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 999px;
+    background: var(--color-brand-400);
+    animation: ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+  }
+
+  .stat-value { font-size: 1.75rem; font-weight: 700; line-height: 1.1; letter-spacing: -0.01em; }
+  .stat-label { font-size: 0.8125rem; color: var(--color-ink-400); }
+
+  /* Bottom navigation used by all three PWAs. */
+  .tabbar {
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: 40;
+    display: grid;
+    padding: 0.5rem;
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+    gap: 0.25rem;
+  }
+  .tabbar-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.5rem 0.25rem;
+    border-radius: 0.875rem;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    color: var(--color-ink-400);
+    transition: color 160ms ease, background-color 160ms ease;
+  }
+  .tabbar-item.is-active { color: var(--color-brand-300); background: rgb(18 183 106 / 0.12); }
+
+  .skeleton {
+    background: linear-gradient(90deg, rgb(255 255 255 / 0.04), rgb(255 255 255 / 0.09), rgb(255 255 255 / 0.04));
+    background-size: 200% 100%;
+    animation: shimmer 1.4s ease-in-out infinite;
+    border-radius: 0.75rem;
+  }
+}
+
+/* ------------------------------------------------------------- utilities */
+
+@layer utilities {
+  .text-gradient {
+    background: linear-gradient(120deg, var(--color-brand-200), var(--color-brand-400) 55%, #7ce7ff);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Logical properties so the whole UI mirrors correctly in RTL. */
+  .ms-auto { margin-inline-start: auto; }
+  .me-auto { margin-inline-end: auto; }
+
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { scrollbar-width: none; }
+
+  .animate-rise { animation: rise 600ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .animate-fade { animation: fade 400ms ease both; }
+}
+
+@keyframes ping {
+  75%, 100% { transform: scale(2.4); opacity: 0; }
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Respect the user's motion preference; a moving map is enough motion. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .live-dot::after { animation: none; }
+}
+
+/* Leaflet needs a few overrides to sit inside a dark glass interface. */
+.leaflet-container { background: var(--color-ink-900); font-family: var(--font-sans); }
+.leaflet-control-attribution {
+  background: rgb(10 17 20 / 0.75) !important;
+  color: var(--color-ink-400) !important;
+  font-size: 10px;
+}
+.leaflet-control-attribution a { color: var(--color-ink-300) !important; }
+.leaflet-popup-content-wrapper, .leaflet-popup-tip {
+  background: rgb(14 23 27 / 0.95);
+  color: var(--color-ink-100);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgb(255 255 255 / 0.1);
+}
+.leaflet-popup-content { margin: 0.875rem; direction: rtl; }
+/* The dark ground makes standard raster tiles glare; tone them down. */
+.leaflet-tile-pane { filter: brightness(0.72) saturate(0.85) contrast(1.05); }

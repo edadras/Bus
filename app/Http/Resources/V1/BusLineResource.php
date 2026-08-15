@@ -26,7 +26,7 @@ class BusLineResource extends JsonResource
             'provenance' => $this->provenance->value,
             'is_verified_data' => $this->provenance->isVerified(),
             'routes' => RouteResource::collection($this->whenLoaded('routes')),
-            'active_bus_count' => $this->whenNotNull($this->additional['active_bus_count'] ?? null),
+            'active_bus_count' => $this->whenNotNull($this->resource->active_bus_count ?? null),
         ];
     }
 }

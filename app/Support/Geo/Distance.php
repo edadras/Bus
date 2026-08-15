@@ -72,10 +72,20 @@ final class Distance
         return ['distance' => self::between($point, $projected), 't' => $t, 'point' => $projected];
     }
 
-    /** Bounding box (in degrees) that contains every point within $meters. */
+    /**
+     * Bounding box (in degrees) that contains every point within $meters.
+     *
+     * This is used as a SQL prefilter ahead of an exact haversine sort, so it
+     * must never be too small — excluding a stop here would silently drop it
+     * from "stops near me". Metres per degree of latitude varies from ~110.6 km
+     * at the equator to ~111.7 km at the poles, so a flat divisor can
+     * under-cover; the margin absorbs that and any rounding.
+     */
     public static function boundingBox(Coordinate $center, float $meters): array
     {
-        $latDelta = $meters / 111_320.0;
+        $meters *= 1.01;
+
+        $latDelta = $meters / 110_570.0;
         $lngDelta = $meters / max(1.0, 111_320.0 * cos(deg2rad($center->lat)));
 
         return [
