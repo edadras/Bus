@@ -20,10 +20,13 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // ResolveTenantCity comes first so ResolveLocale has a city to read a
+        // locale from; a city-resolution failure therefore renders in the
+        // application default, which for this product is Persian anyway.
         $middleware->api(prepend: [
             EnsureJsonResponse::class,
-            ResolveLocale::class,
             ResolveTenantCity::class,
+            ResolveLocale::class,
         ]);
 
         $middleware->web(append: [

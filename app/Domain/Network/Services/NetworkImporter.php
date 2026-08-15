@@ -14,9 +14,10 @@ use App\Domain\Network\Models\Zone;
 use App\Domain\Operations\Services\RouteMatcher;
 use App\Support\Exceptions\DomainException;
 use Illuminate\Support\Facades\DB;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 /**
- * Bulk import of network data from CSV and GeoJSON.
+ * Bulk import of network data from CSV, Excel/ODS spreadsheets and GeoJSON.
  *
  * Two things this deliberately gets right:
  *
@@ -38,10 +39,10 @@ class NetworkImporter
         NetworkProvenance $provenance = NetworkProvenance::Sample,
         ?User $actor = null,
     ): ImportBatch {
-        $batch = $this->startBatch($city, 'stops', 'csv', $path, $provenance, $actor);
+        $batch = $this->startBatch($city, 'stops', $this->formatOf($path), $path, $provenance, $actor);
         $zones = Zone::where('city_id', $city->id)->pluck('id', 'code');
 
-        foreach ($this->readCsv($path, $batch) as $lineNumber => $row) {
+        foreach ($this->readRows($path, $batch) as $lineNumber => $row) {
             try {
                 $this->requireColumns($row, ['code', 'name', 'lat', 'lng']);
 
@@ -77,9 +78,9 @@ class NetworkImporter
         NetworkProvenance $provenance = NetworkProvenance::Sample,
         ?User $actor = null,
     ): ImportBatch {
-        $batch = $this->startBatch($city, 'lines', 'csv', $path, $provenance, $actor);
+        $batch = $this->startBatch($city, 'lines', $this->formatOf($path), $path, $provenance, $actor);
 
-        foreach ($this->readCsv($path, $batch) as $lineNumber => $row) {
+        foreach ($this->readRows($path, $batch) as $lineNumber => $row) {
             try {
                 $this->requireColumns($row, ['code', 'name']);
 
@@ -118,14 +119,14 @@ class NetworkImporter
         NetworkProvenance $provenance = NetworkProvenance::Sample,
         ?User $actor = null,
     ): ImportBatch {
-        $batch = $this->startBatch($city, 'routes', 'csv', $path, $provenance, $actor);
+        $batch = $this->startBatch($city, 'routes', $this->formatOf($path), $path, $provenance, $actor);
 
         $lines = BusLine::where('city_id', $city->id)->pluck('id', 'code');
         $stops = BusStop::where('city_id', $city->id)->pluck('id', 'code');
 
         $grouped = [];
 
-        foreach ($this->readCsv($path, $batch) as $lineNumber => $row) {
+        foreach ($this->readRows($path, $batch) as $lineNumber => $row) {
             try {
                 $this->requireColumns($row, ['line_code', 'direction', 'sequence', 'stop_code']);
 
@@ -260,6 +261,92 @@ class NetworkImporter
         return $this->finishBatch($batch);
     }
 
+    /**
+     * Tabular formats a municipality actually sends, resolved by extension.
+     *
+     * Spreadsheets arrive far more often than CSV in practice — a transit
+     * department exports from Excel — and asking an operator to re-save every
+     * file first is how imports get done wrong or not at all.
+     *
+     * @return \Generator<int, array<string, string>>
+     */
+    private function readRows(string $path, ImportBatch $batch): \Generator
+    {
+        return match ($this->formatOf($path)) {
+            'xlsx' => $this->readSpreadsheet($path, $batch),
+            default => $this->readCsv($path, $batch),
+        };
+    }
+
+    private function formatOf(string $path): string
+    {
+        return match (strtolower(pathinfo($path, PATHINFO_EXTENSION))) {
+            'xlsx', 'xls', 'ods' => 'xlsx',
+            'geojson', 'json' => 'geojson',
+            default => 'csv',
+        };
+    }
+
+    /**
+     * Read the first worksheet as a header row plus data rows.
+     *
+     * Read-only mode is not an optimisation here: it skips styles, charts and
+     * formatting entirely, which is the difference between importing a
+     * 5,000-stop export and exhausting memory on it. Values are read as they
+     * display, so a code formatted as text stays "0102" rather than becoming
+     * the number 102.
+     *
+     * @return \Generator<int, array<string, string>>
+     */
+    private function readSpreadsheet(string $path, ImportBatch $batch): \Generator
+    {
+        if (! is_readable($path)) {
+            throw DomainException::make('import_file_unreadable', 422, ['path' => $path]);
+        }
+
+        try {
+            $reader = IOFactory::createReaderForFile($path);
+            $reader->setReadDataOnly(true);
+            $sheet = $reader->load($path)->getSheet(0);
+        } catch (DomainException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            throw DomainException::make('import_file_unreadable', 422, [
+                'path' => $path,
+                'reason' => $e->getMessage(),
+            ]);
+        }
+
+        $rows = $sheet->toArray(null, true, false, false);
+
+        $header = array_map(
+            static fn ($column) => trim((string) $column),
+            array_shift($rows) ?? [],
+        );
+
+        if ($header === [] || implode('', $header) === '') {
+            throw DomainException::make('import_file_empty', 422);
+        }
+
+        $lineNumber = 1;
+
+        foreach ($rows as $row) {
+            $lineNumber++;
+
+            // Spreadsheets carry trailing empty rows almost by default; they
+            // are not errors the operator needs to see.
+            if (trim(implode('', array_map(static fn ($v) => (string) $v, $row))) === '') {
+                continue;
+            }
+
+            $batch->total_rows++;
+
+            $padded = array_pad($row, count($header), null);
+
+            yield $lineNumber => array_combine($header, array_slice($padded, 0, count($header)));
+        }
+    }
+
     /** @return \Generator<int, array<string, string>> */
     private function readCsv(string $path, ImportBatch $batch): \Generator
     {
@@ -335,6 +422,14 @@ class NetworkImporter
             'source_name' => basename($path),
             'provenance' => $provenance,
             'status' => 'running',
+            // Set explicitly rather than left to the column defaults: the
+            // counters are incremented on this in-memory instance and then
+            // read straight back by the caller, so an untouched one would
+            // report null instead of 0.
+            'total_rows' => 0,
+            'created_rows' => 0,
+            'updated_rows' => 0,
+            'skipped_rows' => 0,
         ]);
     }
 

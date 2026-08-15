@@ -21,11 +21,15 @@ use Symfony\Component\HttpFoundation\Response;
  * should not flip the whole interface — including the RTL layout — for a rider
  * standing at a Bandar Abbas bus stop. Anyone who genuinely wants English asks
  * for it explicitly, and that request wins at step 1.
+ *
+ * This middleware runs after ResolveTenantCity so that step 4 has a city to
+ * read; and the default at step 5 comes from transit.default_locale rather
+ * than app.locale, because App::setLocale() overwrites app.locale and would
+ * otherwise let one English request redefine the default for every request
+ * after it on the same worker.
  */
 class ResolveLocale
 {
-    private const SUPPORTED = ['fa', 'en'];
-
     private const RTL = ['fa', 'ar'];
 
     public function handle(Request $request, Closure $next): Response
@@ -48,6 +52,7 @@ class ResolveLocale
 
     private function resolve(Request $request): string
     {
+        $supported = (array) config('transit.supported_locales', ['fa']);
         $city = $request->attributes->get('city');
 
         $candidates = array_filter([
@@ -60,11 +65,11 @@ class ResolveLocale
         foreach ($candidates as $candidate) {
             $short = substr((string) $candidate, 0, 2);
 
-            if (in_array($short, self::SUPPORTED, true)) {
+            if (in_array($short, $supported, true)) {
                 return $short;
             }
         }
 
-        return (string) config('app.locale', 'fa');
+        return (string) config('transit.default_locale', 'fa');
     }
 }

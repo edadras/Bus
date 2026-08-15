@@ -108,6 +108,10 @@ return [
     'settlement_not_approved' => 'ابتدا باید تسویه تأیید شود.',
     'settlement_already_paid' => 'این تسویه قبلاً پرداخت شده است.',
 
+    // Import
+    'import_file_unreadable' => 'فایل ورودی خوانده نشد.',
+    'import_file_empty' => 'فایل ورودی سطر داده‌ای ندارد.',
+
     // Complaints
     'complaint_closed' => 'این شکایت بسته شده است.',
     'complaint_not_rateable' => 'امکان امتیازدهی به این شکایت وجود ندارد.',

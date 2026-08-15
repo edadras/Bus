@@ -20,8 +20,12 @@
 | Admin panel | Blade + Alpine + Tailwind v4, RTL | `resources/views/admin` |
 | Landing page & public viewer | Blade, installable PWA | `resources/views` |
 
-Persian-first throughout: RTL layout, Persian digits and thousands separator,
-and every user-facing string translatable (`lang/fa`).
+Persian-first throughout: RTL layout, Persian digits and thousands separator.
+Every string the **server** produces — errors, notifications, SMS, enum labels,
+validation — is translated in both `lang/fa` and `lang/en`, and a test fails the
+build if the two drift apart. The admin panel's own chrome and the Flutter
+screens carry their Persian copy inline; see the limitation noted in
+[Security](docs/security.md#known-limitations).
 
 ## Quick start
 
@@ -109,7 +113,7 @@ the passenger's screen. See [`database/data/bandar-abbas/README.md`](database/da
 ## Commands
 
 ```bash
-php artisan transit:import <entity> <file> --provenance=official  # network data
+php artisan transit:import <entity> <file> --provenance=official  # CSV/XLSX/GeoJSON
 php artisan transit:routes:recalculate                            # re-snap stops
 php artisan transit:ledger:audit                                  # financial integrity
 php artisan transit:metrics:rollup                                # dashboard facts
@@ -122,7 +126,7 @@ php artisan webpush:vapid                                         # push key pai
 ## Tests
 
 ```bash
-php artisan test                       # 187 PHP tests
+php artisan test                       # 205 PHP tests
 make apps-test                         # 36 Dart tests
 make apps-analyze                      # static analysis, all four packages
 ```

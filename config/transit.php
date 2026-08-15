@@ -17,6 +17,24 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Default Locale
+    |--------------------------------------------------------------------------
+    |
+    | Deliberately not read from app.locale. Laravel's App::setLocale() writes
+    | app.locale as well as the translator's locale, so a request that asked
+    | for English would rewrite the very default the next request falls back
+    | to. Under a long-lived worker that turns one English visitor into an
+    | English interface for every Persian rider after them. This key is only
+    | ever read.
+    |
+    */
+
+    'default_locale' => env('APP_LOCALE', 'fa'),
+
+    'supported_locales' => ['fa', 'en'],
+
+    /*
+    |--------------------------------------------------------------------------
     | GPS Ingest
     |--------------------------------------------------------------------------
     */

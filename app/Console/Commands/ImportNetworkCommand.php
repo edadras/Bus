@@ -11,11 +11,11 @@ class ImportNetworkCommand extends Command
 {
     protected $signature = 'transit:import
         {entity : stops|lines|routes|geometry}
-        {path : Path to the CSV or GeoJSON file}
+        {path : Path to the CSV, XLSX/ODS or GeoJSON file}
         {--city= : City slug (defaults to the configured default city)}
         {--provenance=sample : official|community|sample}';
 
-    protected $description = 'Import network data (stops, lines, routes, geometry) from CSV or GeoJSON';
+    protected $description = 'Import network data (stops, lines, routes, geometry) from CSV, Excel or GeoJSON';
 
     public function handle(NetworkImporter $importer): int
     {

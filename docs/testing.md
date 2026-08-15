@@ -1,7 +1,7 @@
 # Testing
 
 ```bash
-php artisan test          # 187 PHP tests
+php artisan test          # 205 PHP tests
 make apps-test            # 36 Dart tests
 make apps-analyze         # static analysis across all four Dart packages
 ```
@@ -156,6 +156,28 @@ The cases that break naive distance-over-speed maths:
 - **occupancy leaks neither identity nor position with exactly one rider aboard**
 - revenue needs `finance.manage`; occupancy needs `operations.live_map`; a
   transport manager gets one and not the other
+
+### Network import — `tests/Feature/Network/NetworkImportTest.php` (10)
+
+- stops and lines import from CSV and from an Excel workbook alike
+- **provenance travels with the data**: an import without `--provenance=official`
+  can never produce official rows
+- one malformed row is recorded with its line number and the other rows still land
+- re-importing updates rather than duplicating
+- a clean import reports 0 skips rather than null — the counters are read back
+  from the in-memory batch, so an untouched one must not be blank
+
+### Localisation — `tests/Feature/Web/LocalizationTest.php` (8)
+
+Written after `?lang=en` was found rendering raw dotted keys at the user:
+
+- every key present in one locale is present in the other, and **no key resolves
+  to itself** in either
+- every `DomainException` code has a message in both locales
+- an explicit `?lang=` wins; a phone set to English does not flip a Persian
+  rider's interface; a saved user preference is honoured
+- **two requests in a row do not contaminate each other's locale** — the guard
+  against `App::setLocale()` rewriting the very default the next request reads
 
 ### Geometry — `tests/Unit/GeoTest.php` (11)
 

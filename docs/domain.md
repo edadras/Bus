@@ -196,3 +196,15 @@ labelled as unofficial all the way to the passenger's screen, and the API
 exposes `is_verified_data` so no client can accidentally present demo geometry
 as the published network. The bundled Bandar Abbas data is `sample`; replacing
 it with the real network is an import with `--provenance=official`.
+
+Stops, lines and route sequences import from **CSV or an Excel/ODS workbook**
+(a transit department exports from Excel far more often than it hands over a
+CSV, and asking an operator to re-save every file first is how imports get done
+wrong or not at all); geometry imports from **GeoJSON**. The format is resolved
+from the file extension, and spreadsheets are read in read-only mode so a
+5,000-row export does not have to fit in memory twice.
+
+Errors are collected, never thrown: one malformed row in a 2,000-row export is
+recorded on the batch with its line number, and the other 1,999 land. The
+operator fixes those lines and re-runs — imports are keyed on `code`, so a
+re-run updates rather than duplicates.

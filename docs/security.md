@@ -168,3 +168,10 @@ Stated plainly rather than left to be discovered:
   so no notification is lost — only its out-of-app banner.
 - **SMS has no provider bound.** `SmsSender` is a one-method seam; OTP codes are
   logged in non-production rather than sent.
+- **Client copy is not externalised.** Everything the API returns is translated
+  in both locales and guarded by a test. The admin panel's Blade views and the
+  Flutter screens hold their Persian copy inline, so switching those surfaces to
+  English is a string-extraction pass, not a configuration change. That is a
+  deliberate scope call for a Persian-first product in one Persian city, not an
+  oversight — the API, which is what a second city or a third-party client
+  consumes, is fully localised.
