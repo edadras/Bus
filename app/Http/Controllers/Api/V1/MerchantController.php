@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Domain\Merchant\Models\Merchant;
+use App\Domain\Merchant\Models\MerchantStaff;
 use App\Domain\Merchant\Models\MerchantTransaction;
 use App\Domain\Merchant\Services\MerchantPaymentService;
 use App\Domain\Merchant\Services\MerchantTerminalQrService;
@@ -193,7 +194,7 @@ class MerchantController extends Controller
         ], status: 201);
     }
 
-    private function staff(Request $request): \App\Domain\Merchant\Models\MerchantStaff
+    private function staff(Request $request): MerchantStaff
     {
         $staff = $request->user()->merchantStaff()
             ->where('is_active', true)

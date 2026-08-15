@@ -73,7 +73,7 @@ class DriverAdminController extends Controller
             return ApiResponse::error('invalid_mobile', null, 422);
         }
 
-        $driver = DB::transaction(function () use ($validated, $mobile, $request): Driver {
+        $driver = DB::transaction(function () use ($validated, $mobile): Driver {
             // Reuse an existing passenger account when the number already has
             // one, rather than creating a second identity for the same person.
             $user = User::firstOrCreate(

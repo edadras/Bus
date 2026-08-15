@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Driver;
 
+use App\Domain\Fleet\Enums\DriverStatus;
 use App\Domain\Fleet\Enums\ShiftStatus;
 use App\Domain\Fleet\Models\Bus;
 use App\Domain\Fleet\Models\BusAssignment;
@@ -12,8 +13,10 @@ use App\Domain\Identity\Models\User;
 use App\Domain\Network\Models\BusLine;
 use App\Domain\Network\Models\BusRoute;
 use App\Domain\Network\Models\City;
+use App\Domain\Operations\DTO\LocationPing;
 use App\Domain\Operations\Enums\TripStatus;
 use App\Domain\Operations\Models\Trip;
+use App\Domain\Operations\Services\LocationIngestService;
 use App\Domain\Operations\Services\TripService;
 use App\Domain\Ridership\Enums\PassengerTripStatus;
 use App\Domain\Ridership\Models\PassengerTrip;
@@ -90,7 +93,7 @@ class DriverShiftTest extends TestCase
 
     public function test_a_driver_pending_approval_cannot_start_a_shift(): void
     {
-        $this->driver->forceFill(['status' => \App\Domain\Fleet\Enums\DriverStatus::PendingApproval])->save();
+        $this->driver->forceFill(['status' => DriverStatus::PendingApproval])->save();
 
         try {
             $this->trips->startShift($this->driver->fresh(), $this->bus);
@@ -254,9 +257,9 @@ class DriverShiftTest extends TestCase
 
         $this->assertNull($trip->last_ping_at, 'A trip begins with no telemetry.');
 
-        $result = app(\App\Domain\Operations\Services\LocationIngestService::class)->ingest(
+        $result = app(LocationIngestService::class)->ingest(
             $trip->fresh(['route', 'bus', 'line', 'nextStop']),
-            \App\Domain\Operations\DTO\LocationPing::fromArray([
+            LocationPing::fromArray([
                 'lat' => 27.1832, 'lng' => 56.2666, 'speed' => 25, 'accuracy' => 8,
             ]),
         );

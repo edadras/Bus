@@ -59,7 +59,7 @@ final class Polyline
      * Snap a point onto the polyline.
      *
      * @return array{distance: float, offset: float, index: int, point: Coordinate}
-     *         distance = metres off the line, offset = metres travelled along it
+     *                                                                              distance = metres off the line, offset = metres travelled along it
      */
     public function snap(Coordinate $point): array
     {

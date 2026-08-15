@@ -13,7 +13,6 @@ use App\Domain\Support\Models\ComplaintMessage;
 use App\Support\Exceptions\DomainException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 
 /** Complaint intake, triage and the passenger-facing conversation. */
 class ComplaintService

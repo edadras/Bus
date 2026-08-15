@@ -11,6 +11,7 @@ use App\Http\Resources\V1\ComplaintResource;
 use App\Support\Api\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\Rule;
 
 class SupportAdminController extends Controller
@@ -142,7 +143,7 @@ class SupportAdminController extends Controller
         $attachment = $complaint->attachments()->findOrFail($attachmentId);
 
         return ApiResponse::success([
-            'url' => \Illuminate\Support\Facades\URL::temporarySignedRoute(
+            'url' => URL::temporarySignedRoute(
                 'admin.complaints.attachment.download',
                 now()->addMinutes(10),
                 ['complaint' => $complaint->uuid, 'attachment' => $attachment->id],

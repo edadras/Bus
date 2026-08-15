@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Domain\Identity\Models\User;
 use App\Domain\Identity\Services\AuthService;
 use App\Domain\Identity\Services\OtpService;
 use App\Domain\Network\Models\City;
@@ -71,7 +72,7 @@ class AuthController extends Controller
     {
         $mobile = $this->otp->normalizeMobile($request->string('mobile')->toString());
 
-        $user = \App\Domain\Identity\Models\User::where('mobile', $mobile)->first();
+        $user = User::where('mobile', $mobile)->first();
 
         // Uniform failure for unknown user and wrong password, so the endpoint
         // cannot be used to enumerate which mobile numbers have accounts.

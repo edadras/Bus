@@ -1,0 +1,118 @@
+###############################################################################
+# Development environment.
+#
+# Six services, because the platform genuinely needs all six: the queue worker
+# drains notifications and rollups, the scheduler reaps abandoned rides and
+# stale trips, and Reverb carries the live map. Running the app without them
+# looks fine until a bus stops moving on screen or a ride never closes.
+#
+#   make up      start everything
+#   make fresh   rebuild the database and seed it
+#   make test    run the test suite
+###############################################################################
+
+x-app: &app
+  build:
+    context: .
+    dockerfile: docker/php/Dockerfile
+    target: runtime
+  environment:
+    APP_ENV: local
+    APP_DEBUG: "true"
+  env_file: [.env]
+  volumes:
+    - .:/var/www/html
+    - /var/www/html/vendor
+    - /var/www/html/node_modules
+  depends_on:
+    mysql: { condition: service_healthy }
+    redis: { condition: service_healthy }
+  restart: unless-stopped
+
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    ports: ["8000:80"]
+    volumes:
+      - .:/var/www/html:ro
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on: [php, reverb]
+    restart: unless-stopped
+
+  php:
+    <<: *app
+    # The image runs as www-data; bind mounts in development need the host
+    # user, so the entrypoint fixes ownership on start.
+    user: root
+    command: sh -c "chown -R www-data:www-data storage bootstrap/cache && php-fpm"
+
+  # Drains notifications, metric rollups and any deferred work. Two tries then
+  # the job lands in failed_jobs for inspection rather than looping forever.
+  queue:
+    <<: *app
+    user: root
+    command: php artisan queue:work redis --tries=2 --backoff=5 --max-time=3600 --sleep=1
+
+  # Reaps abandoned rides and stale trips, rolls up metrics, prunes location
+  # history and audits the ledger. See routes/console.php.
+  scheduler:
+    <<: *app
+    user: root
+    command: php artisan schedule:work
+
+  # WebSocket server for the live map and the driver's passenger counter.
+  reverb:
+    <<: *app
+    user: root
+    command: php artisan reverb:start --host=0.0.0.0 --port=8080
+    ports: ["8080:8080"]
+
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-hamsafar}
+      MYSQL_USER: ${DB_USERNAME:-hamsafar}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-secret}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-secret}
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      # trip_locations is the highest-write table in the system; a larger
+      # buffer pool keeps its index hot.
+      - --innodb-buffer-pool-size=512M
+      - --max-connections=200
+    ports: ["3306:3306"]
+    volumes: [mysql-data:/var/lib/mysql]
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${DB_PASSWORD:-secret}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    # Live bus state is ephemeral by design, but the queue is not, so keep
+    # append-only persistence.
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy noeviction
+    ports: ["6379:6379"]
+    volumes: [redis-data:/data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  # Frontend dev server. Not part of the production image.
+  vite:
+    image: node:22-alpine
+    working_dir: /var/www/html
+    command: sh -c "npm install --no-audit --no-fund && npm run dev -- --host 0.0.0.0"
+    ports: ["5173:5173"]
+    volumes: [.:/var/www/html]
+    profiles: [dev]
+
+volumes:
+  mysql-data:
+  redis-data:

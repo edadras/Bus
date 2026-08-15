@@ -6,7 +6,6 @@ use App\Domain\Payment\Services\TopupService;
 use App\Domain\Wallet\Models\Payment;
 use App\Http\Controllers\Controller;
 use Illuminate\Contracts\View\View;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 /**

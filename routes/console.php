@@ -6,6 +6,7 @@ use App\Console\Commands\CloseStaleTripsCommand;
 use App\Console\Commands\NotifyArrivalsCommand;
 use App\Console\Commands\PruneLocationDataCommand;
 use App\Console\Commands\RollupMetricsCommand;
+use App\Domain\Payment\Services\TopupService;
 use Illuminate\Support\Facades\Schedule;
 
 /*
@@ -53,7 +54,7 @@ Schedule::command(AuditLedgerCommand::class)
 
 // Expire abandoned gateway payments so they cannot be completed much later.
 Schedule::call(function (): void {
-    app(\App\Domain\Payment\Services\TopupService::class)->expireStale();
+    app(TopupService::class)->expireStale();
 })->hourly()->name('payments:expire-stale')->onOneServer();
 
 Schedule::command('auth:clear-resets')->daily();

@@ -21,8 +21,11 @@ use Laravel\Sanctum\NewAccessToken;
 class AuthService
 {
     public const ABILITY_PASSENGER = 'passenger';
+
     public const ABILITY_DRIVER = 'driver';
+
     public const ABILITY_MERCHANT = 'merchant';
+
     public const ABILITY_ADMIN = 'admin';
 
     public function __construct(private readonly WalletService $wallets) {}

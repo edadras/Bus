@@ -4,7 +4,6 @@ namespace App\Domain\Merchant\Services;
 
 use App\Domain\Identity\Models\User;
 use App\Domain\Merchant\Models\Merchant;
-use App\Domain\Merchant\Models\MerchantTerminal;
 use App\Domain\Merchant\Models\MerchantTransaction;
 use App\Domain\Wallet\Enums\TransactionStatus;
 use App\Domain\Wallet\Services\FareEngine;

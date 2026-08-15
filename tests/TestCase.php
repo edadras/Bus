@@ -10,6 +10,7 @@ use App\Domain\Wallet\Services\SystemAccountRegistry;
 use App\Domain\Wallet\Services\WalletService;
 use Database\Seeders\RbacSeeder;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Laravel\Sanctum\Sanctum;
 
 abstract class TestCase extends BaseTestCase
 {
@@ -63,21 +64,21 @@ abstract class TestCase extends BaseTestCase
     /** Authenticate as a passenger for API calls, with the right ability. */
     protected function actingAsPassenger(User $user): static
     {
-        \Laravel\Sanctum\Sanctum::actingAs($user, ['passenger']);
+        Sanctum::actingAs($user, ['passenger']);
 
         return $this;
     }
 
     protected function actingAsDriver(User $user): static
     {
-        \Laravel\Sanctum\Sanctum::actingAs($user, ['driver', 'passenger']);
+        Sanctum::actingAs($user, ['driver', 'passenger']);
 
         return $this;
     }
 
     protected function actingAsMerchantStaff(User $user): static
     {
-        \Laravel\Sanctum\Sanctum::actingAs($user, ['merchant']);
+        Sanctum::actingAs($user, ['merchant']);
 
         return $this;
     }
@@ -87,7 +88,7 @@ abstract class TestCase extends BaseTestCase
         $this->seedRbac();
         $user->assignRole($role, $city?->id);
 
-        \Laravel\Sanctum\Sanctum::actingAs($user->fresh(), ['admin']);
+        Sanctum::actingAs($user->fresh(), ['admin']);
 
         return $this;
     }

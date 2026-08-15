@@ -3,7 +3,6 @@
 namespace App\Domain\Operations\Services;
 
 use App\Domain\Operations\Models\Trip;
-use Illuminate\Contracts\Redis\Factory as RedisFactory;
 use Illuminate\Support\Facades\Cache;
 
 /**

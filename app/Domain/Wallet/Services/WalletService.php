@@ -14,6 +14,7 @@ use App\Domain\Wallet\Models\WalletTransaction;
 use App\Support\Exceptions\DomainException;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * Business-facing wallet operations. Everything here delegates the actual
@@ -67,7 +68,7 @@ class WalletService
         Wallet $wallet,
         int $amount,
         string $idempotencyKey,
-        ?\Illuminate\Database\Eloquent\Model $subject = null,
+        ?Model $subject = null,
         array $metadata = [],
     ): WalletTransaction {
         $this->assertTopupWithinLimits($wallet, $amount);
@@ -93,7 +94,7 @@ class WalletService
         Wallet $wallet,
         int $amount,
         string $idempotencyKey,
-        \Illuminate\Database\Eloquent\Model $subject,
+        Model $subject,
         ?User $initiatedBy = null,
         array $metadata = [],
     ): WalletTransaction {
@@ -124,7 +125,7 @@ class WalletService
         int $amount,
         int $commission,
         string $idempotencyKey,
-        \Illuminate\Database\Eloquent\Model $subject,
+        Model $subject,
         ?User $initiatedBy = null,
         array $metadata = [],
     ): WalletTransaction {
@@ -162,7 +163,7 @@ class WalletService
         Wallet $merchantWallet,
         int $amount,
         string $idempotencyKey,
-        \Illuminate\Database\Eloquent\Model $subject,
+        Model $subject,
         ?User $initiatedBy = null,
     ): WalletTransaction {
         return $this->ledger->post(new PostingRequest(

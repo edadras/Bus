@@ -1,59 +1,127 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+<div dir="rtl">
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+# همسفر — سامانه هوشمند حمل‌ونقل شهری و کیف پول یکپارچه
 
-## About Laravel
+پلتفرم جامع حمل‌ونقل شهری: ردیابی زنده اتوبوس، تخمین هوشمند زمان رسیدن،
+پرداخت کرایه با QR، و کیف پول شهری قابل استفاده در استخر، باشگاه، پارکینگ و
+سایر پذیرندگان طرف قرارداد. شهر نخست: **بندرعباس**؛ معماری از ابتدا چندشهری است.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+</div>
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## What this is
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+| Surface | Stack | Path |
+|---|---|---|
+| Backend & API | Laravel 12, PHP 8.3, MySQL 8, Redis 7, Reverb | `app/`, `routes/` |
+| Passenger app | Flutter (Android + iOS) | `apps/passenger` |
+| Driver app | Flutter (Android + iOS) | `apps/driver` |
+| Merchant app | Flutter (Android + iOS) | `apps/merchant` |
+| Shared app package | Dart — API client, models, design system, realtime | `packages/hamsafar_core` |
+| Admin panel | Blade + Alpine + Tailwind v4, RTL | `resources/views/admin` |
+| Landing page & public viewer | Blade, installable PWA | `resources/views` |
 
-## Learning Laravel
+Persian-first throughout: RTL layout, Persian digits and thousands separator,
+and every user-facing string translatable (`lang/fa`).
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+## Quick start
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+```bash
+cp .env.example .env
+docker compose up -d
+docker compose exec php php artisan key:generate
+docker compose exec php php artisan migrate --seed
+npm install && npm run build
+```
 
-## Laravel Sponsors
+Then:
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+- Landing page — <http://localhost:8000>
+- Public map viewer — <http://localhost:8000/app/passenger>
+- Admin panel — <http://localhost:8000/admin> (`989120000001` / `password`)
 
-### Premium Partners
+Development sign-in returns the OTP in the API response, so no SMS gateway is
+needed locally. Seeded accounts:
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+| Role | Mobile |
+|---|---|
+| Super admin | `989120000001` |
+| Finance manager | `989120000003` |
+| Support agent | `989120000004` |
+| Driver (approved) | `989130000001` |
+| Driver (pending approval) | `989130000008` |
+| Passenger (with balance) | `989140000001` |
+| Merchant manager | `989150000001` |
 
-## Contributing
+### Mobile apps
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```bash
+cd packages/hamsafar_core && flutter pub get
+cd ../../apps/passenger && flutter pub get
 
-## Code of Conduct
+# 10.0.2.2 is how the Android emulator reaches the host
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Release builds: `make apk API_URL=https://api.example.com`
 
-## Security Vulnerabilities
+## The parts worth knowing about
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+**The wallet is a double-entry ledger.** Balances are a materialised sum, never
+the source of truth. Every posting balances to zero, ledger rows reject updates
+and deletes at the model layer, and a correction is a new reversing transaction
+rather than an edit. `php artisan transit:ledger:audit` verifies all three
+invariants and runs nightly.
 
-## License
+**QR codes rotate and are single-use.** The sticker in a bus carries only a
+public id; a valid scan must present an HMAC-signed token bound to a 30-second
+time step and a nonce that is claimed atomically. A photograph of the code is
+worthless seconds later, and cannot pay for two people.
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+**ETA is deterministic, and says how sure it is.** Each remaining segment
+blends live speed, the historical mean for that segment in this (day, hour)
+bucket, and a route baseline; dwell time is added per intervening stop. Every
+estimate carries a confidence, and the clients visibly soften an unreliable one
+instead of presenting it as fact.
+
+**Alighting detection is deliberately conservative.** Ending a ride early is
+worse than ending it late, so a single distant GPS fix only marks a ride
+pending; it takes two corroborating observations to close one, and the
+scheduler force-closes anything left open.
+
+**Sample data is labelled everywhere.** The bundled Bandar Abbas network is
+illustrative, not official, and carries `provenance = sample` all the way to
+the passenger's screen. See [`database/data/bandar-abbas/README.md`](database/data/bandar-abbas/README.md).
+
+## Documentation
+
+| Document | Contents |
+|---|---|
+| [Architecture](docs/architecture.md) | System, backend, apps, admin, real-time, Redis, scaling |
+| [Database](docs/database.md) | ERD, every table and column, relationships, indexes |
+| [API reference](docs/api.md) | All 97 endpoints, envelope, error codes, auth |
+| [Security](docs/security.md) | Auth, RBAC, QR, financial integrity, privacy |
+| [Domain design](docs/domain.md) | Wallet, fare, GPS, ETA, ridership, merchant, complaints |
+| [Frontend](docs/frontend.md) | Design system, screens, PWA, admin |
+| [Operations](docs/operations.md) | Docker, deployment, monitoring, backup, runbook |
+| [Testing](docs/testing.md) | Strategy, coverage, how to run |
+| [Roadmap](docs/roadmap.md) | v1 → v3, including the ETA evolution |
+
+## Commands
+
+```bash
+php artisan transit:import <entity> <file> --provenance=official  # network data
+php artisan transit:routes:recalculate                            # re-snap stops
+php artisan transit:ledger:audit                                  # financial integrity
+php artisan transit:metrics:rollup                                # dashboard facts
+php artisan transit:rides:close-abandoned                         # reap open rides
+php artisan transit:trips:close-stale                             # reap dead trips
+php artisan transit:prune:locations                               # retention
+```
+
+## Tests
+
+```bash
+php artisan test                       # 161 PHP tests
+make apps-test                         # 33 Dart tests
+make apps-analyze                      # static analysis, all four packages
+```

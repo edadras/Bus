@@ -10,6 +10,7 @@ use App\Domain\Operations\Services\EtaEngine;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\V1\BusLineResource;
 use App\Http\Resources\V1\BusStopResource;
+use App\Http\Resources\V1\LineSummaryResource;
 use App\Http\Resources\V1\RouteResource;
 use App\Support\Api\ApiResponse;
 use App\Support\Geo\Coordinate;
@@ -82,7 +83,7 @@ class NetworkController extends Controller
 
         return ApiResponse::success([
             'stop' => (new BusStopResource($stop))->resolve(),
-            'lines' => \App\Http\Resources\V1\LineSummaryResource::collection($lines)->resolve(),
+            'lines' => LineSummaryResource::collection($lines)->resolve(),
         ]);
     }
 

@@ -7,7 +7,6 @@ use App\Domain\Fleet\Enums\DriverStatus;
 use App\Domain\Fleet\Models\Bus;
 use App\Domain\Fleet\Models\Driver;
 use App\Domain\Identity\Models\User;
-use App\Domain\Merchant\Models\MerchantTransaction;
 use App\Domain\Network\Models\BusLine;
 use App\Domain\Network\Models\City;
 use App\Domain\Operations\Models\Trip;
@@ -19,7 +18,6 @@ use App\Domain\Wallet\Models\WalletTransaction;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 
 /**
  * Dashboard aggregation.
@@ -47,9 +45,9 @@ class DashboardService
                 ->completed()
                 ->where('created_at', '>=', $today)
                 ->selectRaw('COUNT(*) as cnt')
-                ->selectRaw("COALESCE(SUM(CASE WHEN type = ? THEN amount ELSE 0 END),0) as fares", [TransactionType::FarePayment->value])
-                ->selectRaw("COALESCE(SUM(CASE WHEN type = ? THEN amount ELSE 0 END),0) as topups", [TransactionType::Topup->value])
-                ->selectRaw("COALESCE(SUM(CASE WHEN type = ? THEN amount ELSE 0 END),0) as merchant", [TransactionType::MerchantPayment->value])
+                ->selectRaw('COALESCE(SUM(CASE WHEN type = ? THEN amount ELSE 0 END),0) as fares', [TransactionType::FarePayment->value])
+                ->selectRaw('COALESCE(SUM(CASE WHEN type = ? THEN amount ELSE 0 END),0) as topups', [TransactionType::Topup->value])
+                ->selectRaw('COALESCE(SUM(CASE WHEN type = ? THEN amount ELSE 0 END),0) as merchant', [TransactionType::MerchantPayment->value])
                 ->first();
 
             return [
@@ -192,10 +190,10 @@ class DashboardService
             ->completed()
             ->whereBetween('created_at', [$start, $end])
             ->selectRaw('COUNT(*) as cnt')
-            ->selectRaw("COALESCE(SUM(CASE WHEN type = ? THEN amount ELSE 0 END),0) as fares", [TransactionType::FarePayment->value])
-            ->selectRaw("COALESCE(SUM(CASE WHEN type = ? THEN amount ELSE 0 END),0) as topups", [TransactionType::Topup->value])
-            ->selectRaw("COALESCE(SUM(CASE WHEN type = ? THEN amount ELSE 0 END),0) as merchant", [TransactionType::MerchantPayment->value])
-            ->selectRaw("COALESCE(SUM(CASE WHEN type = ? THEN amount ELSE 0 END),0) as refunds", [TransactionType::Reversal->value])
+            ->selectRaw('COALESCE(SUM(CASE WHEN type = ? THEN amount ELSE 0 END),0) as fares', [TransactionType::FarePayment->value])
+            ->selectRaw('COALESCE(SUM(CASE WHEN type = ? THEN amount ELSE 0 END),0) as topups', [TransactionType::Topup->value])
+            ->selectRaw('COALESCE(SUM(CASE WHEN type = ? THEN amount ELSE 0 END),0) as merchant', [TransactionType::MerchantPayment->value])
+            ->selectRaw('COALESCE(SUM(CASE WHEN type = ? THEN amount ELSE 0 END),0) as refunds', [TransactionType::Reversal->value])
             ->first();
 
         $metric = DailyMetric::firstOrNew([

@@ -6,6 +6,7 @@ use App\Domain\Network\Models\BusRoute;
 use App\Domain\Network\Models\RouteStop;
 use App\Domain\Operations\DTO\RouteMatch;
 use App\Support\Geo\Coordinate;
+use App\Support\Geo\Polyline;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 
@@ -85,7 +86,7 @@ class RouteMatcher
         );
     }
 
-    public function polylineFor(BusRoute $route): \App\Support\Geo\Polyline
+    public function polylineFor(BusRoute $route): Polyline
     {
         return $route->polyline();
     }

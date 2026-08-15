@@ -2,9 +2,19 @@
 
 namespace App\Providers;
 
+use App\Domain\Fleet\Models\Bus;
+use App\Domain\Fleet\Models\Driver;
 use App\Domain\Identity\Models\User;
 use App\Domain\Mapping\Contracts\MapProvider;
 use App\Domain\Mapping\Providers\TileMapProvider;
+use App\Domain\Merchant\Models\Merchant;
+use App\Domain\Merchant\Models\MerchantTransaction;
+use App\Domain\Merchant\Models\Settlement;
+use App\Domain\Operations\Models\Trip;
+use App\Domain\Ridership\Models\PassengerTrip;
+use App\Domain\Support\Models\Complaint;
+use App\Domain\Wallet\Models\Payment;
+use App\Domain\Wallet\Models\WalletTransaction;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -38,16 +48,16 @@ class AppServiceProvider extends ServiceProvider
         // so class names can be refactored without a data migration.
         Relation::enforceMorphMap([
             'user' => User::class,
-            'trip' => \App\Domain\Operations\Models\Trip::class,
-            'passenger_trip' => \App\Domain\Ridership\Models\PassengerTrip::class,
-            'merchant_transaction' => \App\Domain\Merchant\Models\MerchantTransaction::class,
-            'settlement' => \App\Domain\Merchant\Models\Settlement::class,
-            'payment' => \App\Domain\Wallet\Models\Payment::class,
-            'wallet_transaction' => \App\Domain\Wallet\Models\WalletTransaction::class,
-            'complaint' => \App\Domain\Support\Models\Complaint::class,
-            'bus' => \App\Domain\Fleet\Models\Bus::class,
-            'driver' => \App\Domain\Fleet\Models\Driver::class,
-            'merchant' => \App\Domain\Merchant\Models\Merchant::class,
+            'trip' => Trip::class,
+            'passenger_trip' => PassengerTrip::class,
+            'merchant_transaction' => MerchantTransaction::class,
+            'settlement' => Settlement::class,
+            'payment' => Payment::class,
+            'wallet_transaction' => WalletTransaction::class,
+            'complaint' => Complaint::class,
+            'bus' => Bus::class,
+            'driver' => Driver::class,
+            'merchant' => Merchant::class,
         ]);
 
         if ($this->app->environment('production')) {

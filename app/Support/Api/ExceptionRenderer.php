@@ -6,6 +6,7 @@ use App\Support\Exceptions\DomainException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
@@ -19,7 +20,7 @@ use Throwable;
  */
 final class ExceptionRenderer
 {
-    public static function render(Throwable $e, Request $request): \Illuminate\Http\JsonResponse
+    public static function render(Throwable $e, Request $request): JsonResponse
     {
         return match (true) {
             $e instanceof DomainException => ApiResponse::error(

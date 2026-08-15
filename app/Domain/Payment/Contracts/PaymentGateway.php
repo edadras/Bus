@@ -23,7 +23,7 @@ interface PaymentGateway
      * a successful verification, never on the redirect alone, because a
      * redirect is attacker-controllable and a verification is not.
      *
-     * @param array<string, mixed> $callback
+     * @param  array<string, mixed>  $callback
      */
     public function verify(Payment $payment, array $callback): GatewayVerification;
 

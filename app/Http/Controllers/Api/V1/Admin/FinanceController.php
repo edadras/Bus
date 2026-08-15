@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Domain\Identity\Models\User;
 use App\Domain\Identity\Services\AuditLogger;
-use App\Domain\Merchant\Enums\SettlementStatus;
 use App\Domain\Merchant\Models\Merchant;
 use App\Domain\Merchant\Models\Settlement;
 use App\Domain\Merchant\Services\SettlementService;

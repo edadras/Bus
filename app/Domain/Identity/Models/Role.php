@@ -11,15 +11,25 @@ class Role extends Model
     use HasFactory;
 
     public const SUPER_ADMIN = 'super_admin';
+
     public const ADMIN = 'admin';
+
     public const TRANSPORT_MANAGER = 'transport_manager';
+
     public const FLEET_MANAGER = 'fleet_manager';
+
     public const DRIVER_MANAGER = 'driver_manager';
+
     public const FINANCE_MANAGER = 'finance_manager';
+
     public const SUPPORT_AGENT = 'support_agent';
+
     public const MERCHANT_MANAGER = 'merchant_manager';
+
     public const MERCHANT_STAFF = 'merchant_staff';
+
     public const DRIVER = 'driver';
+
     public const PASSENGER = 'passenger';
 
     /** Roles that may sign in to the web admin panel. */

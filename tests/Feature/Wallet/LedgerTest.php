@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Wallet;
 
+use App\Domain\Merchant\Models\Merchant;
+use App\Domain\Operations\Models\Trip;
 use App\Domain\Wallet\DTO\PostingLine;
 use App\Domain\Wallet\DTO\PostingRequest;
 use App\Domain\Wallet\Enums\TransactionStatus;
@@ -110,7 +112,7 @@ class LedgerTest extends TestCase
         $city = $this->makeCity();
         $user = $this->makePassenger($city, 30_000);
         $wallet = $this->walletOf($user);
-        $trip = \App\Domain\Operations\Models\Trip::factory()->create(['city_id' => $city->id]);
+        $trip = Trip::factory()->create(['city_id' => $city->id]);
 
         $this->expectException(InsufficientFundsException::class);
 
@@ -146,7 +148,7 @@ class LedgerTest extends TestCase
         $city = $this->makeCity();
         $user = $this->makePassenger($city, 200_000);
         $wallet = $this->walletOf($user);
-        $trip = \App\Domain\Operations\Models\Trip::factory()->create(['city_id' => $city->id]);
+        $trip = Trip::factory()->create(['city_id' => $city->id]);
 
         $fare = $this->wallets->chargeFare($wallet, 50_000, 'fare-1', $trip);
         $this->assertSame(150_000, $wallet->fresh()->balance);
@@ -167,7 +169,7 @@ class LedgerTest extends TestCase
     {
         $city = $this->makeCity();
         $wallet = $this->walletOf($this->makePassenger($city, 200_000));
-        $trip = \App\Domain\Operations\Models\Trip::factory()->create(['city_id' => $city->id]);
+        $trip = Trip::factory()->create(['city_id' => $city->id]);
 
         $fare = $this->wallets->chargeFare($wallet, 50_000, 'fare-2', $trip);
         $this->ledger->reverse($fare, 'first');
@@ -180,7 +182,7 @@ class LedgerTest extends TestCase
     {
         $city = $this->makeCity();
         $wallet = $this->walletOf($this->makePassenger($city, 500_000));
-        $trip = \App\Domain\Operations\Models\Trip::factory()->create(['city_id' => $city->id]);
+        $trip = Trip::factory()->create(['city_id' => $city->id]);
 
         $this->wallets->freeze($wallet, 'suspected fraud');
 
@@ -212,7 +214,7 @@ class LedgerTest extends TestCase
     {
         $city = $this->makeCity();
         $payer = $this->makePassenger($city, 1_000_000);
-        $merchant = \App\Domain\Merchant\Models\Merchant::factory()->create([
+        $merchant = Merchant::factory()->create([
             'city_id' => $city->id,
             'commission_bps' => 200, // 2%
         ]);

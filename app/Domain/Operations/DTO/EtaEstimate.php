@@ -2,6 +2,8 @@
 
 namespace App\Domain\Operations\DTO;
 
+use Carbon\CarbonInterface;
+
 /**
  * A predicted arrival, carrying its own provenance. `confidence` and `source`
  * exist so the UI can show "۴ دقیقه" firmly or "حدود ۴ دقیقه" softly instead
@@ -23,7 +25,7 @@ final readonly class EtaEstimate
         return (int) max(1, round($this->seconds / 60));
     }
 
-    public function arrivesAt(): \Carbon\CarbonInterface
+    public function arrivesAt(): CarbonInterface
     {
         return now()->addSeconds($this->seconds);
     }

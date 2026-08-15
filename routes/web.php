@@ -1,9 +1,11 @@
 <?php
 
+use App\Domain\Support\Models\Complaint;
 use App\Http\Controllers\Web\ClientAppController;
 use App\Http\Controllers\Web\LandingController;
 use App\Http\Controllers\Web\PaymentReturnController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 
 /*
 |--------------------------------------------------------------------------
@@ -58,10 +60,10 @@ Route::get('/payments/{payment}/pending', [PaymentReturnController::class, 'pend
 | these files routinely contain faces, plates and interiors.
 */
 Route::get('/admin/complaints/{complaint}/attachments/{attachment}/download', function (
-    \App\Domain\Support\Models\Complaint $complaint,
+    Complaint $complaint,
     int $attachment,
 ) {
     $file = $complaint->attachments()->findOrFail($attachment);
 
-    return \Illuminate\Support\Facades\Storage::disk('local')->download($file->file_path, $file->original_name);
+    return Storage::disk('local')->download($file->file_path, $file->original_name);
 })->middleware('signed')->name('admin.complaints.attachment.download');

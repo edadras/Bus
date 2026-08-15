@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Domain\Network\Models\BusLine;
 use App\Domain\Ridership\Models\PassengerTrip;
 use App\Domain\Ridership\Services\AlightingService;
 use App\Domain\Ridership\Services\BoardingService;
@@ -129,7 +130,7 @@ class PassengerController extends Controller
     {
         $validated = $request->validate(['line_id' => ['required', 'integer', 'exists:bus_lines,id']]);
 
-        $line = \App\Domain\Network\Models\BusLine::findOrFail($validated['line_id']);
+        $line = BusLine::findOrFail($validated['line_id']);
 
         abort_unless($line->city_id === $this->city()->id, 404);
 

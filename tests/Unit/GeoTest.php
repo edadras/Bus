@@ -2,10 +2,10 @@
 
 namespace Tests\Unit;
 
+use App\Support\Exceptions\DomainException;
 use App\Support\Geo\Coordinate;
 use App\Support\Geo\Distance;
 use App\Support\Geo\Polyline;
-use App\Support\Exceptions\DomainException;
 use PHPUnit\Framework\TestCase;
 
 /**

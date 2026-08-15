@@ -10,7 +10,7 @@ use App\Domain\Wallet\DTO\FareQuote;
 use App\Domain\Wallet\Models\FareRule;
 use App\Support\Exceptions\DomainException;
 use Carbon\CarbonInterface;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 
 /**
@@ -171,8 +171,8 @@ class FareEngine
         return $ruleValue === null || $ruleValue == $contextValue;
     }
 
-    /** @return \Illuminate\Support\Collection<int, FareRule> */
-    private function candidatesFor(int $cityId, string $context): \Illuminate\Support\Collection
+    /** @return Collection<int, FareRule> */
+    private function candidatesFor(int $cityId, string $context): Collection
     {
         return Cache::remember(
             "fare_rules:$cityId:$context",

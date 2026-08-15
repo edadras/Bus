@@ -2,6 +2,7 @@
 
 namespace App\Domain\Ridership\Services;
 
+use App\Domain\Fleet\DTO\QrToken;
 use App\Domain\Fleet\Services\BusQrService;
 use App\Domain\Fleet\Services\QrTokenService;
 use App\Domain\Identity\Models\User;
@@ -60,7 +61,7 @@ class BoardingService
         $this->assertNotRateLimited($user);
 
         $resolved = $this->qr->resolveScan($rawToken);
-        /** @var \App\Domain\Fleet\DTO\QrToken $token */
+        /** @var QrToken $token */
         $token = $resolved['token'];
         $bus = $resolved['bus'];
 

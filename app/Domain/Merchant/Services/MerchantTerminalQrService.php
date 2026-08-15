@@ -2,6 +2,7 @@
 
 namespace App\Domain\Merchant\Services;
 
+use App\Domain\Fleet\DTO\QrToken;
 use App\Domain\Fleet\Services\QrTokenService;
 use App\Domain\Merchant\Models\Merchant;
 use App\Domain\Merchant\Models\MerchantTerminal;
@@ -38,7 +39,7 @@ class MerchantTerminalQrService
         ];
     }
 
-    /** @return array{token: \App\Domain\Fleet\DTO\QrToken, terminal: MerchantTerminal} */
+    /** @return array{token: QrToken, terminal: MerchantTerminal} */
     public function resolveScan(string $rawToken): array
     {
         $token = $this->tokens->parse($rawToken);
@@ -60,12 +61,12 @@ class MerchantTerminalQrService
         return ['token' => $token, 'terminal' => $terminal];
     }
 
-    public function consume(\App\Domain\Fleet\DTO\QrToken $token): void
+    public function consume(QrToken $token): void
     {
         $this->tokens->consumeNonce($token, 'merchant');
     }
 
-    public function release(\App\Domain\Fleet\DTO\QrToken $token): void
+    public function release(QrToken $token): void
     {
         $this->tokens->releaseNonce($token, 'merchant');
     }

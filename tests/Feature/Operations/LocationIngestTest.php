@@ -15,7 +15,6 @@ use App\Domain\Operations\Models\TripLocation;
 use App\Domain\Operations\Services\LocationIngestService;
 use App\Domain\Operations\Services\RouteMatcher;
 use App\Support\Exceptions\DomainException;
-use App\Support\Geo\Coordinate;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;

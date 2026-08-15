@@ -3,7 +3,6 @@
 namespace App\Domain\Wallet\Models;
 
 use App\Domain\Identity\Models\User;
-use App\Domain\Wallet\Enums\LedgerDirection;
 use App\Domain\Wallet\Enums\TransactionStatus;
 use App\Domain\Wallet\Enums\TransactionType;
 use App\Support\Concerns\BelongsToCity;
@@ -14,6 +13,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * The header of a double entry posting. Its ledger entries always balance:
@@ -62,7 +62,7 @@ class WalletTransaction extends Model
         return $this->belongsTo(self::class, 'reverses_transaction_id');
     }
 
-    public function reversal(): \Illuminate\Database\Eloquent\Relations\HasOne
+    public function reversal(): HasOne
     {
         return $this->hasOne(self::class, 'reverses_transaction_id');
     }

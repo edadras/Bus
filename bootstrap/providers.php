@@ -1,9 +1,15 @@
 <?php
 
+use App\Providers\AppServiceProvider;
+use App\Providers\BroadcastServiceProvider;
+use App\Providers\DomainServiceProvider;
+use App\Providers\EventServiceProvider;
+use App\Providers\RouteServiceProvider;
+
 return [
-    App\Providers\AppServiceProvider::class,
-    App\Providers\DomainServiceProvider::class,
-    App\Providers\RouteServiceProvider::class,
-    App\Providers\BroadcastServiceProvider::class,
-    App\Providers\EventServiceProvider::class,
+    AppServiceProvider::class,
+    DomainServiceProvider::class,
+    RouteServiceProvider::class,
+    BroadcastServiceProvider::class,
+    EventServiceProvider::class,
 ];

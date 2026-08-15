@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Domain\Network\Models\BusLine;
 use App\Domain\Network\Models\BusStop;
 use App\Domain\Operations\Models\Trip;
 use App\Domain\Operations\Services\EtaEngine;
@@ -105,11 +106,11 @@ class LiveController extends Controller
 
         return ApiResponse::success([
             'active_buses' => count($live),
-            'lines' => \App\Domain\Network\Models\BusLine::forCity($cityId)->active()->count(),
+            'lines' => BusLine::forCity($cityId)->active()->count(),
             'stops' => BusStop::forCity($cityId)->active()->count(),
             // From the database, not the map snapshot: the cached entry only
             // refreshes on the next GPS ping.
-            'passengers_on_board' => (int) \App\Domain\Operations\Models\Trip::forCity($this->city())
+            'passengers_on_board' => (int) Trip::forCity($this->city())
                 ->live()->sum('passenger_count'),
             'generated_at' => now()->toIso8601String(),
         ]);

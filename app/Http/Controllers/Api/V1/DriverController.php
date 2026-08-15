@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Domain\Fleet\Enums\ShiftStatus;
+use App\Domain\Fleet\Models\Driver;
 use App\Domain\Fleet\Models\DriverShift;
 use App\Domain\Fleet\Services\BusQrService;
 use App\Domain\Network\Models\BusRoute;
@@ -232,7 +232,7 @@ class DriverController extends Controller
         ]);
     }
 
-    private function driver(Request $request): \App\Domain\Fleet\Models\Driver
+    private function driver(Request $request): Driver
     {
         $driver = $request->user()->driver;
 

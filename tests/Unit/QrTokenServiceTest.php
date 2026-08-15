@@ -2,6 +2,8 @@
 
 namespace Tests\Unit;
 
+use App\Domain\Fleet\Models\Bus;
+use App\Domain\Fleet\Services\BusQrService;
 use App\Domain\Fleet\Services\QrTokenService;
 use App\Support\Exceptions\QrValidationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -164,21 +166,21 @@ class QrTokenServiceTest extends TestCase
      */
     public function test_a_hostile_public_id_resolves_to_unknown_code_without_touching_the_schema(): void
     {
-        $bus = \App\Domain\Fleet\Models\Bus::factory()->create();
-        app(\App\Domain\Fleet\Services\BusQrService::class)->issueFor($bus);
+        $bus = Bus::factory()->create();
+        app(BusQrService::class)->issueFor($bus);
 
         $hostile = "'; DROP TABLE buses;--";
         $raw = $this->tokens->issue($hostile, $this->secret);
 
         try {
-            app(\App\Domain\Fleet\Services\BusQrService::class)->resolveScan($raw);
+            app(BusQrService::class)->resolveScan($raw);
             $this->fail('A non-existent public id must be rejected.');
         } catch (QrValidationException $e) {
             $this->assertSame(__('errors.qr_unknown_code'), $e->getMessage());
         }
 
         // The table is still there, with its row.
-        $this->assertSame(1, \App\Domain\Fleet\Models\Bus::count());
+        $this->assertSame(1, Bus::count());
     }
 
     public function test_a_deep_link_url_is_accepted_as_a_token(): void

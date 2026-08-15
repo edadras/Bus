@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Domain\Analytics\Services\DashboardService;
+use App\Domain\Operations\Models\Trip;
 use App\Domain\Operations\Services\LiveStateStore;
 use App\Http\Controllers\Controller;
 use App\Support\Api\ApiResponse;
@@ -44,7 +45,7 @@ class DashboardController extends Controller
 
         $tripIds = array_column($buses, 'trip_id');
 
-        $crews = \App\Domain\Operations\Models\Trip::whereIn('id', $tripIds)
+        $crews = Trip::whereIn('id', $tripIds)
             ->with(['driver.user:id,first_name,last_name,display_name,mobile'])
             ->get()
             ->keyBy('id');
