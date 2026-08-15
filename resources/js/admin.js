@@ -89,6 +89,12 @@ Alpine.data('adminShell', () => ({
     reply: { body: '', internal: false },
 
     qrModal: null,
+
+    // Bus↔driver assignments. Without one a driver cannot open a shift, so
+    // this is the step that actually puts a bus on the road.
+    assignmentModal: null,
+    assignments: [],
+    assignmentForm: { driver_uuid: '', starts_on: '', ends_on: '', busy: false, error: null },
     qrCountdown: 0,
 
     occupancy: {},
@@ -495,6 +501,79 @@ Alpine.data('adminShell', () => ({
     },
 
     // ── drivers ─────────────────────────────────────────────────────────
+    async openAssignments(bus) {
+        this.assignmentModal = bus;
+        this.assignments = [];
+        this.assignmentForm = {
+            driver_uuid: '',
+            // Defaulting to today is what an operator means nine times in ten,
+            // and a future date is a deliberate choice rather than a typo.
+            starts_on: new Date().toISOString().slice(0, 10),
+            ends_on: '',
+            busy: false,
+            error: null,
+        };
+
+        // The driver list may not have been loaded yet if the operator came
+        // straight to Fleet.
+        if (!this.drivers.length) await this.loadDrivers().catch(() => {});
+
+        await this.loadAssignments();
+    },
+
+    async loadAssignments() {
+        if (!this.assignmentModal) return;
+
+        const { data } = await api.get(`/admin/fleet/buses/${this.assignmentModal.uuid}/assignments`);
+        this.assignments = data;
+    },
+
+    /** Only drivers who could actually take a bus are offered. */
+    get assignableDrivers() {
+        return this.drivers.filter((driver) => driver.status === 'active');
+    },
+
+    async submitAssignment() {
+        this.assignmentForm.busy = true;
+        this.assignmentForm.error = null;
+
+        try {
+            await api.post(`/admin/fleet/buses/${this.assignmentModal.uuid}/assignments`, {
+                driver_uuid: this.assignmentForm.driver_uuid,
+                starts_on: this.assignmentForm.starts_on,
+                ends_on: this.assignmentForm.ends_on || null,
+            });
+
+            window.toast?.(t('admin.fleet.assignment_added'), 'success');
+
+            this.assignmentForm.driver_uuid = '';
+            this.assignmentForm.ends_on = '';
+
+            await this.loadAssignments();
+            // The bus row shows its current driver, so it is now stale.
+            await this.loadFleet();
+        } catch (error) {
+            this.assignmentForm.error = error.message;
+        } finally {
+            this.assignmentForm.busy = false;
+        }
+    },
+
+    async revokeAssignment(assignment) {
+        if (!confirm(t('admin.fleet.assignment_revoke_confirm'))) return;
+
+        try {
+            await api.delete(`/admin/fleet/assignments/${assignment.id}`);
+
+            window.toast?.(t('admin.fleet.assignment_revoked'), 'success');
+
+            await this.loadAssignments();
+            await this.loadFleet();
+        } catch (error) {
+            window.toast?.(error.message, 'error');
+        }
+    },
+
     async loadDrivers() {
         const { data } = await api.get('/admin/drivers', { query: this.filters.drivers });
         this.drivers = data;

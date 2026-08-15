@@ -38,6 +38,7 @@
                                 <div class="flex gap-1">
                                     <button type="button" class="btn btn-ghost btn-sm" @click="openBusForm(bus)">{{ __('admin.common.edit') }}</button>
                                     <button type="button" class="btn btn-ghost btn-sm" @click="showQr(bus)">{{ __('admin.fleet.qr_button') }}</button>
+                                    <button type="button" class="btn btn-ghost btn-sm" @click="openAssignments(bus)">{{ __('admin.fleet.assignments') }}</button>
                                 </div>
                             </td>
                         </tr>
@@ -74,3 +75,91 @@
         </div>
     </div>
 </section>
+
+{{-- ── Assignments ──────────────────────────────────────────────────────────
+     Without an assignment a driver cannot open a shift at all, so this is the
+     step that puts a bus on the road. --}}
+<div x-show="assignmentModal" x-cloak
+     class="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4"
+     @keydown.escape.window="assignmentModal = null">
+    <div class="glass-strong card w-full max-w-2xl" @click.outside="assignmentModal = null">
+        <div class="flex items-center gap-3">
+            <h3 class="text-base font-bold"
+                x-text="$t('admin.fleet.assignments_title', { number: $num(assignmentModal?.bus_number) })"></h3>
+            <button type="button" class="ms-auto text-ink-400 hover:text-ink-100"
+                    @click="assignmentModal = null">✕</button>
+        </div>
+
+        <p class="mt-2 text-xs leading-6 text-ink-400">{{ __('admin.fleet.assignments_note') }}</p>
+
+        <div class="mt-4 overflow-x-auto">
+            <table class="table text-sm">
+                <thead>
+                    <tr>
+                        <th>{{ __('admin.reports.driver') }}</th>
+                        <th>{{ __('admin.fleet.assignment_from') }}</th>
+                        <th>{{ __('admin.fleet.assignment_to') }}</th>
+                        <th>{{ __('admin.common.status') }}</th>
+                        <th>{{ __('admin.common.actions') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template x-for="item in assignments" :key="item.id">
+                        <tr>
+                            <td class="font-semibold" x-text="item.driver_name || '—'"></td>
+                            <td class="text-xs" x-text="$num(item.starts_on)"></td>
+                            <td class="text-xs" x-text="item.ends_on ? $num(item.ends_on) : '—'"></td>
+                            <td>
+                                <span class="badge"
+                                      :class="item.is_current ? 'badge-success' : 'badge-neutral'"
+                                      x-text="item.is_current
+                                          ? $t('admin.fleet.assignment_current')
+                                          : $t('admin.fleet.assignment_not_current')"></span>
+                            </td>
+                            <td>
+                                <button type="button" class="btn btn-ghost btn-sm"
+                                        x-show="item.is_active"
+                                        @click="revokeAssignment(item)">{{ __('admin.fleet.assignment_revoke') }}</button>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+
+        <p x-show="!assignments.length" class="py-6 text-center text-sm text-ink-500">
+            {{ __('admin.fleet.assignments_empty') }}
+        </p>
+
+        <form class="mt-4 grid gap-3 border-t border-white/5 pt-4 sm:grid-cols-4"
+              @submit.prevent="submitAssignment()">
+            <div class="sm:col-span-2">
+                <label class="field-label">{{ __('admin.reports.driver') }}</label>
+                <select class="field text-sm" x-model="assignmentForm.driver_uuid" required>
+                    <option value="">—</option>
+                    <template x-for="driver in assignableDrivers" :key="driver.uuid">
+                        <option :value="driver.uuid" x-text="driver.name"></option>
+                    </template>
+                </select>
+            </div>
+            <div>
+                <label class="field-label">{{ __('admin.fleet.assignment_from') }}</label>
+                <input type="date" class="field text-sm" x-model="assignmentForm.starts_on" required>
+            </div>
+            <div>
+                <label class="field-label">{{ __('admin.fleet.assignment_to') }}</label>
+                <input type="date" class="field text-sm" x-model="assignmentForm.ends_on">
+            </div>
+
+            <p x-show="assignmentForm.error" x-cloak x-text="assignmentForm.error"
+               class="text-xs text-red-400 sm:col-span-4"></p>
+
+            <div class="sm:col-span-4">
+                <button type="submit" class="btn btn-primary btn-sm" :disabled="assignmentForm.busy">
+                    <span x-show="!assignmentForm.busy">{{ __('admin.fleet.assignment_add') }}</span>
+                    <span x-show="assignmentForm.busy" x-cloak>{{ __('admin.common.saving') }}</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

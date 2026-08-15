@@ -203,6 +203,7 @@ Route::prefix('v1')->group(function (): void {
             Route::patch('buses/{bus}', [FleetController::class, 'update']);
             Route::get('buses/{bus}/qr', [FleetController::class, 'qrCode']);
             Route::post('buses/{bus}/qr/regenerate', [FleetController::class, 'regenerateQr']);
+            Route::get('buses/{bus}/assignments', [FleetController::class, 'assignments']);
             Route::post('buses/{bus}/assignments', [FleetController::class, 'assignDriver']);
             Route::delete('assignments/{assignment}', [FleetController::class, 'revokeAssignment']);
         });

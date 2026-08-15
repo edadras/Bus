@@ -36,7 +36,10 @@ class AuditLogger
             'context' => $context ?: null,
             'ip_address' => request()->ip(),
             'user_agent' => substr((string) request()->userAgent(), 0, 500),
-            'created_at' => now(),
+            // Deliberately not passing created_at: Eloquent stamps it, and
+            // mass-assigning a guarded column throws wherever
+            // preventSilentlyDiscardingAttributes is on — which is every
+            // environment except production.
         ]);
     }
 

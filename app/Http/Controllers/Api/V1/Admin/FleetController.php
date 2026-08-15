@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Api\V1\Admin;
 use App\Domain\Fleet\Enums\BusStatus;
 use App\Domain\Fleet\Models\Bus;
 use App\Domain\Fleet\Models\BusAssignment;
+use App\Domain\Fleet\Models\Driver;
 use App\Domain\Fleet\Services\BusQrService;
 use App\Domain\Identity\Services\AuditLogger;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\V1\AssignmentResource;
 use App\Http\Resources\V1\BusResource;
 use App\Support\Api\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -64,7 +66,10 @@ class FleetController extends Controller
         $this->audit->log('fleet.bus.created', $bus, $request->user(), after: $validated);
 
         return ApiResponse::success([
-            'bus' => (new BusResource($bus))->resolve(),
+            // Refreshed so the columns the database defaulted — status above
+            // all — are populated. Without it the resource reads a null enum
+            // and the whole response 500s on a bus created without a status.
+            'bus' => (new BusResource($bus->refresh()))->resolve(),
             'qr' => ['public_id' => $qr->public_id, 'version' => $qr->version],
         ], status: 201);
     }
@@ -138,27 +143,48 @@ class FleetController extends Controller
     {
         abort_unless($bus->city_id === $this->city()->id, 404);
 
+        // Addressed by uuid like everything else on the admin surface; the
+        // numeric driver id is never published.
         $validated = $request->validate([
-            'driver_id' => ['required', 'integer', 'exists:drivers,id'],
+            'driver_uuid' => ['required', 'string', 'exists:drivers,uuid'],
             'bus_line_id' => ['nullable', 'integer', 'exists:bus_lines,id'],
             'starts_on' => ['required', 'date'],
             'ends_on' => ['nullable', 'date', 'after_or_equal:starts_on'],
         ]);
 
-        $assignment = BusAssignment::create($validated + [
+        $driver = Driver::forCity($this->city())->where('uuid', $validated['driver_uuid'])->firstOrFail();
+
+        $assignment = BusAssignment::create([
             'bus_id' => $bus->id,
+            'driver_id' => $driver->id,
+            'bus_line_id' => $validated['bus_line_id'] ?? null,
+            'starts_on' => $validated['starts_on'],
+            'ends_on' => $validated['ends_on'] ?? null,
             'is_active' => true,
             'created_by' => $request->user()->id,
         ]);
 
         $this->audit->log('fleet.bus.driver_assigned', $bus, $request->user(), after: $validated);
 
-        return ApiResponse::success([
-            'assignment_id' => $assignment->id,
-            'driver_id' => $assignment->driver_id,
-            'starts_on' => $assignment->starts_on->toDateString(),
-            'ends_on' => $assignment->ends_on?->toDateString(),
-        ], status: 201);
+        return ApiResponse::success(
+            (new AssignmentResource($assignment->load('driver.user', 'line')))->resolve(),
+            status: 201,
+        );
+    }
+
+    /** Assignments for one bus — what the panel lists beside it. */
+    public function assignments(Bus $bus): JsonResponse
+    {
+        abort_unless($bus->city_id === $this->city()->id, 404);
+
+        $assignments = $bus->assignments()
+            ->with(['driver.user:id,first_name,last_name,display_name', 'line'])
+            ->orderByDesc('is_active')
+            ->orderByDesc('starts_on')
+            ->limit(50)
+            ->get();
+
+        return ApiResponse::success(AssignmentResource::collection($assignments)->resolve());
     }
 
     public function revokeAssignment(Request $request, BusAssignment $assignment): JsonResponse
