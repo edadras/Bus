@@ -15,6 +15,7 @@ use App\Support\Api\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\Rule;
 
 /**
@@ -237,5 +238,33 @@ class DriverAdminController extends Controller
         ]);
 
         return ApiResponse::success(['id' => $document->id, 'type' => $document->type->value], status: 201);
+    }
+
+    /**
+     * A short-lived signed URL for one document.
+     *
+     * The files sit on the private disk — a licence scan and a national card
+     * are not things to serve from a guessable path — so approving a driver
+     * means looking at the document through a link that expires.
+     */
+    public function document(Request $request, Driver $driver, int $documentId): JsonResponse
+    {
+        abort_unless($driver->city_id === $this->city()->id, 404);
+
+        $document = $driver->documents()->findOrFail($documentId);
+
+        $this->audit->log('fleet.driver.document_viewed', $driver, $request->user(), context: [
+            'document_id' => $document->id,
+            'type' => $document->type->value,
+        ]);
+
+        return ApiResponse::success([
+            'url' => URL::temporarySignedRoute(
+                'admin.drivers.document.download',
+                now()->addMinutes(10),
+                ['driver' => $driver->uuid, 'document' => $document->id],
+            ),
+            'expires_in' => 600,
+        ]);
     }
 }

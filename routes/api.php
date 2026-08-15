@@ -215,6 +215,7 @@ Route::prefix('v1')->group(function (): void {
             Route::get('{driver}', [DriverAdminController::class, 'show']);
             Route::patch('{driver}', [DriverAdminController::class, 'update']);
             Route::post('{driver}/status', [DriverAdminController::class, 'changeStatus']);
+            Route::get('{driver}/documents/{document}', [DriverAdminController::class, 'document']);
             Route::post('{driver}/documents', [DriverAdminController::class, 'uploadDocument'])
                 ->middleware('throttle:uploads');
         });

@@ -97,6 +97,11 @@ Alpine.data('adminShell', () => ({
 
     qrModal: null,
 
+    // The driver dossier: licence, documents, assignments and recent shifts.
+    // Approving someone to carry passengers means reading all four.
+    driverModal: null,
+    driverUpload: { type: 'license', issued_at: '', expires_at: '', busy: false, error: null },
+
     // Bus↔driver assignments. Without one a driver cannot open a shift, so
     // this is the step that actually puts a bus on the road.
     assignmentModal: null,
@@ -584,6 +589,106 @@ Alpine.data('adminShell', () => ({
         this.drivers = data;
     },
 
+    async openDriver(driver) {
+        this.driverUpload = { type: 'license', issued_at: '', expires_at: '', busy: false, error: null };
+
+        try {
+            const { data } = await api.get(`/admin/drivers/${driver.uuid}`);
+            this.driverModal = { ...data, uuid: driver.uuid };
+        } catch (error) {
+            window.toast?.(error.message, 'error');
+        }
+    },
+
+    closeDriver() {
+        this.driverModal = null;
+    },
+
+    openDriverEditForm() {
+        const driver = this.driverModal?.driver;
+
+        if (!driver) return;
+
+        this.openForm({
+            title: t('admin.drivers.edit_title', { name: driver.name }),
+            fields: [
+                { name: 'license_number', label: t('admin.forms.driver.license_number') },
+                { name: 'license_class', label: t('admin.forms.driver.license_class') },
+                { name: 'license_expires_at', label: t('admin.forms.driver.license_expires_at'), type: 'date' },
+                { name: 'employee_code', label: t('admin.forms.driver.employee_code') },
+                { name: 'contract_ends_at', label: t('admin.forms.driver.contract_ends_at'), type: 'date' },
+                { name: 'notes', label: t('admin.forms.bus.notes'), type: 'textarea', wide: true },
+            ],
+            data: {
+                license_number: driver.license_number,
+                license_class: driver.license_class,
+                license_expires_at: driver.license_expires_at,
+                employee_code: driver.employee_code,
+                contract_ends_at: driver.contract_ends_at,
+                notes: driver.notes,
+            },
+            submit: (data) => api.patch(`/admin/drivers/${this.driverModal.uuid}`, data),
+            onDone: async () => {
+                window.toast?.(t('admin.common.saved'), 'success');
+                await Promise.all([
+                    this.openDriver({ uuid: this.driverModal.uuid }),
+                    this.loadDrivers(),
+                ]);
+            },
+        });
+    },
+
+    /**
+     * Documents go up as multipart, so this is a hand-rolled form rather than
+     * the schema-driven modal, which speaks JSON.
+     */
+    async uploadDriverDocument(event) {
+        const input = event.target.querySelector('input[type="file"]');
+        const file = input?.files?.[0];
+
+        if (!file) return;
+
+        const body = new FormData();
+        body.append('type', this.driverUpload.type);
+        body.append('file', file);
+        if (this.driverUpload.issued_at) body.append('issued_at', this.driverUpload.issued_at);
+        if (this.driverUpload.expires_at) body.append('expires_at', this.driverUpload.expires_at);
+
+        this.driverUpload.busy = true;
+        this.driverUpload.error = null;
+
+        try {
+            await api.post(`/admin/drivers/${this.driverModal.uuid}/documents`, body);
+
+            window.toast?.(t('admin.drivers.document_uploaded'), 'success');
+
+            input.value = '';
+            this.driverUpload.issued_at = '';
+            this.driverUpload.expires_at = '';
+
+            await this.openDriver({ uuid: this.driverModal.uuid });
+        } catch (error) {
+            this.driverUpload.error = error.details
+                ? Object.values(error.details).flat().join(' ')
+                : error.message;
+        } finally {
+            this.driverUpload.busy = false;
+        }
+    },
+
+    /**
+     * Documents live on the private disk, so viewing one means asking the
+     * server for a link that expires — never a guessable path.
+     */
+    async viewDriverDocument(document_) {
+        try {
+            const { data } = await api.get(`/admin/drivers/${this.driverModal.uuid}/documents/${document_.id}`);
+            window.open(data.url, '_blank', 'noopener');
+        } catch (error) {
+            window.toast?.(error.message, 'error');
+        }
+    },
+
     async changeDriverStatus(driver, status) {
         const reason = status === 'suspended' ? prompt(t('admin.drivers.suspend_reason_prompt')) : null;
 
@@ -593,6 +698,10 @@ Alpine.data('adminShell', () => ({
             await api.post(`/admin/drivers/${driver.uuid}/status`, { status, reason });
             window.toast?.(t('admin.drivers.status_updated'), 'success');
             await this.loadDrivers();
+
+            // The dossier may be open on this very driver, in which case its
+            // badge is now wrong.
+            if (this.driverModal?.uuid === driver.uuid) await this.openDriver(driver);
         } catch (error) {
             window.toast?.(error.message, 'error');
         }

@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\Fleet\Models\Driver;
 use App\Domain\Support\Models\Complaint;
 use App\Http\Controllers\Web\ClientAppController;
 use App\Http\Controllers\Web\LandingController;
@@ -40,6 +41,34 @@ Route::get('/sw.js', [ClientAppController::class, 'serviceWorker'])->name('pwa.s
 Route::get('/offline', [ClientAppController::class, 'offline'])->name('pwa.offline');
 
 /*
+| Signed, short-lived downloads for files held on the private disk. Never a
+| public path: complaint photos routinely contain faces, plates and interiors,
+| and a driver's documents are their licence and national card.
+|
+| These must be registered BEFORE the admin shell below, which claims
+| `/admin/{any}` so that a bookmarked panel URL reloads. First match wins, so a
+| download registered after it would silently serve the panel's HTML instead of
+| the file — with the `signed` middleware never running at all.
+*/
+Route::get('/admin/complaints/{complaint}/attachments/{attachment}/download', function (
+    Complaint $complaint,
+    int $attachment,
+) {
+    $file = $complaint->attachments()->findOrFail($attachment);
+
+    return Storage::disk('local')->download($file->file_path, $file->original_name);
+})->middleware('signed')->name('admin.complaints.attachment.download');
+
+Route::get('/admin/drivers/{driver}/documents/{document}/download', function (
+    Driver $driver,
+    int $document,
+) {
+    $file = $driver->documents()->findOrFail($document);
+
+    return Storage::disk('local')->download($file->file_path, $file->original_name);
+})->middleware('signed')->name('admin.drivers.document.download');
+
+/*
 | Admin panel shell. Authentication happens against the API from the browser;
 | these routes only serve the application shell.
 */
@@ -54,16 +83,3 @@ Route::prefix('admin')->group(function (): void {
 Route::get('/payments/{payment}/sandbox', [PaymentReturnController::class, 'sandbox'])->name('payments.sandbox');
 Route::get('/payments/{payment}/callback', [PaymentReturnController::class, 'callback'])->name('payments.callback');
 Route::get('/payments/{payment}/pending', [PaymentReturnController::class, 'pending'])->name('payments.pending');
-
-/*
-| Signed, short-lived download for a complaint attachment. Never a public path:
-| these files routinely contain faces, plates and interiors.
-*/
-Route::get('/admin/complaints/{complaint}/attachments/{attachment}/download', function (
-    Complaint $complaint,
-    int $attachment,
-) {
-    $file = $complaint->attachments()->findOrFail($attachment);
-
-    return Storage::disk('local')->download($file->file_path, $file->original_name);
-})->middleware('signed')->name('admin.complaints.attachment.download');
