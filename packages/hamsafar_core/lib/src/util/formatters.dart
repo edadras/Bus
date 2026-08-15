@@ -1,18 +1,38 @@
 import 'package:intl/intl.dart';
 
+import '../l10n/app_strings.dart';
+
 /// Presentation helpers.
 ///
 /// The product is Persian-first, so numbers are rendered with Persian digits
 /// and money is displayed in Toman while the API always speaks in Rial minor
 /// units. Doing that conversion in exactly one place is what keeps a
 /// ten-times-too-large price off the screen.
+///
+/// The active locale is a static rather than a parameter. These are called from
+/// build methods all over three apps — hundreds of call sites — and threading a
+/// locale through every one would buy nothing: there is exactly one active
+/// locale per process, and `LocaleController` keeps this in step with it.
 abstract final class Format {
+  /// Kept in step with `localeProvider` by each app's root widget.
+  static String locale = AppStrings.fallbackLocale;
+
+  static AppStrings get _t => AppStrings(locale);
+
+  static bool get _isPersian => locale != 'en';
+
   static const _persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
 
   /// Display unit for money; matches config('wallet.display_unit') server-side.
   static const displayUnit = 'toman';
 
+  /// Latin digits mapped to the locale's numerals.
+  ///
+  /// English is left alone: Persian numerals inside an English sentence are
+  /// unreadable to the person who asked for English.
   static String digits(String input) {
+    if (!_isPersian) return input;
+
     final buffer = StringBuffer();
 
     for (final rune in input.runes) {
@@ -53,9 +73,11 @@ abstract final class Format {
   /// formatter exists rather than calling NumberFormat directly.
   static const _thousandsSeparator = '٬';
 
-  static String number(num? value) => digits(
-        NumberFormat.decimalPattern('en').format(value ?? 0).replaceAll(',', _thousandsSeparator),
-      );
+  static String number(num? value) {
+    final formatted = NumberFormat.decimalPattern('en').format(value ?? 0);
+
+    return _isPersian ? digits(formatted.replaceAll(',', _thousandsSeparator)) : formatted;
+  }
 
   /// Minor units (rial) formatted for display, in Toman by default.
   static String money(int? minorUnits, {bool withSuffix = true}) {
@@ -64,14 +86,14 @@ abstract final class Format {
     final value = displayUnit == 'toman' ? minorUnits ~/ 10 : minorUnits;
     final formatted = number(value);
 
-    return withSuffix ? '$formatted تومان' : formatted;
+    return withSuffix ? '$formatted ${_t('unit.$displayUnit')}' : formatted;
   }
 
   static String minutes(int? seconds) {
     if (seconds == null) return '—';
-    if (seconds < 60) return 'کمتر از یک دقیقه';
+    if (seconds < 60) return _t('unit.under_a_minute');
 
-    return '${number((seconds / 60).round())} دقیقه';
+    return _t('unit.minutes', {'count': number((seconds / 60).round())});
   }
 
   /// Compact form for the ETA badge, where only the number fits.
@@ -82,8 +104,8 @@ abstract final class Format {
     if (meters == null) return '—';
 
     return meters < 1000
-        ? '${number(meters.round())} متر'
-        : '${digits((meters / 1000).toStringAsFixed(1))} کیلومتر';
+        ? _t('unit.metres', {'count': number(meters.round())})
+        : _t('unit.kilometres', {'count': digits((meters / 1000).toStringAsFixed(1))});
   }
 
   static String time(DateTime? at) =>
@@ -97,10 +119,12 @@ abstract final class Format {
 
     final difference = DateTime.now().difference(at);
 
-    if (difference.inSeconds < 60) return 'چند لحظه پیش';
-    if (difference.inMinutes < 60) return '${number(difference.inMinutes)} دقیقه پیش';
-    if (difference.inHours < 24) return '${number(difference.inHours)} ساعت پیش';
-    if (difference.inDays < 30) return '${number(difference.inDays)} روز پیش';
+    if (difference.inSeconds < 60) return _t('unit.moments_ago');
+    if (difference.inMinutes < 60) {
+      return _t('unit.minutes_ago', {'count': number(difference.inMinutes)});
+    }
+    if (difference.inHours < 24) return _t('unit.hours_ago', {'count': number(difference.inHours)});
+    if (difference.inDays < 30) return _t('unit.days_ago', {'count': number(difference.inDays)});
 
     return dateTime(at);
   }
@@ -111,9 +135,11 @@ abstract final class Format {
     final hours = seconds ~/ 3600;
     final mins = (seconds % 3600) ~/ 60;
 
-    if (hours > 0) return '${number(hours)} ساعت و ${number(mins)} دقیقه';
+    if (hours > 0) {
+      return _t('unit.hours_and_minutes', {'hours': number(hours), 'minutes': number(mins)});
+    }
 
-    return '${number(mins)} دقیقه';
+    return _t('unit.minutes', {'count': number(mins)});
   }
 
   /// Normalise a typed mobile number to the canonical 98XXXXXXXXXX form,
@@ -130,4 +156,8 @@ abstract final class Format {
   }
 
   static bool isValidMobile(String normalized) => RegExp(r'^989\d{9}$').hasMatch(normalized);
+
+  /// Screens call this rather than reaching for the table directly, so a string
+  /// that sits beside a formatted number stays in one place.
+  static String tr(String key, [Map<String, Object?> params = const {}]) => _t(key, params);
 }
