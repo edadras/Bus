@@ -25,7 +25,8 @@ class _TripSheet extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         border: Border(top: BorderSide(color: AppColors.glassBorder)),
       ),
-      padding: const EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.md, AppSpacing.xl, AppSpacing.xl),
+      padding:
+          const EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.md, AppSpacing.xl, AppSpacing.xl),
       child: SafeArea(
         top: false,
         child: Column(
@@ -43,7 +44,6 @@ class _TripSheet extends StatelessWidget {
               ),
             ),
             const SizedBox(height: AppSpacing.xl),
-
             Row(
               children: [
                 Expanded(
@@ -73,9 +73,7 @@ class _TripSheet extends StatelessWidget {
                   const StatusBadge(label: 'در حال حرکت', colorToken: 'success'),
               ],
             ),
-
             const SizedBox(height: AppSpacing.xl),
-
             Row(
               children: [
                 Expanded(
@@ -117,7 +115,6 @@ class _TripSheet extends StatelessWidget {
                 ),
               ],
             ),
-
             if (bus.destination != null) ...[
               const SizedBox(height: AppSpacing.lg),
               GlassCard(
@@ -133,7 +130,6 @@ class _TripSheet extends StatelessWidget {
                 ),
               ),
             ],
-
             const SizedBox(height: AppSpacing.lg),
             Text(
               'آخرین به‌روزرسانی موقعیت: ${Format.relative(bus.updatedAt)}',

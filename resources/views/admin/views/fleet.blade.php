@@ -9,7 +9,8 @@
             <option value="maintenance">در تعمیرگاه</option>
             <option value="out_of_service">خارج از سرویس</option>
         </select>
-        <span class="ms-auto text-xs text-ink-400" x-text="`${$num(buses.length)} اتوبوس`"></span>
+        <button type="button" class="btn btn-primary btn-sm ms-auto" @click="openBusForm()">+ اتوبوس جدید</button>
+        <span class="text-xs text-ink-400" x-text="`${$num(buses.length)} اتوبوس`"></span>
     </div>
 
     <div class="glass card !p-0">
@@ -34,7 +35,10 @@
                             <td class="text-xs text-ink-400"
                                 x-text="bus.last_ping_at ? $time(bus.last_ping_at) : 'بدون گزارش'"></td>
                             <td>
-                                <button type="button" class="btn btn-ghost btn-sm" @click="showQr(bus)">کد QR</button>
+                                <div class="flex gap-1">
+                                    <button type="button" class="btn btn-ghost btn-sm" @click="openBusForm(bus)">ویرایش</button>
+                                    <button type="button" class="btn btn-ghost btn-sm" @click="showQr(bus)">کد QR</button>
+                                </div>
                             </td>
                         </tr>
                     </template>

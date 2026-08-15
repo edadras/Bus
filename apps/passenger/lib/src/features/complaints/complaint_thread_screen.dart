@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hamsafar_core/hamsafar_core.dart';
 
-
 final _complaintProvider = FutureProvider.family<Complaint, String>(
   (ref, uuid) => ref.watch(transitApiProvider).complaint(uuid),
 );
@@ -94,14 +93,11 @@ class _ComplaintThreadScreenState extends ConsumerState<ComplaintThreadScreen> {
                       ],
                     ),
                   ),
-
                   const SizedBox(height: AppSpacing.lg),
-
                   for (final message in data.messages) ...[
                     _MessageBubble(message: message),
                     const SizedBox(height: AppSpacing.sm),
                   ],
-
                   if (data.messages.isEmpty)
                     const EmptyState(
                       icon: Icons.mark_chat_read_outlined,
@@ -110,7 +106,6 @@ class _ComplaintThreadScreenState extends ConsumerState<ComplaintThreadScreen> {
                 ],
               ),
             ),
-
             if (data.isOpen)
               SafeArea(
                 child: Padding(
@@ -164,9 +159,7 @@ class _MessageBubble extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
           decoration: BoxDecoration(
-            color: fromSupport
-                ? AppColors.brand500.withValues(alpha: 0.16)
-                : AppColors.glassFill,
+            color: fromSupport ? AppColors.brand500.withValues(alpha: 0.16) : AppColors.glassFill,
             borderRadius: BorderRadius.only(
               topLeft: const Radius.circular(16),
               topRight: const Radius.circular(16),
@@ -174,9 +167,8 @@ class _MessageBubble extends StatelessWidget {
               bottomRight: Radius.circular(fromSupport ? 4 : 16),
             ),
             border: Border.all(
-              color: fromSupport
-                  ? AppColors.brand500.withValues(alpha: 0.28)
-                  : AppColors.glassBorder,
+              color:
+                  fromSupport ? AppColors.brand500.withValues(alpha: 0.28) : AppColors.glassBorder,
             ),
           ),
           child: Column(

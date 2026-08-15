@@ -98,7 +98,7 @@ the passenger's screen. See [`database/data/bandar-abbas/README.md`](database/da
 |---|---|
 | [Architecture](docs/architecture.md) | System, backend, apps, admin, real-time, Redis, scaling |
 | [Database](docs/database.md) | ERD, every table and column, relationships, indexes |
-| [API reference](docs/api.md) | All 97 endpoints, envelope, error codes, auth |
+| [API reference](docs/api.md) | All 109 endpoints, envelope, error codes, auth |
 | [Security](docs/security.md) | Auth, RBAC, QR, financial integrity, privacy |
 | [Domain design](docs/domain.md) | Wallet, fare, GPS, ETA, ridership, merchant, complaints |
 | [Frontend](docs/frontend.md) | Design system, screens, PWA, admin |
@@ -116,12 +116,13 @@ php artisan transit:metrics:rollup                                # dashboard fa
 php artisan transit:rides:close-abandoned                         # reap open rides
 php artisan transit:trips:close-stale                             # reap dead trips
 php artisan transit:prune:locations                               # retention
+php artisan webpush:vapid                                         # push key pair
 ```
 
 ## Tests
 
 ```bash
-php artisan test                       # 161 PHP tests
-make apps-test                         # 33 Dart tests
+php artisan test                       # 187 PHP tests
+make apps-test                         # 36 Dart tests
 make apps-analyze                      # static analysis, all four packages
 ```

@@ -184,8 +184,7 @@ class _ComplaintFormScreenState extends ConsumerState<_ComplaintFormScreen> {
 
     try {
       final attachments = <MultipartFile>[
-        for (final photo in _photos)
-          await MultipartFile.fromFile(photo.path, filename: photo.name),
+        for (final photo in _photos) await MultipartFile.fromFile(photo.path, filename: photo.name),
       ];
 
       await ref.read(transitApiProvider).submitComplaint(
@@ -238,7 +237,6 @@ class _ComplaintFormScreenState extends ConsumerState<_ComplaintFormScreen> {
                     onChanged: (value) => setState(() => _category = value),
                     validator: (value) => value == null ? 'یک دسته‌بندی انتخاب کنید.' : null,
                   ),
-
                   const SizedBox(height: AppSpacing.lg),
                   Text('موضوع', style: Theme.of(context).textTheme.labelMedium),
                   const SizedBox(height: AppSpacing.sm),
@@ -252,7 +250,6 @@ class _ComplaintFormScreenState extends ConsumerState<_ComplaintFormScreen> {
                     validator: (value) =>
                         (value == null || value.trim().length < 3) ? 'موضوع را وارد کنید.' : null,
                   ),
-
                   const SizedBox(height: AppSpacing.lg),
                   Text('شرح ماجرا', style: Theme.of(context).textTheme.labelMedium),
                   const SizedBox(height: AppSpacing.sm),
@@ -271,9 +268,7 @@ class _ComplaintFormScreenState extends ConsumerState<_ComplaintFormScreen> {
                 ],
               ),
             ),
-
             const SizedBox(height: AppSpacing.md),
-
             GlassCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -344,13 +339,13 @@ class _ComplaintFormScreenState extends ConsumerState<_ComplaintFormScreen> {
                         ),
                     ],
                   ),
-
                   const SizedBox(height: AppSpacing.lg),
                   SwitchListTile(
                     value: _attachLocation,
                     onChanged: (value) => setState(() => _attachLocation = value),
                     contentPadding: EdgeInsets.zero,
-                    title: Text('ارسال موقعیت مکانی', style: Theme.of(context).textTheme.titleSmall),
+                    title:
+                        Text('ارسال موقعیت مکانی', style: Theme.of(context).textTheme.titleSmall),
                     subtitle: Text(
                       'به کارشناس کمک می‌کند محل دقیق رویداد را تشخیص دهد.',
                       style: Theme.of(context).textTheme.labelSmall,
@@ -359,7 +354,6 @@ class _ComplaintFormScreenState extends ConsumerState<_ComplaintFormScreen> {
                 ],
               ),
             ),
-
             const SizedBox(height: AppSpacing.lg),
             FilledButton(
               onPressed: _submitting ? null : _submit,

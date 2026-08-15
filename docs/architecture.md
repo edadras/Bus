@@ -58,9 +58,9 @@ app/
 │   ├── Payment/            gateway abstraction, top-ups
 │   ├── Merchant/           terminals, payments, settlement
 │   ├── Support/            complaints
-│   ├── Analytics/          dashboard aggregation, rollups
+│   ├── Analytics/          dashboard aggregation, rollups, reports
 │   ├── Mapping/            provider abstraction
-│   └── Notifications/      arrival subscriptions
+│   └── Notifications/      arrival subscriptions, Web Push channel
 ├── Http/                   thin: controllers, requests, resources, middleware
 ├── Console/Commands/       operational + scheduled work
 └── Support/                geometry, money, API envelope, exceptions

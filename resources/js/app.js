@@ -1,10 +1,14 @@
 import Alpine from 'alpinejs';
 import { api, auth, city, formatMoney, formatNumber, formatMinutes, formatTime, formatDateTime, ApiError } from './lib/api.js';
+import { enablePush, disablePush, syncPush, pushSupported, pushPermission } from './lib/push.js';
 
 window.Alpine = Alpine;
 
 // Shared helpers, available to every Alpine component without re-importing.
-window.hamsafar = { api, auth, city, formatMoney, formatNumber, formatMinutes, formatTime, formatDateTime, ApiError };
+window.hamsafar = {
+    api, auth, city, formatMoney, formatNumber, formatMinutes, formatTime, formatDateTime, ApiError,
+    push: { enable: enablePush, disable: disablePush, supported: pushSupported, permission: pushPermission },
+};
 
 Alpine.magic('money', () => formatMoney);
 Alpine.magic('num', () => formatNumber);
@@ -34,3 +38,7 @@ export function toast(message, type = 'info') {
 window.toast = toast;
 
 Alpine.start();
+
+// Refresh an already-granted push subscription once the worker is ready.
+// Never prompts: enrolment stays a deliberate user action.
+if (pushSupported()) syncPush();

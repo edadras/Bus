@@ -1,8 +1,8 @@
 # Testing
 
 ```bash
-php artisan test          # 161 PHP tests
-make apps-test            # 33 Dart tests
+php artisan test          # 187 PHP tests
+make apps-test            # 36 Dart tests
 make apps-analyze         # static analysis across all four Dart packages
 ```
 
@@ -135,6 +135,28 @@ The cases that break naive distance-over-speed maths:
 - another city's stop is not reachable
 - every page renders its body, not just its head; RTL and Persian are declared
 
+### Notifications and push — `tests/Feature/Api/NotificationApiTest.php` (15)
+
+- the inbox lists only the caller's own notifications and reports an unread count
+- another account's notification cannot be marked read, and its device cannot be
+  unsubscribed by guessing the endpoint
+- the VAPID endpoint publishes the public half and never the private one, and
+  reports `enabled: false` on a deployment with no keys, so no client raises a
+  permission prompt it cannot honour
+- re-registering the same endpoint keeps exactly one row and rotates its keys
+- a plain-`http` endpoint is refused
+- every notification goes out over both the inbox and push, and carries a
+  collapse tag so repeats replace rather than stack
+
+### Reports and occupancy — `tests/Feature/Api/AdminReportsTest.php` (11)
+
+- each report counts only its period, and an inverted range is refused
+- driver figures roll up from shifts, which is what a duty roster is built from
+- **the passenger report contains no identifier of any single rider**
+- **occupancy leaks neither identity nor position with exactly one rider aboard**
+- revenue needs `finance.manage`; occupancy needs `operations.live_map`; a
+  transport manager gets one and not the other
+
 ### Geometry — `tests/Unit/GeoTest.php` (11)
 
 Tested against known distances rather than against itself: haversine against a
@@ -142,7 +164,7 @@ real 11.5 km city pair, one degree of latitude, bearings, segment projection and
 clamping, polyline length and snapping, and that the bounding box never
 under-covers its radius.
 
-### Flutter (33)
+### Flutter (36)
 
 `packages/hamsafar_core` — formatters (rial→toman, Persian digits and
 separator, mobile normalisation across six input forms, ETA never showing zero

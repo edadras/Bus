@@ -9,7 +9,8 @@
             <option value="suspended">تعلیق‌شده</option>
             <option value="inactive">غیرفعال</option>
         </select>
-        <span class="ms-auto text-xs text-ink-400" x-text="`${$num(drivers.length)} راننده`"></span>
+        <button type="button" class="btn btn-primary btn-sm ms-auto" @click="openDriverForm()">+ راننده جدید</button>
+        <span class="text-xs text-ink-400" x-text="`${$num(drivers.length)} راننده`"></span>
     </div>
 
     <div class="glass card !p-0">

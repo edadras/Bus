@@ -106,4 +106,40 @@ void main() {
       expect(config.center.lat, isNot(0));
     });
   });
+
+  group('AppNotification', () {
+    test('parses an inbox entry', () {
+      final notification = AppNotification.fromJson(const {
+        'id': '9c1e-uuid',
+        'type': 'bus_approaching',
+        'title': 'اتوبوس نزدیک است',
+        'body': 'خط ۱ تا ۳ دقیقه دیگر می‌رسد.',
+        'data': {'line_code': '1', 'minutes': 3},
+        'read': false,
+        'created_at': '2026-08-15T08:30:00+00:00',
+      });
+
+      expect(notification.id, '9c1e-uuid');
+      expect(notification.type, 'bus_approaching');
+      expect(notification.read, isFalse);
+      expect(notification.data['minutes'], 3);
+      expect(notification.createdAt, isNotNull);
+    });
+
+    test('an unknown payload still renders rather than throwing', () {
+      final notification = AppNotification.fromJson(const {'id': 'x'});
+
+      // A future notification type must never crash an installed app.
+      expect(notification.type, 'general');
+      expect(notification.title, isNull);
+      expect(notification.read, isFalse);
+    });
+
+    test('marking read produces a new value rather than mutating', () {
+      const original = AppNotification(id: 'x', type: 'general', read: false);
+
+      expect(original.copyWith(read: true).read, isTrue);
+      expect(original.read, isFalse);
+    });
+  });
 }

@@ -139,7 +139,6 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
                   ),
                   const SizedBox(height: AppSpacing.md),
                   Text(data.formattedBalance, style: theme.textTheme.displayMedium),
-
                   const SizedBox(height: AppSpacing.xl),
                   Text('شارژ سریع', style: theme.textTheme.labelMedium),
                   const SizedBox(height: AppSpacing.sm),
@@ -174,14 +173,12 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
               ),
             ),
           ),
-
           const SizedBox(height: AppSpacing.lg),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
             child: Text('تراکنش‌های اخیر', style: theme.textTheme.titleSmall),
           ),
           const SizedBox(height: AppSpacing.sm),
-
           transactions.when(
             loading: () => const Column(
               children: [
@@ -229,9 +226,8 @@ class _TransactionTile extends StatelessWidget {
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              color: entry.isCredit
-                  ? AppColors.brand500.withValues(alpha: 0.15)
-                  : AppColors.glassFill,
+              color:
+                  entry.isCredit ? AppColors.brand500.withValues(alpha: 0.15) : AppColors.glassFill,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(

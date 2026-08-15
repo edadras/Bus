@@ -18,7 +18,20 @@ class ComplaintReplyNotification extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['database'];
+        return ['database', 'webpush'];
+    }
+
+    /** @return array<string, mixed> */
+    public function toWebPush(object $notifiable): array
+    {
+        $payload = $this->toArray($notifiable);
+
+        return [
+            'title' => $payload['title'],
+            'body' => $payload['body'],
+            'tag' => 'complaint:'.$this->complaint->uuid,
+            'url' => '/app/passenger',
+        ];
     }
 
     public function toArray(object $notifiable): array

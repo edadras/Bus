@@ -198,13 +198,10 @@ class _ActiveRideCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: AppSpacing.lg),
-
               Text(ride.lineName ?? 'خط نامشخص', style: theme.textTheme.headlineMedium),
               const SizedBox(height: 4),
               Text('مقصد: ${ride.destination ?? '—'}', style: theme.textTheme.bodySmall),
-
               const SizedBox(height: AppSpacing.xl),
-
               Row(
                 children: [
                   Expanded(
@@ -308,7 +305,8 @@ class _ScanPrompt extends ConsumerWidget {
                   color: AppColors.brand500.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(24),
                 ),
-                child: const Icon(Icons.qr_code_scanner_rounded, size: 38, color: AppColors.brand300),
+                child:
+                    const Icon(Icons.qr_code_scanner_rounded, size: 38, color: AppColors.brand300),
               ),
               const SizedBox(height: AppSpacing.xl),
               Text('پرداخت کرایه', style: theme.textTheme.titleLarge),
@@ -319,7 +317,6 @@ class _ScanPrompt extends ConsumerWidget {
                 style: theme.textTheme.bodySmall,
               ),
               const SizedBox(height: AppSpacing.xl),
-
               wallet.when(
                 loading: () => const ShimmerBox(height: 52),
                 error: (_, __) => const SizedBox.shrink(),
@@ -344,7 +341,6 @@ class _ScanPrompt extends ConsumerWidget {
                   ),
                 ),
               ),
-
               const SizedBox(height: AppSpacing.lg),
               FilledButton.icon(
                 onPressed: () async {
@@ -365,7 +361,6 @@ class _ScanPrompt extends ConsumerWidget {
             ],
           ),
         ),
-
         const SizedBox(height: AppSpacing.lg),
         const SampleDataNotice(),
       ],

@@ -15,7 +15,10 @@
     <div class="glass card">
         <div class="flex items-center justify-between">
             <h2 class="text-sm font-bold">قوانین کرایه</h2>
-            <span class="text-[11px] text-ink-500">بالاترین اولویت برنده است</span>
+            <div class="flex items-center gap-3">
+                <span class="text-[11px] text-ink-500">بالاترین اولویت برنده است</span>
+                <button type="button" class="btn btn-primary btn-sm" @click="openFareRuleForm()">+ قانون جدید</button>
+            </div>
         </div>
         <div class="table-scroll mt-4">
             <table class="table">
@@ -24,7 +27,7 @@
                 </thead>
                 <tbody>
                     <template x-for="rule in fareRules" :key="rule.id">
-                        <tr>
+                        <tr class="cursor-pointer" @click="openFareRuleForm(rule)">
                             <td class="text-sm" x-text="rule.name"></td>
                             <td class="font-mono text-[11px] text-ink-400" dir="ltr" x-text="rule.code"></td>
                             <td class="text-xs" x-text="rule.passenger_type || 'همه'"></td>

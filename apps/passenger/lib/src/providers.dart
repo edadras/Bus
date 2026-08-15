@@ -18,8 +18,7 @@ final devicePositionProvider = FutureProvider<Position?>((ref) async {
     permission = await Geolocator.requestPermission();
   }
 
-  if (permission == LocationPermission.denied ||
-      permission == LocationPermission.deniedForever) {
+  if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
     return null;
   }
 
@@ -99,8 +98,8 @@ final nearbyStopsProvider = FutureProvider<List<BusStop>>((ref) async {
 final selectedStopProvider = StateProvider<BusStop?>((ref) => null);
 
 final arrivalsProvider = FutureProvider.autoDispose<List<Arrival>>((ref) async {
-  final stop = ref.watch(selectedStopProvider) ??
-      (await ref.watch(nearbyStopsProvider.future)).firstOrNull;
+  final stop =
+      ref.watch(selectedStopProvider) ?? (await ref.watch(nearbyStopsProvider.future)).firstOrNull;
 
   if (stop == null) return const [];
 
@@ -134,4 +133,68 @@ final complaintsProvider = FutureProvider<List<Complaint>>(
 
 final linesProvider = FutureProvider<List<BusLine>>(
   (ref) => ref.watch(transitApiProvider).lines(),
+);
+
+/// The in-app notification inbox.
+///
+/// State is held rather than re-fetched on every read so marking one item read
+/// updates the badge instantly — a list that only settles after a round trip
+/// feels broken on a bus with two bars of signal.
+class NotificationsNotifier extends StateNotifier<AsyncValue<List<AppNotification>>> {
+  NotificationsNotifier(this._ref) : super(const AsyncValue.loading()) {
+    unawaited(refresh());
+  }
+
+  final Ref _ref;
+  int _unreadCount = 0;
+
+  int get unreadCount => _unreadCount;
+
+  Future<void> refresh() async {
+    try {
+      final result = await _ref.read(transitApiProvider).notifications();
+
+      if (!mounted) return;
+
+      _unreadCount = result.unreadCount;
+      state = AsyncValue.data(result.items);
+    } catch (error, stack) {
+      if (mounted) state = AsyncValue.error(error, stack);
+    }
+  }
+
+  Future<void> markRead(AppNotification notification) async {
+    if (notification.read) return;
+
+    // Optimistic: the badge drops immediately, and a failed call is corrected
+    // by the next refresh.
+    state = state.whenData(
+      (items) => items
+          .map((item) => item.id == notification.id ? item.copyWith(read: true) : item)
+          .toList(),
+    );
+    _unreadCount = (_unreadCount - 1).clamp(0, 1 << 30);
+
+    try {
+      await _ref.read(transitApiProvider).markNotificationRead(notification.id);
+    } catch (_) {
+      await refresh();
+    }
+  }
+
+  Future<void> markAllRead() async {
+    state = state.whenData((items) => items.map((item) => item.copyWith(read: true)).toList());
+    _unreadCount = 0;
+
+    try {
+      await _ref.read(transitApiProvider).markAllNotificationsRead();
+    } catch (_) {
+      await refresh();
+    }
+  }
+}
+
+final notificationsProvider =
+    StateNotifierProvider<NotificationsNotifier, AsyncValue<List<AppNotification>>>(
+  NotificationsNotifier.new,
 );

@@ -31,12 +31,15 @@ class TransitApi {
     required String client,
     String? deviceName,
   }) async {
-    final result = await _client.post('/auth/otp/verify', body: {
-      'mobile': mobile,
-      'code': code,
-      'client': client,
-      if (deviceName != null) 'device_name': deviceName,
-    },);
+    final result = await _client.post(
+      '/auth/otp/verify',
+      body: {
+        'mobile': mobile,
+        'code': code,
+        'client': client,
+        if (deviceName != null) 'device_name': deviceName,
+      },
+    );
 
     final data = result.asMap;
 
@@ -70,13 +73,16 @@ class TransitApi {
     String? query,
     int limit = 30,
   }) async {
-    final result = await _client.get('/stops', query: {
-      'lat': lat,
-      'lng': lng,
-      'radius': radius,
-      'q': query,
-      'limit': limit,
-    },);
+    final result = await _client.get(
+      '/stops',
+      query: {
+        'lat': lat,
+        'lng': lng,
+        'radius': radius,
+        'q': query,
+        'limit': limit,
+      },
+    );
 
     return result.asList.map(BusStop.fromJson).toList();
   }
@@ -97,12 +103,15 @@ class TransitApi {
   }
 
   Future<List<LiveBus>> liveBuses({int? lineId, double? lat, double? lng, int? radius}) async {
-    final result = await _client.get('/buses/live', query: {
-      'line_id': lineId,
-      'lat': lat,
-      'lng': lng,
-      'radius': radius,
-    },);
+    final result = await _client.get(
+      '/buses/live',
+      query: {
+        'line_id': lineId,
+        'lat': lat,
+        'lng': lng,
+        'radius': radius,
+      },
+    );
 
     return result.asList.map(LiveBus.fromJson).toList();
   }
@@ -119,12 +128,15 @@ class TransitApi {
     required double toLat,
     required double toLng,
   }) async {
-    final result = await _client.get('/journey/plan', query: {
-      'from_lat': fromLat,
-      'from_lng': fromLng,
-      'to_lat': toLat,
-      'to_lng': toLng,
-    },);
+    final result = await _client.get(
+      '/journey/plan',
+      query: {
+        'from_lat': fromLat,
+        'from_lng': fromLng,
+        'to_lat': toLat,
+        'to_lng': toLng,
+      },
+    );
 
     return result.asMap;
   }
@@ -168,12 +180,15 @@ class TransitApi {
     double? lng,
     String? deviceId,
   }) async {
-    final result = await _client.post('/bus/scan', body: {
-      'token': token,
-      if (lat != null && lng != null) 'lat': lat,
-      if (lat != null && lng != null) 'lng': lng,
-      if (deviceId != null) 'device_id': deviceId,
-    },);
+    final result = await _client.post(
+      '/bus/scan',
+      body: {
+        'token': token,
+        if (lat != null && lng != null) 'lat': lat,
+        if (lat != null && lng != null) 'lng': lng,
+        if (deviceId != null) 'device_id': deviceId,
+      },
+    );
 
     return result.asMap;
   }
@@ -191,20 +206,25 @@ class TransitApi {
     required double lng,
     double? accuracy,
   }) async {
-    final result = await _client.post('/rides/$rideUuid/ping', body: {
-      'lat': lat,
-      'lng': lng,
-      if (accuracy != null) 'accuracy': accuracy,
-    },);
+    final result = await _client.post(
+      '/rides/$rideUuid/ping',
+      body: {
+        'lat': lat,
+        'lng': lng,
+        if (accuracy != null) 'accuracy': accuracy,
+      },
+    );
 
     return result.asMap;
   }
 
-  Future<void> endRide(String rideUuid, {double? lat, double? lng}) =>
-      _client.post('/rides/$rideUuid/end', body: {
-        if (lat != null) 'lat': lat,
-        if (lng != null) 'lng': lng,
-      },);
+  Future<void> endRide(String rideUuid, {double? lat, double? lng}) => _client.post(
+        '/rides/$rideUuid/end',
+        body: {
+          if (lat != null) 'lat': lat,
+          if (lng != null) 'lng': lng,
+        },
+      );
 
   Future<List<RideHistoryItem>> rideHistory({int page = 1}) async {
     final result = await _client.get('/rides', query: {'page': page});
@@ -268,6 +288,53 @@ class TransitApi {
     return Complaint.fromJson(result.asMap);
   }
 
+  // ── Notifications ───────────────────────────────────────────────────────
+
+  /// The in-app inbox. Every notification the platform sends lands here, so
+  /// this list is complete even for a device that never granted push.
+  Future<({List<AppNotification> items, int unreadCount})> notifications({
+    bool unreadOnly = false,
+  }) async {
+    final result = await _client.get(
+      '/notifications',
+      query: {if (unreadOnly) 'unread': '1'},
+    );
+
+    return (
+      items: result.asList.map(AppNotification.fromJson).toList(),
+      unreadCount: (result.meta?['unread_count'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  Future<int> unreadNotificationCount() async {
+    final result = await _client.get('/notifications/unread-count');
+
+    return (result.asMap['unread_count'] as num?)?.toInt() ?? 0;
+  }
+
+  Future<void> markNotificationRead(String id) => _client.post('/notifications/$id/read');
+
+  Future<void> markAllNotificationsRead() => _client.post('/notifications/read-all');
+
+  /// Register this device for push. Native builds pass the platform token they
+  /// obtained from the OS; the web build passes its Web Push subscription.
+  Future<void> registerPushSubscription({
+    required String endpoint,
+    required String publicKey,
+    required String authToken,
+    String? platform,
+    String? deviceName,
+  }) =>
+      _client.post(
+        '/push/subscriptions',
+        body: {
+          'endpoint': endpoint,
+          'keys': {'p256dh': publicKey, 'auth': authToken},
+          if (platform != null) 'platform': platform,
+          if (deviceName != null) 'device_name': deviceName,
+        },
+      );
+
   // ── Driver ──────────────────────────────────────────────────────────────
 
   Future<Map<String, dynamic>> driverState() async {
@@ -281,11 +348,14 @@ class TransitApi {
     double? lat,
     double? lng,
   }) async {
-    final result = await _client.post('/driver/shifts/start', body: {
-      'token': token,
-      if (lat != null) 'lat': lat,
-      if (lng != null) 'lng': lng,
-    },);
+    final result = await _client.post(
+      '/driver/shifts/start',
+      body: {
+        'token': token,
+        if (lat != null) 'lat': lat,
+        if (lng != null) 'lng': lng,
+      },
+    );
 
     return result.asMap;
   }
@@ -318,15 +388,18 @@ class TransitApi {
     double? altitude,
     DateTime? recordedAt,
   }) async {
-    final result = await _client.post('/driver/location', body: {
-      'lat': lat,
-      'lng': lng,
-      if (speedKmh != null) 'speed': speedKmh,
-      if (heading != null) 'heading': heading,
-      if (accuracy != null) 'accuracy': accuracy,
-      if (altitude != null) 'altitude': altitude,
-      if (recordedAt != null) 'recorded_at': recordedAt.toUtc().toIso8601String(),
-    },);
+    final result = await _client.post(
+      '/driver/location',
+      body: {
+        'lat': lat,
+        'lng': lng,
+        if (speedKmh != null) 'speed': speedKmh,
+        if (heading != null) 'heading': heading,
+        if (accuracy != null) 'accuracy': accuracy,
+        if (altitude != null) 'altitude': altitude,
+        if (recordedAt != null) 'recorded_at': recordedAt.toUtc().toIso8601String(),
+      },
+    );
 
     return result.asMap;
   }
@@ -393,11 +466,14 @@ class TransitApi {
     required int amount,
     String? description,
   }) async {
-    final result = await _client.post('/merchant/charge', body: {
-      'token': token,
-      'amount': amount,
-      if (description != null) 'description': description,
-    },);
+    final result = await _client.post(
+      '/merchant/charge',
+      body: {
+        'token': token,
+        'amount': amount,
+        if (description != null) 'description': description,
+      },
+    );
 
     return result.asMap;
   }

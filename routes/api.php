@@ -6,6 +6,8 @@ use App\Http\Controllers\Api\V1\Admin\FinanceController;
 use App\Http\Controllers\Api\V1\Admin\FleetController;
 use App\Http\Controllers\Api\V1\Admin\MerchantAdminController;
 use App\Http\Controllers\Api\V1\Admin\NetworkAdminController;
+use App\Http\Controllers\Api\V1\Admin\OccupancyController;
+use App\Http\Controllers\Api\V1\Admin\ReportController;
 use App\Http\Controllers\Api\V1\Admin\SupportAdminController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\ComplaintController;
@@ -13,7 +15,9 @@ use App\Http\Controllers\Api\V1\DriverController;
 use App\Http\Controllers\Api\V1\LiveController;
 use App\Http\Controllers\Api\V1\MerchantController;
 use App\Http\Controllers\Api\V1\NetworkController;
+use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\PassengerController;
+use App\Http\Controllers\Api\V1\PushSubscriptionController;
 use App\Http\Controllers\Api\V1\WalletController;
 use Illuminate\Support\Facades\Route;
 
@@ -57,6 +61,10 @@ Route::prefix('v1')->group(function (): void {
         Route::get('trips/{trip}', [LiveController::class, 'trip']);
         Route::get('trips/{trip}/eta/{stop}', [LiveController::class, 'tripEta']);
         Route::get('summary', [LiveController::class, 'summary']);
+
+        // The VAPID public key is, by design, public: a browser needs it
+        // before it can create a subscription at all.
+        Route::get('push/key', [PushSubscriptionController::class, 'key']);
     });
 
     /*
@@ -70,6 +78,27 @@ Route::prefix('v1')->group(function (): void {
         Route::middleware('auth:sanctum')->group(function (): void {
             Route::get('me', [AuthController::class, 'me']);
             Route::post('logout', [AuthController::class, 'logout']);
+        });
+    });
+
+    /*
+    | Any signed-in client, whichever surface it came from. A driver wants
+    | shift alerts and a merchant wants settlement alerts just as much as a
+    | passenger wants an arrival alert, so this is not ability-gated.
+    */
+    Route::middleware('auth:sanctum')->group(function (): void {
+        Route::prefix('push')->group(function (): void {
+            Route::post('subscriptions', [PushSubscriptionController::class, 'store']);
+            Route::delete('subscriptions', [PushSubscriptionController::class, 'destroy']);
+        });
+
+        // The in-app inbox. Every notification lands here, whether or not it
+        // also went out as a push or an SMS.
+        Route::prefix('notifications')->group(function (): void {
+            Route::get('/', [NotificationController::class, 'index']);
+            Route::get('unread-count', [NotificationController::class, 'unreadCount']);
+            Route::post('read-all', [NotificationController::class, 'markAllRead']);
+            Route::post('{notification}/read', [NotificationController::class, 'markRead']);
         });
     });
 
@@ -154,6 +183,19 @@ Route::prefix('v1')->group(function (): void {
 
         Route::get('live/map', [DashboardController::class, 'liveMap'])
             ->middleware('permission:operations.live_map');
+
+        // Live ridership, aggregated per vehicle. See OccupancyController for
+        // why this is not a per-passenger map.
+        Route::get('live/occupancy', OccupancyController::class)
+            ->middleware('permission:operations.live_map');
+
+        Route::prefix('reports')->middleware('permission:dashboard.view')->group(function (): void {
+            Route::get('transport', [ReportController::class, 'transport']);
+            Route::get('drivers', [ReportController::class, 'drivers']);
+            Route::get('passengers', [ReportController::class, 'passengers']);
+            Route::get('revenue', [ReportController::class, 'revenue'])
+                ->middleware('permission:finance.manage');
+        });
 
         Route::prefix('fleet')->middleware('permission:fleet.manage')->group(function (): void {
             Route::get('buses', [FleetController::class, 'index']);

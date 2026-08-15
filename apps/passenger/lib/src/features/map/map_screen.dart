@@ -63,7 +63,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           child: Column(
             children: [
               _Header(busCount: buses.valueOrNull?.length ?? 0),
-
               Expanded(
                 flex: 5,
                 child: Padding(
@@ -154,7 +153,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                             ],
                           ),
                         ),
-
                         Positioned(
                           right: 12,
                           bottom: 12,
@@ -163,7 +161,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                             backgroundColor: AppColors.ink850,
                             onPressed: _centreOnUser,
                             child: Icon(
-                              _followUser ? Icons.my_location_rounded : Icons.location_searching_rounded,
+                              _followUser
+                                  ? Icons.my_location_rounded
+                                  : Icons.location_searching_rounded,
                               color: AppColors.brand300,
                               size: 20,
                             ),
@@ -174,7 +174,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   ),
                 ),
               ),
-
               Expanded(flex: 4, child: _ArrivalBoard()),
             ],
           ),
@@ -192,7 +191,8 @@ class _Header extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.sm, AppSpacing.md, AppSpacing.sm),
+      padding:
+          const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.sm, AppSpacing.md, AppSpacing.sm),
       child: GlassCard(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         child: Row(
@@ -271,7 +271,6 @@ class _ArrivalBoard extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
-
           Expanded(
             child: arrivals.when(
               loading: () => ListView.separated(

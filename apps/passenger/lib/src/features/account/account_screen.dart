@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hamsafar_core/hamsafar_core.dart';
 
 import '../../providers.dart';
+import '../notifications/notifications_screen.dart';
 
 /// Profile, ride history and the app's privacy disclosure.
 class AccountScreen extends ConsumerWidget {
@@ -90,14 +91,14 @@ class AccountScreen extends ConsumerWidget {
                 ],
               ),
             ),
-
+            const SizedBox(height: AppSpacing.lg),
+            const _NotificationsTile(),
             const SizedBox(height: AppSpacing.lg),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
               child: Text('سفرهای اخیر', style: theme.textTheme.titleSmall),
             ),
             const SizedBox(height: AppSpacing.sm),
-
             history.when(
               loading: () => const Column(
                 children: [ShimmerBox(height: 66), SizedBox(height: 8), ShimmerBox(height: 66)],
@@ -234,6 +235,53 @@ class _RideTile extends StatelessWidget {
             ),
           ),
           Text(ride.formattedFare, style: theme.textTheme.titleSmall),
+        ],
+      ),
+    );
+  }
+}
+
+/// Entry point to the inbox, carrying the unread badge.
+class _NotificationsTile extends ConsumerWidget {
+  const _NotificationsTile();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final notifications = ref.watch(notificationsProvider);
+    final unread = notifications.maybeWhen(
+      data: (items) => items.where((item) => !item.read).length,
+      orElse: () => 0,
+    );
+
+    return GlassCard(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(builder: (_) => const NotificationsScreen()),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.notifications_none_rounded, size: 20, color: AppColors.ink400),
+          const SizedBox(width: 12),
+          Expanded(child: Text('اعلان‌ها', style: theme.textTheme.titleSmall)),
+          if (unread > 0)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+              decoration: BoxDecoration(
+                color: AppColors.brand500,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                Format.number(unread),
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          const SizedBox(width: 6),
+          const Icon(Icons.chevron_left_rounded, size: 20, color: AppColors.ink400),
         ],
       ),
     );

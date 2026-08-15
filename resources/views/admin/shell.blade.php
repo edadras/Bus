@@ -90,9 +90,13 @@
             @include('admin.views.network')
             @include('admin.views.finance')
             @include('admin.views.merchants')
+            @include('admin.views.occupancy')
+            @include('admin.views.reports')
             @include('admin.views.complaints')
         </div>
     </main>
+
+    @include('admin.partials.form-modal')
 </div>
 @endsection
 

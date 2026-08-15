@@ -14,14 +14,16 @@ Everything in this repository:
 - Merchant payments with in-posting commission split, and claim-based settlement
 - Complaints with photos, threaded replies and internal triage notes
 - Three native Flutter apps on a shared package
-- Admin panel with live operations map and RBAC scoped per city
+- Admin panel with live operations map, aggregated occupancy, four report
+  families and RBAC scoped per city
+- In-app notification inbox plus Web Push delivery with VAPID
 - Persian-first, RTL, installable PWA, Docker environment
 
 ## Version 1.1 — near term
 
 | Item | Why |
 |---|---|
-| Web Push delivery driver | Subscriptions and the service worker are already in place; only the sending side is missing |
+| Native APNs / FCM push | Web Push ships; native delivery needs per-store credentials that cannot live in this repository. The channel and subscription table are provider-shaped already |
 | SMS provider integration | `SmsSender` is a one-method seam |
 | Real payment gateway | `PaymentGateway` interface is implemented and tested against the sandbox |
 | Bandar Abbas official data | Replace the sample import with `--provenance=official` |

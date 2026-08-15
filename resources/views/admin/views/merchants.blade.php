@@ -8,7 +8,8 @@
             <option value="active">فعال</option>
             <option value="suspended">تعلیق‌شده</option>
         </select>
-        <span class="ms-auto text-xs text-ink-400" x-text="`${$num(merchants.length)} پذیرنده`"></span>
+        <button type="button" class="btn btn-primary btn-sm ms-auto" @click="openMerchantForm()">+ پذیرنده جدید</button>
+        <span class="text-xs text-ink-400" x-text="`${$num(merchants.length)} پذیرنده`"></span>
     </div>
 
     <div class="glass card !p-0">

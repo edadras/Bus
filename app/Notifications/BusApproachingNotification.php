@@ -18,7 +18,28 @@ class BusApproachingNotification extends Notification
     /** @return array<int, string> */
     public function via(object $notifiable): array
     {
-        return ['database'];
+        return ['database', 'webpush'];
+    }
+
+    /**
+     * The push payload, consumed by the `push` handler in the service worker.
+     *
+     * The tag collapses repeats: a rider subscribed to the same stop should
+     * see the arrival estimate update in place, not accumulate a stack of
+     * near-identical banners as the bus closes in.
+     *
+     * @return array<string, mixed>
+     */
+    public function toWebPush(object $notifiable): array
+    {
+        $payload = $this->toArray($notifiable);
+
+        return [
+            'title' => $payload['title'],
+            'body' => $payload['body'],
+            'tag' => 'arrival:'.$this->lineCode.':'.$this->stopName,
+            'url' => '/app/passenger',
+        ];
     }
 
     public function toArray(object $notifiable): array

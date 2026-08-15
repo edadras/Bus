@@ -1,10 +1,14 @@
 <section x-show="view === 'network'" x-cloak class="flex flex-col gap-3">
     <div class="grid gap-3 lg:grid-cols-2">
         <article class="glass card">
-            <h2 class="text-sm font-bold">خطوط</h2>
+            <div class="flex items-center gap-2">
+                <h2 class="text-sm font-bold">خطوط</h2>
+                <button type="button" class="btn btn-primary btn-sm ms-auto" @click="openLineForm()">+ خط جدید</button>
+            </div>
             <div class="mt-4 flex max-h-[60vh] flex-col gap-2 overflow-y-auto">
                 <template x-for="line in lines" :key="line.id">
-                    <div class="rounded-xl bg-white/[0.03] px-3 py-2.5">
+                    <button type="button" class="rounded-xl bg-white/[0.03] px-3 py-2.5 text-start transition hover:bg-white/[0.06]"
+                            @click="openLineForm(line)">
                         <div class="flex items-center gap-2">
                             <span class="size-2.5 shrink-0 rounded-full" :style="`background:${line.color}`"></span>
                             <span class="text-sm font-semibold" x-text="$num(line.code)"></span>
@@ -15,14 +19,17 @@
                         </div>
                         <p class="mt-1 truncate text-[11px] text-ink-500"
                            x-text="`${line.origin || '—'} ← ${line.destination || '—'}`"></p>
-                    </div>
+                    </button>
                 </template>
                 <p x-show="!lines.length" class="py-8 text-center text-sm text-ink-500">خطی ثبت نشده است.</p>
             </div>
         </article>
 
         <article class="glass card">
-            <h2 class="text-sm font-bold">ایستگاه‌ها</h2>
+            <div class="flex items-center gap-2">
+                <h2 class="text-sm font-bold">ایستگاه‌ها</h2>
+                <button type="button" class="btn btn-primary btn-sm ms-auto" @click="openStopForm()">+ ایستگاه جدید</button>
+            </div>
             <input type="search" class="field mt-3 !py-2 text-xs" placeholder="جستجوی ایستگاه"
                    x-model.debounce.400ms="filters.stops.q" @input="loadStops()">
             <div class="mt-3 flex max-h-[54vh] flex-col gap-2 overflow-y-auto">

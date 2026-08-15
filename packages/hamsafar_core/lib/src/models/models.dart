@@ -551,3 +551,51 @@ class MapConfig extends Equatable {
   @override
   List<Object?> get props => [tileUrl, center, zoom];
 }
+
+/// One entry in the in-app notification inbox.
+///
+/// The server stores each notification's payload as free-form JSON keyed by
+/// type, so only `title` and `body` are treated as guaranteed; everything else
+/// stays in [data] for the screens that know what to do with it.
+class AppNotification extends Equatable {
+  const AppNotification({
+    required this.id,
+    required this.type,
+    required this.read,
+    this.title,
+    this.body,
+    this.data = const {},
+    this.createdAt,
+  });
+
+  final String id;
+  final String type;
+  final bool read;
+  final String? title;
+  final String? body;
+  final Map<String, dynamic> data;
+  final DateTime? createdAt;
+
+  factory AppNotification.fromJson(Map<String, dynamic> json) => AppNotification(
+        id: _as<String>(json['id']) ?? '',
+        type: _as<String>(json['type']) ?? 'general',
+        read: json['read'] == true,
+        title: _as<String>(json['title']),
+        body: _as<String>(json['body']),
+        data: _as<Map<String, dynamic>>(json['data']) ?? const {},
+        createdAt: _date(json['created_at']),
+      );
+
+  AppNotification copyWith({bool? read}) => AppNotification(
+        id: id,
+        type: type,
+        read: read ?? this.read,
+        title: title,
+        body: body,
+        data: data,
+        createdAt: createdAt,
+      );
+
+  @override
+  List<Object?> get props => [id, read];
+}

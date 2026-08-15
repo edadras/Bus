@@ -67,6 +67,7 @@ GET /buses/live                     ?line_id&lat&lng&radius
 GET /trips/{trip}                   trip plus stop-by-stop progress
 GET /trips/{trip}/eta/{stop}
 GET /summary                        headline counters
+GET /push/key                       VAPID public key + whether push is enabled
 ```
 
 Every stop, line and route carries `provenance` and `is_verified_data`, so no
@@ -84,6 +85,41 @@ An arrival:
 ```
 
 `reliable: false` means the UI must present the figure as approximate.
+
+## Any signed-in client — `auth:sanctum`, no ability required
+
+A driver wants shift alerts and a merchant wants settlement alerts just as much
+as a passenger wants an arrival alert, so these are not ability-gated.
+
+```
+GET    /notifications               inbox   ?unread=1&per_page
+GET    /notifications/unread-count
+POST   /notifications/read-all
+POST   /notifications/{id}/read
+
+POST   /push/subscriptions          { endpoint, keys:{p256dh,auth}, platform?, device_name? }
+DELETE /push/subscriptions          ?endpoint=…
+```
+
+Every notification is written to the inbox regardless of whether push or SMS
+also fired, so the list is complete for a device that never granted push. Both
+notification and subscription queries are scoped to the caller: an id is a UUID
+and an endpoint is a URL, but ownership is what actually keeps one account out
+of another's inbox — or from silencing another's device.
+
+An inbox entry:
+
+```json
+{
+  "id": "9c1e…", "type": "bus_approaching", "read": false,
+  "title": "اتوبوس نزدیک است", "body": "خط ۱۰۲ تا ۴ دقیقه دیگر می‌رسد.",
+  "data": { "line_code": "102", "stop_name": "…", "minutes": 4 },
+  "created_at": "2026-08-15T08:30:00+00:00"
+}
+```
+
+`type` is the discriminator; `title` and `body` are the only keys every type
+guarantees, and the rest stays in `data` for the screens that understand it.
 
 ## Passenger — `abilities:passenger`
 
@@ -152,7 +188,9 @@ POST /merchant/settlements/request      ?from&to
 
 ```
 dashboard.view       GET  /admin/dashboard/kpis | /charts
+                     GET  /admin/reports/transport | /drivers | /passengers   ?from&to
 operations.live_map  GET  /admin/live/map
+                     GET  /admin/live/occupancy    aggregated ridership per vehicle
 
 fleet.manage         GET  /admin/fleet/buses
                      POST /admin/fleet/buses
@@ -172,7 +210,8 @@ network.manage       POST|PATCH /admin/network/stops[/{stop}]
                      POST /admin/network/lines/{line}/routes
                      POST /admin/network/routes/{route}/recalculate
 
-finance.manage       GET  /admin/finance/summary | /transactions
+finance.manage       GET  /admin/reports/revenue                   ?from&to
+                     GET  /admin/finance/summary | /transactions
                      POST /admin/finance/transactions/{tx}/reverse { reason }
                      POST /admin/finance/wallets/adjust            { user_uuid, amount, reason }
                      GET  /admin/finance/wallets/audit             ?user_uuid

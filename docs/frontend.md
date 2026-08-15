@@ -40,7 +40,12 @@ live map is already enough motion.
 | Scanner | Camera QR with viewfinder; expired and replayed codes are recoverable states, not errors |
 | Wallet | Balance, quick top-up amounts, gateway hand-off with status polling, statement |
 | Complaints | List, intake with up to five photos and optional position, threaded replies |
-| Account | Profile, ride history, plain-language privacy disclosure |
+| Notifications | In-app inbox with unread badge; tapping a card marks it read |
+| Account | Profile, ride history, notification entry point, plain-language privacy disclosure |
+
+The inbox is the durable record of everything the platform has said. Push is
+best-effort — a phone can be off, out of coverage, or have notifications
+switched off entirely — so nothing is ever *only* a push.
 
 The map tab is deliberately reachable without an account: a passenger must be
 able to look up a stop and see the next bus before signing up. Tabs that move
@@ -74,10 +79,23 @@ practical failure of these devices.
 ### Admin panel (web)
 
 Dashboard with eight KPI cards and trend charts; live operations map with
-driver detail and a searchable fleet list; fleet with rotating QR display and
-revocation; driver approval and suspension; network browser with provenance
-badges; finance with fare rules, transactions and settlement approval; merchant
-management; and a complaint workbench with internal notes and SLA figures.
+driver detail and a searchable fleet list; **live occupancy** with per-vehicle
+crowding levels; **reports** across transport, drivers, passengers and revenue
+with a selectable period; fleet with rotating QR display and revocation; driver
+approval and suspension; network browser with provenance badges; finance with
+fare rules, transactions and settlement approval; merchant management; and a
+complaint workbench with internal notes and SLA figures.
+
+Create and edit flows across fleet, drivers, network, merchants and fare rules
+share one schema-driven modal (`admin/partials/form-modal.blade.php`), so a new
+managed entity is a field list rather than another form.
+
+The occupancy screen is what the specification called a live passenger map. It
+publishes counts per vehicle — "bus 102: 27 of 40" — and never the position or
+identity of a rider. Everything an operations team does with that screen —
+spotting crowding, rebalancing frequency, dispatching a relief bus — is answered
+by counts, and a per-person map would be a far larger capability than running a
+bus network requires.
 
 ### Landing page
 
@@ -99,6 +117,14 @@ balance is actively misleading. Offline, the app says so.
 The web passenger surface is a read-only viewer — map, stops, arrival times.
 Anything that moves money lives in the native app, which can hold a credential
 in the platform keystore rather than in browser storage.
+
+**Web Push.** The service worker's `push` handler renders the notification and
+`notificationclick` focuses an existing tab rather than opening another.
+Enrolment lives in `resources/js/lib/push.js` and is only ever triggered by a
+user gesture (`hamsafar.push.enable()`): a permission prompt fired on page load
+is usually answered with "block", and a blocked origin can never ask again. An
+unsupported browser, a deployment without VAPID keys, or a denied permission
+each return a status string rather than throwing.
 
 ## Client architecture
 

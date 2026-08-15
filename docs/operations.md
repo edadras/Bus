@@ -54,6 +54,9 @@ The scheduler needs one cron entry:
 - [ ] `PAYMENT_GATEWAY` is a real gateway, not `sandbox`
 - [ ] **Redis is the cache store** — QR replay protection depends on it
 - [ ] Reverb keys generated; `REVERB_SCHEME=https`
+- [ ] VAPID pair generated once (`php artisan webpush:vapid`) and **never
+      rotated afterwards** — a new pair invalidates every stored subscription.
+      Leaving it empty disables push cleanly; nothing else breaks
 - [ ] TLS terminated, HSTS on
 - [ ] **Every seeded password rotated**; demo seeder does not run in production
 - [ ] Storage symlink created, private disk not web-reachable

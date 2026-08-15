@@ -139,8 +139,11 @@ class _OtpLoginViewState extends ConsumerState<OtpLoginView> {
                       ),
                     ),
                     const SizedBox(height: AppSpacing.xl),
-                    Text(widget.title,
-                        textAlign: TextAlign.center, style: theme.textTheme.headlineMedium,),
+                    Text(
+                      widget.title,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.headlineMedium,
+                    ),
                     if (widget.subtitle != null) ...[
                       const SizedBox(height: AppSpacing.sm),
                       Text(

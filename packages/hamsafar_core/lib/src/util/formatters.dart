@@ -54,8 +54,8 @@ abstract final class Format {
   static const _thousandsSeparator = '٬';
 
   static String number(num? value) => digits(
-    NumberFormat.decimalPattern('en').format(value ?? 0).replaceAll(',', _thousandsSeparator),
-  );
+        NumberFormat.decimalPattern('en').format(value ?? 0).replaceAll(',', _thousandsSeparator),
+      );
 
   /// Minor units (rial) formatted for display, in Toman by default.
   static String money(int? minorUnits, {bool withSuffix = true}) {

@@ -109,6 +109,13 @@ Location is the most sensitive data here, and it is treated that way.
 only to close that ride, and pruned after 24 hours. It is never exposed to
 other passengers, and never to staff without `operations.live_map`.
 
+**There is no per-person live map.** `GET /admin/live/occupancy` — the screen
+the specification called a live passenger map — publishes counts per vehicle and
+nothing else, tagged `privacy_note: aggregated_per_vehicle`. The passenger
+reports are the same: rides, active users and frequency buckets, never a row per
+person. A test asserts that with exactly one rider aboard, neither their
+identifier nor their number appears in the occupancy response.
+
 **Driver position** is the vehicle's position, reported only while a shift is
 open. Reporting stops the moment the shift ends.
 
@@ -155,5 +162,9 @@ Stated plainly rather than left to be discovered:
   by the scheduler.
 - **The journey planner covers direct lines only.** It reports
   `supports_transfers: false` rather than silently returning nothing.
-- **Web Push is not wired to a provider.** Subscriptions are stored and the
-  service worker handles `push` events; the sending driver is a v1.1 item.
+- **Push is Web Push only.** Browsers and the installable PWA receive pushes;
+  native APNs/FCM delivery needs per-store credentials that cannot live in this
+  repository. The Flutter apps use the in-app inbox and the live socket instead,
+  so no notification is lost — only its out-of-app banner.
+- **SMS has no provider bound.** `SmsSender` is a one-method seam; OTP codes are
+  logged in non-production rather than sent.

@@ -47,7 +47,6 @@ class ArrivalTile extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -85,7 +84,6 @@ class ArrivalTile extends StatelessWidget {
               ],
             ),
           ),
-
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             mainAxisSize: MainAxisSize.min,

@@ -1,0 +1,77 @@
+<section x-show="view === 'occupancy'" x-cloak class="flex flex-col gap-3">
+    <div class="glass card">
+        <div class="flex flex-wrap items-center gap-3">
+            <h2 class="text-sm font-bold">شلوغی زنده ناوگان</h2>
+            <span class="badge badge-success">
+                <span class="live-dot"></span>
+                <span x-text="`${$num(occupancy.totals?.buses_in_service ?? 0)} اتوبوس در سرویس`"></span>
+            </span>
+            <span class="ms-auto text-[11px] text-ink-500">
+                این صفحه فقط تعداد مسافران هر اتوبوس را نشان می‌دهد، نه موقعیت یا هویت افراد.
+            </span>
+        </div>
+
+        <div class="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <div class="rounded-xl bg-white/[0.03] px-3 py-3">
+                <p class="stat-value !text-2xl text-brand-300" x-text="$num(occupancy.totals?.passengers_on_board ?? 0)"></p>
+                <p class="stat-label mt-1">مسافر داخل اتوبوس‌ها</p>
+            </div>
+            <div class="rounded-xl bg-white/[0.03] px-3 py-3">
+                <p class="stat-value !text-2xl" x-text="$num(occupancy.totals?.total_capacity ?? 0)"></p>
+                <p class="stat-label mt-1">ظرفیت کل در سرویس</p>
+            </div>
+            <div class="rounded-xl bg-white/[0.03] px-3 py-3">
+                <p class="stat-value !text-2xl"
+                   x-text="`${$num(Math.round((occupancy.totals?.network_occupancy ?? 0) * 100))}٪`"></p>
+                <p class="stat-label mt-1">ضریب اشغال شبکه</p>
+            </div>
+            <div class="rounded-xl bg-white/[0.03] px-3 py-3">
+                <p class="stat-value !text-2xl text-amber-400" x-text="$num(occupancy.totals?.crowded_buses ?? 0)"></p>
+                <p class="stat-label mt-1">اتوبوس شلوغ</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid gap-3 lg:grid-cols-2">
+        <template x-for="bus in occupancyRows" :key="bus.trip_uuid">
+            <article class="glass card">
+                <div class="flex items-center gap-3">
+                    <span class="grid size-10 shrink-0 place-items-center rounded-xl text-xs font-bold text-white"
+                          :style="`background:${bus.line_color || '#12b76a'}`"
+                          x-text="$num(bus.line_code)"></span>
+                    <div class="min-w-0 flex-1">
+                        <p class="text-sm font-semibold" x-text="`اتوبوس ${$num(bus.bus_number)}`"></p>
+                        <p class="truncate text-[11px] text-ink-400" x-text="bus.line_name"></p>
+                    </div>
+                    <span class="badge" :class="{
+                        'badge-danger': bus.crowding === 'full',
+                        'badge-warning': bus.crowding === 'crowded',
+                        'badge-info': bus.crowding === 'moderate',
+                        'badge-success': bus.crowding === 'light',
+                    }" x-text="crowdingLabel(bus.crowding)"></span>
+                </div>
+
+                <div class="mt-4 flex items-end gap-3">
+                    <p class="text-3xl font-bold leading-none text-brand-300" x-text="$num(bus.passenger_count)"></p>
+                    <p class="pb-0.5 text-xs text-ink-400" x-text="`از ${$num(bus.capacity)} نفر`"></p>
+                    <p class="ms-auto pb-0.5 text-[11px] text-ink-500"
+                       x-text="`بیشینه: ${$num(bus.peak_passenger_count)}`"></p>
+                </div>
+
+                <div class="mt-3 h-2 overflow-hidden rounded-full bg-ink-700">
+                    <div class="h-full rounded-full transition-all duration-500"
+                         :class="{
+                             'bg-danger': bus.crowding === 'full',
+                             'bg-warning': bus.crowding === 'crowded',
+                             'bg-brand-400': bus.crowding === 'moderate' || bus.crowding === 'light',
+                         }"
+                         :style="`width:${Math.min(100, Math.round(bus.occupancy * 100))}%`"></div>
+                </div>
+            </article>
+        </template>
+    </div>
+
+    <p x-show="!occupancyRows.length" class="glass card py-12 text-center text-sm text-ink-500">
+        در حال حاضر اتوبوسی در سرویس نیست.
+    </p>
+</section>

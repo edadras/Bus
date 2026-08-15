@@ -142,13 +142,10 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     await showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
-        icon: const Icon(Icons.account_balance_wallet_outlined,
-            color: AppColors.warning, size: 40),
+        icon: const Icon(Icons.account_balance_wallet_outlined, color: AppColors.warning, size: 40),
         title: const Text('موجودی کافی نیست'),
         content: Text(
-          shortfall is int
-              ? 'برای این سفر ${Format.money(shortfall)} کم دارید.'
-              : error.message,
+          shortfall is int ? 'برای این سفر ${Format.money(shortfall)} کم دارید.' : error.message,
           textAlign: TextAlign.center,
         ),
         actions: [
