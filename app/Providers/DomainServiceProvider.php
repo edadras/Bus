@@ -6,7 +6,10 @@ use App\Domain\Fleet\Services\BusQrService;
 use App\Domain\Fleet\Services\QrTokenService;
 use App\Domain\Identity\Services\AuditLogger;
 use App\Domain\Merchant\Services\MerchantTerminalQrService;
-use App\Domain\Notifications\Channels\WebPushChannel;
+use App\Domain\Notifications\Channels\PushChannel;
+use App\Domain\Notifications\Services\FcmSender;
+use App\Domain\Notifications\Services\PushSender;
+use App\Domain\Notifications\Services\SmsGatewayManager;
 use App\Domain\Notifications\Services\WebPushSender;
 use App\Domain\Operations\Services\EtaEngine;
 use App\Domain\Operations\Services\LiveStateStore;
@@ -45,6 +48,9 @@ class DomainServiceProvider extends ServiceProvider
             PaymentGatewayManager::class,
             AuditLogger::class,
             WebPushSender::class,
+            FcmSender::class,
+            PushSender::class,
+            SmsGatewayManager::class,
         ] as $service) {
             $this->app->singleton($service);
         }
@@ -52,11 +58,11 @@ class DomainServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        // Adds `webpush` to the channels a notification may list in via().
-        // Notifications without a toWebPush() method are skipped by the
-        // channel itself, so this is safe to register unconditionally.
+        // Adds `push` to the channels a notification may list in via().
+        // Notifications without a toPush() method are skipped by the channel
+        // itself, so this is safe to register unconditionally.
         Notification::resolved(function (ChannelManager $manager): void {
-            $manager->extend('webpush', fn ($app) => $app->make(WebPushChannel::class));
+            $manager->extend('push', fn ($app) => $app->make(PushChannel::class));
         });
     }
 }

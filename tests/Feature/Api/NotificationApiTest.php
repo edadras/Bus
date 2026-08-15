@@ -5,14 +5,18 @@ namespace Tests\Feature\Api;
 use App\Domain\Identity\Models\PushSubscription;
 use App\Domain\Identity\Models\User;
 use App\Domain\Network\Models\City;
+use App\Domain\Notifications\Services\FcmSender;
+use App\Domain\Notifications\Services\PushSender;
+use App\Domain\Notifications\Services\WebPushSender;
 use App\Notifications\LowBalanceNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
+use Mockery;
 use Tests\TestCase;
 
 /**
- * The notification surface: the in-app inbox every user shares, and the Web
- * Push enrolment that sits beside it.
+ * The notification surface: the in-app inbox every user shares, and the push
+ * enrolment that sits beside it — browsers over Web Push, phones over FCM.
  *
  * The inbox is the durable record — a rider whose phone was off still finds
  * the message — so the ownership checks here matter as much as the delivery.
@@ -108,7 +112,7 @@ class NotificationApiTest extends TestCase
         $this->getJson('/api/v1/notifications')->assertUnauthorized();
     }
 
-    // ── Web Push enrolment ────────────────────────────────────────────────
+    // ── Push enrolment ────────────────────────────────────────────────────
 
     public function test_the_vapid_key_endpoint_reports_when_push_is_not_configured(): void
     {
@@ -204,26 +208,136 @@ class NotificationApiTest extends TestCase
             ->assertStatus(422);
     }
 
-    public function test_notifications_are_sent_over_both_the_inbox_and_web_push(): void
+    public function test_notifications_are_sent_over_both_the_inbox_and_push(): void
     {
         Notification::fake();
 
         $this->user->notify(new LowBalanceNotification(5_000));
 
         Notification::assertSentTo($this->user, LowBalanceNotification::class, function ($notification, array $channels) {
-            return in_array('database', $channels, true) && in_array('webpush', $channels, true);
+            return in_array('database', $channels, true) && in_array('push', $channels, true);
         });
     }
 
     public function test_the_push_payload_carries_a_title_body_and_collapse_tag(): void
     {
-        $payload = (new LowBalanceNotification(5_000))->toWebPush($this->user);
+        $payload = (new LowBalanceNotification(5_000))->toPush($this->user);
 
         $this->assertArrayHasKey('title', $payload);
         $this->assertArrayHasKey('body', $payload);
         // Without a tag, repeated low-balance alerts stack up as separate
         // banners instead of replacing one another.
         $this->assertSame('low_balance', $payload['tag']);
+    }
+
+    public function test_a_phone_registers_with_a_token_and_no_key_pair(): void
+    {
+        // A native device has an FCM registration token, not an endpoint URL
+        // and a key pair, and must not be forced to invent them.
+        $this->actingAsPassenger($this->user)
+            ->postJson('/api/v1/push/subscriptions', [
+                'endpoint' => 'fcm-registration-token-abc123',
+                'platform' => 'android',
+                'device_name' => 'Pixel 8',
+            ])
+            ->assertCreated();
+
+        $subscription = PushSubscription::firstOrFail();
+
+        $this->assertSame('android', $subscription->platform);
+        $this->assertNull($subscription->public_key);
+    }
+
+    public function test_a_browser_registration_without_keys_is_refused(): void
+    {
+        // The same leniency must not apply to the web: without the key pair
+        // there is nothing to encrypt the payload to.
+        $this->actingAsPassenger($this->user)
+            ->postJson('/api/v1/push/subscriptions', [
+                'endpoint' => 'https://push.example.com/endpoint-a',
+                'platform' => 'web',
+            ])
+            ->assertStatus(422);
+    }
+
+    public function test_the_key_endpoint_reports_each_transport_separately(): void
+    {
+        config([
+            'webpush.vapid.public_key' => 'public-half',
+            'webpush.vapid.private_key' => 'private-half',
+            'fcm.project_id' => null,
+            'fcm.credentials' => null,
+        ]);
+
+        // A phone must not prompt for permission on a deployment that has web
+        // push but no FCM credentials.
+        $this->getJson('/api/v1/push/key')
+            ->assertOk()
+            ->assertJsonPath('data.web_enabled', true)
+            ->assertJsonPath('data.native_enabled', false);
+    }
+
+    public function test_push_reaches_a_users_browser_and_phone_from_one_call(): void
+    {
+        config([
+            'webpush.vapid.public_key' => 'public-half',
+            'webpush.vapid.private_key' => 'private-half',
+        ]);
+
+        PushSubscription::create([
+            'user_id' => $this->user->id,
+            'endpoint' => 'https://push.example.com/browser',
+            'public_key' => 'k',
+            'auth_token' => 'a',
+            'platform' => 'web',
+        ]);
+
+        PushSubscription::create([
+            'user_id' => $this->user->id,
+            'endpoint' => 'fcm-token',
+            'platform' => 'android',
+        ]);
+
+        // A user is one account with a browser and a phone; the sender splits
+        // their devices by transport rather than the caller having to.
+        $sender = Mockery::mock(WebPushSender::class);
+        $sender->shouldReceive('isConfigured')->andReturnTrue();
+        $sender->shouldReceive('send')
+            ->once()
+            ->with(Mockery::on(fn ($subs) => $subs->count() === 1 && $subs->first()->platform === 'web'), Mockery::any())
+            ->andReturn(['sent' => 1, 'expired' => 0, 'failed' => 0]);
+
+        $native = Mockery::mock(FcmSender::class);
+        $native->shouldReceive('isConfigured')->andReturnTrue();
+        $native->shouldReceive('send')
+            ->once()
+            ->with(Mockery::on(fn ($subs) => $subs->count() === 1 && $subs->first()->platform === 'android'), Mockery::any())
+            ->andReturn(['sent' => 1, 'expired' => 0, 'failed' => 0]);
+
+        $totals = (new PushSender($sender, $native))->sendToUser($this->user->id, ['title' => 'x']);
+
+        $this->assertSame(2, $totals['sent']);
+    }
+
+    public function test_an_unconfigured_deployment_sends_nothing_and_breaks_nothing(): void
+    {
+        config([
+            'webpush.vapid.public_key' => null,
+            'webpush.vapid.private_key' => null,
+            'fcm.project_id' => null,
+            'fcm.credentials' => null,
+        ]);
+
+        PushSubscription::create([
+            'user_id' => $this->user->id,
+            'endpoint' => 'fcm-token',
+            'platform' => 'android',
+        ]);
+
+        $this->assertSame(
+            ['sent' => 0, 'expired' => 0, 'failed' => 0],
+            app(PushSender::class)->sendToUser($this->user->id, ['title' => 'x']),
+        );
     }
 
     /** @param array<string, mixed> $overrides */

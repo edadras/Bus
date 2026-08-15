@@ -148,8 +148,10 @@ class PublicNetworkTest extends TestCase
 
         $this->assertSame([], $response->json('data.options'));
         $this->assertSame('no_stop_within_walking_distance', $response->json('data.reason'));
-        // Transfers are a v2 feature; the API says so rather than pretending.
-        $this->assertFalse($response->json('data.supports_transfers'));
+        // The planner searches transfers, so an empty answer means there is
+        // genuinely no journey — not that it stopped looking.
+        $this->assertTrue($response->json('data.supports_transfers'));
+        $this->assertSame(2, $response->json('data.max_transfers'));
     }
 
     public function test_map_configuration_is_served_without_a_hard_coded_provider(): void

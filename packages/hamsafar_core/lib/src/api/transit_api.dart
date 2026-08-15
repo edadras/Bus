@@ -316,12 +316,25 @@ class TransitApi {
 
   Future<void> markAllNotificationsRead() => _client.post('/notifications/read-all');
 
-  /// Register this device for push. Native builds pass the platform token they
-  /// obtained from the OS; the web build passes its Web Push subscription.
+  /// Whether this deployment can deliver a native push at all.
+  ///
+  /// Asked before prompting for notification permission: an accepted prompt
+  /// that can never deliver anything is worse than no prompt, and a declined
+  /// one is hard to ask for again.
+  Future<bool> nativePushEnabled() async {
+    final result = await _client.get('/push/key');
+
+    return result.asMap['native_enabled'] == true;
+  }
+
+  /// Register this device for push.
+  ///
+  /// A native build passes the registration token it got from the OS and no
+  /// keys; a browser passes its Web Push endpoint and key pair.
   Future<void> registerPushSubscription({
     required String endpoint,
-    required String publicKey,
-    required String authToken,
+    String? publicKey,
+    String? authToken,
     String? platform,
     String? deviceName,
   }) =>
@@ -329,7 +342,8 @@ class TransitApi {
         '/push/subscriptions',
         body: {
           'endpoint': endpoint,
-          'keys': {'p256dh': publicKey, 'auth': authToken},
+          if (publicKey != null && authToken != null)
+            'keys': {'p256dh': publicKey, 'auth': authToken},
           if (platform != null) 'platform': platform,
           if (deviceName != null) 'device_name': deviceName,
         },

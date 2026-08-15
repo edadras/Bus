@@ -10,6 +10,7 @@ export 'src/api/api_exception.dart';
 export 'src/api/transit_api.dart';
 export 'src/config/app_config.dart';
 export 'src/models/models.dart';
+export 'src/push/push_registration.dart';
 export 'src/providers/core_providers.dart';
 export 'src/realtime/realtime_client.dart';
 export 'src/storage/token_store.dart';

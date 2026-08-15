@@ -75,5 +75,7 @@ return [
         'route_id' => 'route',
         'reason' => 'reason',
         'status' => 'status',
+        'push_endpoint' => 'push endpoint',
+        'push_keys' => 'push keys',
     ],
 ];

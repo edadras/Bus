@@ -75,5 +75,7 @@ return [
         'route_id' => 'مسیر',
         'reason' => 'دلیل',
         'status' => 'وضعیت',
+        'push_endpoint' => 'نشانی اعلان',
+        'push_keys' => 'کلیدهای اعلان',
     ],
 ];

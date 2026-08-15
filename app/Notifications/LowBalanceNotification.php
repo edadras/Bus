@@ -14,11 +14,11 @@ class LowBalanceNotification extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['database', 'webpush'];
+        return ['database', 'push'];
     }
 
     /** @return array<string, mixed> */
-    public function toWebPush(object $notifiable): array
+    public function toPush(object $notifiable): array
     {
         $payload = $this->toArray($notifiable);
 

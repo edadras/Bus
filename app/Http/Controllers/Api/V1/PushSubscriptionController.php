@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Domain\Identity\Models\PushSubscription;
+use App\Domain\Notifications\Services\FcmSender;
 use App\Domain\Notifications\Services\WebPushSender;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\V1\Notifications\RegisterPushSubscriptionRequest;
@@ -23,7 +24,10 @@ use Illuminate\Http\Request;
  */
 class PushSubscriptionController extends Controller
 {
-    public function __construct(private readonly WebPushSender $sender) {}
+    public function __construct(
+        private readonly WebPushSender $web,
+        private readonly FcmSender $native,
+    ) {}
 
     /**
      * The application server key a browser passes to pushManager.subscribe().
@@ -31,11 +35,14 @@ class PushSubscriptionController extends Controller
     public function key(): JsonResponse
     {
         return ApiResponse::success([
-            'vapid_public_key' => $this->sender->publicKey(),
+            'vapid_public_key' => $this->web->publicKey(),
             // Clients must not prompt for notification permission when push
             // is not configured on this deployment: an accepted prompt that
             // can never deliver anything is worse than no prompt at all.
-            'enabled' => $this->sender->isConfigured(),
+            // Each client asks about the transport it can actually use.
+            'enabled' => $this->web->isConfigured(),
+            'web_enabled' => $this->web->isConfigured(),
+            'native_enabled' => $this->native->isConfigured(),
         ]);
     }
 
@@ -57,9 +64,10 @@ class PushSubscriptionController extends Controller
                 'endpoint' => $data['endpoint'],
             ],
             [
-                'public_key' => $data['keys']['p256dh'],
-                'auth_token' => $data['keys']['auth'],
-                'platform' => $data['platform'] ?? null,
+                // Null for a native device: an FCM token needs no key pair.
+                'public_key' => $data['keys']['p256dh'] ?? null,
+                'auth_token' => $data['keys']['auth'] ?? null,
+                'platform' => $data['platform'] ?? 'web',
                 'device_name' => $data['device_name'] ?? null,
                 'last_used_at' => now(),
             ],

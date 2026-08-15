@@ -6,6 +6,7 @@ use App\Domain\Mapping\Contracts\MapProvider;
 use App\Domain\Network\Models\BusLine;
 use App\Domain\Network\Models\BusRoute;
 use App\Domain\Network\Models\BusStop;
+use App\Domain\Network\Services\JourneyPlanner;
 use App\Domain\Operations\Services\EtaEngine;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\V1\BusLineResource;
@@ -14,7 +15,6 @@ use App\Http\Resources\V1\LineSummaryResource;
 use App\Http\Resources\V1\RouteResource;
 use App\Support\Api\ApiResponse;
 use App\Support\Geo\Coordinate;
-use App\Support\Geo\Distance;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -165,12 +165,13 @@ class NetworkController extends Controller
     }
 
     /**
-     * Simple journey suggestion: find stops near origin and destination, then
-     * surface lines that serve both, in order. This is the v1 planner — it
-     * covers direct journeys and explicitly reports when none exists rather
-     * than inventing a transfer it cannot yet compute.
+     * Journey planning, delegated to the planner service.
+     *
+     * The controller's whole job here is validation and defaults: the search
+     * itself is a domain concern, tested directly, and reused by anything else
+     * that needs a route between two points.
      */
-    public function plan(Request $request): JsonResponse
+    public function plan(Request $request, JourneyPlanner $planner): JsonResponse
     {
         $validated = $request->validate([
             'from_lat' => ['required', 'numeric', 'between:-90,90'],
@@ -178,87 +179,15 @@ class NetworkController extends Controller
             'to_lat' => ['required', 'numeric', 'between:-90,90'],
             'to_lng' => ['required', 'numeric', 'between:-180,180'],
             'walk_radius' => ['nullable', 'integer', 'min:100', 'max:2000'],
+            'max_transfers' => ['nullable', 'integer', 'min:0', 'max:2'],
         ]);
 
-        $from = new Coordinate((float) $validated['from_lat'], (float) $validated['from_lng']);
-        $to = new Coordinate((float) $validated['to_lat'], (float) $validated['to_lng']);
-        $radius = (int) ($validated['walk_radius'] ?? 700);
-
-        $originStops = $this->stopsNear($from, $radius);
-        $destinationStops = $this->stopsNear($to, $radius);
-
-        if ($originStops->isEmpty() || $destinationStops->isEmpty()) {
-            return ApiResponse::success([
-                'options' => [],
-                'reason' => 'no_stop_within_walking_distance',
-                'supports_transfers' => false,
-            ]);
-        }
-
-        $originIds = $originStops->pluck('id');
-        $destinationIds = $destinationStops->pluck('id');
-
-        // A route serves the journey when it calls at an origin stop and then,
-        // later in its sequence, at a destination stop.
-        $routes = BusRoute::query()
-            ->active()
-            ->whereHas('line', fn ($q) => $q->where('city_id', $this->city()->id)->where('is_active', true))
-            ->whereHas('routeStops', fn ($q) => $q->whereIn('bus_stop_id', $originIds))
-            ->whereHas('routeStops', fn ($q) => $q->whereIn('bus_stop_id', $destinationIds))
-            ->with(['line', 'routeStops.stop'])
-            ->get();
-
-        $options = $routes->map(function (BusRoute $route) use ($originIds, $destinationIds, $from, $to) {
-            $boarding = $route->routeStops->first(fn ($rs) => $originIds->contains($rs->bus_stop_id));
-            $alighting = $route->routeStops->last(fn ($rs) => $destinationIds->contains($rs->bus_stop_id));
-
-            if ($boarding === null || $alighting === null || $alighting->sequence <= $boarding->sequence) {
-                return null;
-            }
-
-            $rideDistance = max(0, $alighting->distance_from_start - $boarding->distance_from_start);
-            $walkToStop = Distance::between($from, $boarding->stop->coordinate());
-            $walkFromStop = Distance::between($to, $alighting->stop->coordinate());
-
-            return [
-                'line' => [
-                    'id' => $route->line->id,
-                    'code' => $route->line->code,
-                    'name' => $route->line->name,
-                    'color' => $route->line->color,
-                ],
-                'route_id' => $route->id,
-                'board_at' => ['id' => $boarding->stop->id, 'name' => $boarding->stop->name],
-                'alight_at' => ['id' => $alighting->stop->id, 'name' => $alighting->stop->name],
-                'stops_count' => $alighting->sequence - $boarding->sequence,
-                'ride_distance_meters' => $rideDistance,
-                'walk_to_stop_meters' => (int) round($walkToStop),
-                'walk_from_stop_meters' => (int) round($walkFromStop),
-                // Walking at ~5 km/h plus the ride at the route baseline speed.
-                'estimated_total_minutes' => (int) ceil(
-                    ($walkToStop + $walkFromStop) / 83
-                    + $rideDistance / (((float) config('transit.eta.baseline_speed_kmh')) * 1000 / 60)
-                ),
-            ];
-        })->filter()->sortBy('estimated_total_minutes')->values();
-
-        return ApiResponse::success([
-            'options' => $options->all(),
-            'reason' => $options->isEmpty() ? 'no_direct_line' : null,
-            // Transfers arrive in v2; saying so beats silently returning none.
-            'supports_transfers' => false,
-        ]);
-    }
-
-    private function stopsNear(Coordinate $center, int $radius)
-    {
-        return BusStop::query()
-            ->forCity($this->city())
-            ->active()
-            ->near($center, $radius)
-            ->limit(50)
-            ->get()
-            ->filter(fn (BusStop $stop) => $stop->distanceTo($center) <= $radius)
-            ->values();
+        return ApiResponse::success($planner->plan(
+            city: $this->city(),
+            from: new Coordinate((float) $validated['from_lat'], (float) $validated['from_lng']),
+            to: new Coordinate((float) $validated['to_lat'], (float) $validated['to_lng']),
+            walkRadius: (int) ($validated['walk_radius'] ?? 700),
+            maxTransfers: (int) ($validated['max_transfers'] ?? 2),
+        ));
     }
 }
