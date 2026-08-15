@@ -1,0 +1,25 @@
+code,name,name_en,lat,lng,address,zone_code,is_terminal,geofence_radius
+TRM-S,پایانه مسافربری جنوب,South Terminal,27.16200,56.24100,,WEST,1,90
+GOLSH,گلشهر,Golshahr,27.17250,56.22050,,WEST,0,60
+SAYYAD,بلوار صیادان,Sayyadan Blvd,27.17800,56.23500,,WEST,0,60
+AZADI,میدان آزادی,Azadi Square,27.18360,56.24920,,CENTRAL,0,60
+BAZAR,بازار قدیم,Old Bazaar,27.17950,56.26200,,CENTRAL,0,60
+SHOHADA,میدان شهدا,Shohada Square,27.18520,56.26680,,CENTRAL,0,60
+EMAM,خیابان امام خمینی,Imam Khomeini St,27.18800,56.27550,,CENTRAL,0,60
+SEYED,میدان سیدالشهدا,Seyed-o-Shohada Sq,27.19050,56.28600,,CENTRAL,0,60
+PORT,بندر شهید رجایی (ورودی),Shahid Rajaee Port,27.12900,56.07900,,PORT,1,90
+SURO,سورو,Suru,27.17350,56.28300,,EAST,0,60
+NAKHL,نخل ناخدا,Nakhl-e Nakhoda,27.19600,56.29800,,EAST,0,60
+UNI,دانشگاه هرمزگان,Hormozgan University,27.20750,56.33000,,EAST,1,90
+HOSP,بیمارستان شهید محمدی,Shahid Mohammadi Hosp,27.18680,56.25850,,CENTRAL,0,60
+SAHEL,بلوار ساحلی,Coastal Blvd,27.16900,56.27050,,CENTRAL,0,60
+PARK,پارک دباغیان,Dabbaghian Park,27.18120,56.29050,,EAST,0,60
+SHAHRD,شهرداری مرکزی,City Hall,27.18410,56.27180,,CENTRAL,0,60
+AIRP,فرودگاه بین‌المللی بندرعباس,Bandar Abbas Airport,27.21830,56.37780,,EAST,1,90
+PARDIS,شهرک پردیس,Pardis Town,27.20500,56.24500,,WEST,0,60
+ZEYTUN,شهرک زیتون,Zeytoon Town,27.21400,56.26800,,WEST,0,60
+SADAF,مجتمع صدف,Sadaf Complex,27.16550,56.25600,,CENTRAL,0,60
+ISAR,بلوار ایثار,Isar Blvd,27.19900,56.25600,,WEST,0,60
+JAHAD,میدان جهاد,Jahad Square,27.19300,56.26200,,CENTRAL,0,60
+SHAHID,بلوار شهید بهشتی,Shahid Beheshti Blvd,27.17700,56.27600,,CENTRAL,0,60
+FISH,بازار ماهی‌فروشان,Fish Market,27.16020,56.26480,,CENTRAL,0,60
