@@ -195,8 +195,10 @@ class NetworkAdminController extends Controller
             'stops' => count($validated['stops']),
         ]);
 
+        // The ends are loaded too: a create response that omits what the same
+        // route reports everywhere else makes the caller fetch it again.
         return ApiResponse::success(
-            (new RouteResource($route->load(['routeStops.stop'])))->resolve(),
+            (new RouteResource($route->load(['routeStops.stop', 'originStop', 'destinationStop'])))->resolve(),
             status: 201,
         );
     }

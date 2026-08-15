@@ -101,6 +101,12 @@ Alpine.data('adminShell', () => ({
     // The merchant dossier: wallet, tills and who may use them.
     merchantModal: null,
 
+    // A line's routes, one route's stop sequence, and the builder for a new
+    // one. Sequences are what every ETA is computed from.
+    routeModal: null,
+    sequence: null,
+    routeBuilder: null,
+
     // The driver dossier: licence, documents, assignments and recent shifts.
     // Approving someone to carry passengers means reading all four.
     driverModal: null,
@@ -722,6 +728,134 @@ Alpine.data('adminShell', () => ({
         this.stops = data;
     },
 
+    /** A line's routes: the stop sequences that ETAs and "next stop" run on. */
+    async openRoutes(line) {
+        this.routeModal = { line, routes: [], loading: true };
+
+        try {
+            const { data } = await api.get(`/lines/${line.id}`);
+            this.routeModal = { line, routes: data.routes ?? [], loading: false };
+        } catch (error) {
+            this.routeModal = null;
+            window.toast?.(error.message, 'error');
+        }
+    },
+
+    closeRoutes() {
+        this.routeModal = null;
+        this.sequence = null;
+        this.routeBuilder = null;
+    },
+
+    async openSequence(route) {
+        try {
+            const { data } = await api.get(`/routes/${route.id}`);
+            this.sequence = data;
+        } catch (error) {
+            window.toast?.(error.message, 'error');
+        }
+    },
+
+    /**
+     * Re-snap every stop onto the route's geometry.
+     *
+     * Offsets are what "next stop" and every ETA are computed from, so after a
+     * geometry import or a stop being moved they have to be rebuilt — and the
+     * operator needs a button for it, not a shell.
+     */
+    async recalculateRoute(route) {
+        this.busy = true;
+
+        try {
+            const { data } = await api.post(`/admin/network/routes/${route.id}/recalculate`);
+
+            window.toast?.(t('admin.network.recalculated', {
+                count: formatNumber(data.stops_updated),
+            }), 'success');
+
+            await this.openRoutes(this.routeModal.line);
+        } catch (error) {
+            window.toast?.(error.message, 'error');
+        } finally {
+            this.busy = false;
+        }
+    },
+
+    /** Start building a stop sequence for a new route on this line. */
+    startRouteBuilder() {
+        this.routeBuilder = {
+            name: '',
+            direction: 'outbound',
+            is_default: false,
+            stops: [],
+            query: '',
+            busy: false,
+            error: null,
+        };
+    },
+
+    /** Stops matching the builder's search, minus the ones already added. */
+    get builderCandidates() {
+        if (!this.routeBuilder) return [];
+
+        const term = this.routeBuilder.query.trim();
+        const chosen = new Set(this.routeBuilder.stops.map((stop) => stop.id));
+
+        return this.stops
+            .filter((stop) => !chosen.has(stop.id))
+            .filter((stop) => !term || stop.name.includes(term) || String(stop.code).includes(term))
+            .slice(0, 12);
+    },
+
+    addBuilderStop(stop) {
+        this.routeBuilder.stops.push({ id: stop.id, name: stop.name, code: stop.code });
+    },
+
+    removeBuilderStop(index) {
+        this.routeBuilder.stops.splice(index, 1);
+    },
+
+    /** Order is the whole point of a sequence, so it has to be adjustable. */
+    moveBuilderStop(index, delta) {
+        const target = index + delta;
+
+        if (target < 0 || target >= this.routeBuilder.stops.length) return;
+
+        const stops = this.routeBuilder.stops;
+        [stops[index], stops[target]] = [stops[target], stops[index]];
+    },
+
+    async submitRoute() {
+        if (this.routeBuilder.stops.length < 2) {
+            this.routeBuilder.error = t('admin.network.route_needs_two_stops');
+
+            return;
+        }
+
+        this.routeBuilder.busy = true;
+        this.routeBuilder.error = null;
+
+        try {
+            await api.post(`/admin/network/lines/${this.routeModal.line.id}/routes`, {
+                name: this.routeBuilder.name,
+                direction: this.routeBuilder.direction,
+                is_default: this.routeBuilder.is_default,
+                stops: this.routeBuilder.stops.map((stop) => ({ bus_stop_id: stop.id })),
+            });
+
+            window.toast?.(t('admin.network.route_created'), 'success');
+
+            this.routeBuilder = null;
+            await this.openRoutes(this.routeModal.line);
+        } catch (error) {
+            this.routeBuilder.error = error.isValidation
+                ? Object.values(error.details ?? {}).flat().join(' ')
+                : error.message;
+        } finally {
+            if (this.routeBuilder) this.routeBuilder.busy = false;
+        }
+    },
+
     // ── finance ─────────────────────────────────────────────────────────
     async loadFinance() {
         const { data } = await api.get('/admin/finance/summary');
@@ -1321,12 +1455,14 @@ Alpine.data('adminShell', () => ({
         });
     },
 
-    openStopForm() {
+    openStopForm(stop = null) {
         this.openForm({
-            title: t('admin.forms.stop.add'),
-            hint: t('admin.forms.stop.hint'),
+            title: stop ? t('admin.forms.stop.edit', { name: stop.name }) : t('admin.forms.stop.add'),
+            hint: stop ? t('admin.forms.stop.move_hint') : t('admin.forms.stop.hint'),
             fields: [
-                { name: 'code', label: t('admin.forms.stop.code'), required: true },
+                // The code identifies the stop on printed signage; changing it
+                // is not an edit, it is a different stop.
+                ...(stop ? [] : [{ name: 'code', label: t('admin.forms.stop.code'), required: true }]),
                 { name: 'name', label: t('admin.forms.stop.name'), required: true },
                 { name: 'name_en', label: t('admin.forms.stop.name_en') },
                 { name: 'lat', label: t('admin.forms.stop.lat'), required: true, type: 'number', step: 'any' },
@@ -1339,8 +1475,18 @@ Alpine.data('adminShell', () => ({
                 { name: 'has_shelter', label: t('admin.forms.stop.has_shelter'), type: 'checkbox' },
                 { name: 'description', label: t('admin.forms.line.description'), type: 'textarea', wide: true },
             ],
-            data: { geofence_radius: 60 },
-            submit: (data) => api.post('/admin/network/stops', data),
+            data: stop
+                ? {
+                    name: stop.name, name_en: stop.name_en,
+                    lat: stop.lat, lng: stop.lng,
+                    geofence_radius: stop.geofence_radius, address: stop.address,
+                    is_terminal: stop.is_terminal, is_accessible: stop.is_accessible,
+                    has_shelter: stop.has_shelter, description: stop.description,
+                }
+                : { geofence_radius: 60 },
+            submit: (data) => stop
+                ? api.patch(`/admin/network/stops/${stop.id}`, data)
+                : api.post('/admin/network/stops', data),
         });
     },
 
