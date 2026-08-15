@@ -148,4 +148,101 @@ void main() {
       expect(original.read, isFalse);
     });
   });
+
+  group('JourneyPlan', () {
+    test('parses a two-leg itinerary the way the planner emits it', () {
+      final plan = JourneyPlan.fromJson(const {
+        'options': [
+          {
+            'mode': 'bus',
+            'transfers': 1,
+            'estimated_total_minutes': 34,
+            'walk_minutes': 9,
+            'total_walk_meters': 720,
+            'walk_to_stop_meters': 240,
+            'walk_from_stop_meters': 180,
+            'stops_count': 14,
+            'ride_distance_meters': 8400,
+            'legs': [
+              {
+                'line': {'id': 1, 'code': '1', 'name': 'گلشهر — رسالت', 'color': '#12B76A'},
+                'board_at': {'id': 10, 'name': 'میدان شهدا'},
+                'alight_at': {'id': 18, 'name': 'چهارراه فاطمیه'},
+                'stops_count': 8,
+                'ride_minutes': 16,
+                'headway_minutes': 12,
+              },
+              {
+                'line': {'id': 4, 'code': '4', 'name': 'رسالت — بندر', 'color': null},
+                'board_at': {'id': 18, 'name': 'چهارراه فاطمیه'},
+                'alight_at': {'id': 25, 'name': 'اسکله شهید حقانی'},
+                'stops_count': 6,
+                'ride_minutes': 9,
+                'headway_minutes': 15,
+              },
+            ],
+          },
+        ],
+      });
+
+      expect(plan.reason, isNull);
+      expect(plan.options, hasLength(1));
+
+      final option = plan.options.single;
+
+      expect(option.isWalk, isFalse);
+      expect(option.transfers, 1);
+      expect(option.totalMinutes, 34);
+      // The two ends of the walk are kept apart from the total, because the
+      // itinerary says where the walking happens.
+      expect(option.walkToStopMeters, 240);
+      expect(option.walkFromStopMeters, 180);
+      expect(option.legs, hasLength(2));
+      expect(option.legs.first.boardStopName, 'میدان شهدا');
+      expect(option.legs.last.alightStopName, 'اسکله شهید حقانی');
+      expect(option.legs.last.lineColor, isNull);
+    });
+
+    test('carries the reason when there is nothing to offer', () {
+      final plan = JourneyPlan.fromJson(const {
+        'options': <Map<String, dynamic>>[],
+        'reason': 'no_stop_within_walking_distance',
+      });
+
+      // Without this the screen could only show a blank list, and "no stop
+      // near you" and "no route exists" call for different actions.
+      expect(plan.options, isEmpty);
+      expect(plan.reason, 'no_stop_within_walking_distance');
+    });
+
+    test('a walk-only answer has no legs and is flagged as walking', () {
+      final plan = JourneyPlan.fromJson(const {
+        'options': [
+          {
+            'mode': 'walk',
+            'transfers': 0,
+            'estimated_total_minutes': 7,
+            'walk_minutes': 7,
+            'total_walk_meters': 560,
+            'legs': <Map<String, dynamic>>[],
+          },
+        ],
+      });
+
+      expect(plan.options.single.isWalk, isTrue);
+      expect(plan.options.single.legs, isEmpty);
+    });
+
+    test('a malformed option degrades instead of throwing', () {
+      final plan = JourneyPlan.fromJson(const {
+        'options': [
+          {'legs': null},
+        ],
+      });
+
+      expect(plan.options.single.mode, 'bus');
+      expect(plan.options.single.totalMinutes, 0);
+      expect(plan.options.single.legs, isEmpty);
+    });
+  });
 }

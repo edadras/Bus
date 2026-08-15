@@ -45,6 +45,7 @@ live map is already enough motion.
 |---|---|
 | Map | Live buses, stops, user position, arrival board for the nearest stop. **Usable signed-out.** |
 | Bus sheet | Line, destination, next stop, ETA, occupancy, speed, staleness |
+| Plan | Origin and destination pickers, transfer tolerance, itineraries with per-leg board/alight rows. **Usable signed-out.** |
 | Ride | Active journey with next stop and ETA, or the scan entry point |
 | Scanner | Camera QR with viewfinder; expired and replayed codes are recoverable states, not errors |
 | Wallet | Balance, quick top-up amounts, gateway hand-off with status polling, statement |
@@ -59,6 +60,15 @@ switched off entirely — so nothing is ever *only* a push.
 The map tab is deliberately reachable without an account: a passenger must be
 able to look up a stop and see the next bus before signing up. Tabs that move
 money explain what signing in unlocks rather than hiding.
+
+Journey planning opens from the map header and is reachable on the same terms —
+planning a trip is exactly what someone does before deciding whether to sign up.
+Each itinerary is presented as instructions rather than a summary: walk this far
+to the stop, take this line from here to there, change, walk to the destination.
+Every figure includes the expected wait at the stop and is labelled an estimate,
+and when there is nothing to offer the screen says which of the two reasons it
+was — no stop within walking distance, or no route between them — because the
+passenger's next move differs.
 
 ### Driver app (Flutter)
 

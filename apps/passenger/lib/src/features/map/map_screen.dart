@@ -5,6 +5,7 @@ import 'package:hamsafar_core/hamsafar_core.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../providers.dart';
+import '../plan/plan_screen.dart';
 import 'widgets/arrival_tile.dart';
 import 'widgets/bus_marker.dart';
 import 'widgets/trip_sheet.dart';
@@ -225,7 +226,16 @@ class _Header extends ConsumerWidget {
               Format.tr('map.bus_count', {'count': Format.number(busCount)}),
               style: Theme.of(context).textTheme.labelMedium?.copyWith(color: AppColors.brand300),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 4),
+            IconButton(
+              tooltip: Format.tr('plan.title'),
+              visualDensity: VisualDensity.compact,
+              color: AppColors.brand300,
+              icon: const Icon(Icons.alt_route_rounded, size: 20),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => const PlanScreen()),
+              ),
+            ),
             const SampleDataNotice(compact: true),
           ],
         ),

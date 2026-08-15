@@ -122,11 +122,12 @@ class TransitApi {
     return result.asMap;
   }
 
-  Future<Map<String, dynamic>> planJourney({
+  Future<JourneyPlan> planJourney({
     required double fromLat,
     required double fromLng,
     required double toLat,
     required double toLng,
+    int? maxTransfers,
   }) async {
     final result = await _client.get(
       '/journey/plan',
@@ -135,10 +136,11 @@ class TransitApi {
         'from_lng': fromLng,
         'to_lat': toLat,
         'to_lng': toLng,
+        'max_transfers': maxTransfers,
       },
     );
 
-    return result.asMap;
+    return JourneyPlan.fromJson(result.asMap);
   }
 
   // ── Passenger ───────────────────────────────────────────────────────────

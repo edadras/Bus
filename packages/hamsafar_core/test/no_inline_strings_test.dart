@@ -40,7 +40,10 @@ void main() {
       }
     }
 
-    expect(offenders, isEmpty,
-        reason: 'Move these into strings_fa/strings_en:\n${offenders.join('\n')}');
+    expect(
+      offenders,
+      isEmpty,
+      reason: 'Move these into strings_fa/strings_en:\n${offenders.join('\n')}',
+    );
   });
 }

@@ -601,3 +601,124 @@ class AppNotification extends Equatable {
   @override
   List<Object?> get props => [id, read];
 }
+
+/// One suggested way of getting from A to B.
+///
+/// A journey is either a walk or a sequence of rides; `legs` is empty for the
+/// walk. The flattened `line`/`boardAt`/`alightAt` fields mirror the first and
+/// last leg so a compact row can render without unpacking the whole thing.
+class JourneyOption extends Equatable {
+  const JourneyOption({
+    required this.mode,
+    required this.transfers,
+    required this.totalMinutes,
+    required this.legs,
+    this.walkMinutes = 0,
+    this.totalWalkMeters = 0,
+    this.walkToStopMeters = 0,
+    this.walkFromStopMeters = 0,
+    this.stopsCount = 0,
+    this.rideDistanceMeters = 0,
+  });
+
+  final String mode;
+  final int transfers;
+  final int totalMinutes;
+  final List<JourneyLeg> legs;
+  final int walkMinutes;
+  final int totalWalkMeters;
+
+  /// The two ends of the walk, kept apart from the total so the itinerary can
+  /// say *where* the walking happens instead of only how much there is.
+  final int walkToStopMeters;
+  final int walkFromStopMeters;
+  final int stopsCount;
+  final int rideDistanceMeters;
+
+  bool get isWalk => mode == 'walk';
+
+  factory JourneyOption.fromJson(Map<String, dynamic> json) => JourneyOption(
+        mode: _as<String>(json['mode']) ?? 'bus',
+        transfers: _int(json['transfers']) ?? 0,
+        totalMinutes: _int(json['estimated_total_minutes']) ?? 0,
+        walkMinutes: _int(json['walk_minutes']) ?? 0,
+        totalWalkMeters: _int(json['total_walk_meters']) ?? 0,
+        walkToStopMeters: _int(json['walk_to_stop_meters']) ?? 0,
+        walkFromStopMeters: _int(json['walk_from_stop_meters']) ?? 0,
+        stopsCount: _int(json['stops_count']) ?? 0,
+        rideDistanceMeters: _int(json['ride_distance_meters']) ?? 0,
+        legs: (_as<List<dynamic>>(json['legs']) ?? const [])
+            .cast<Map<String, dynamic>>()
+            .map(JourneyLeg.fromJson)
+            .toList(),
+      );
+
+  @override
+  List<Object?> get props => [mode, transfers, totalMinutes, legs.length];
+}
+
+/// One ride within a journey: board this line here, get off there.
+class JourneyLeg extends Equatable {
+  const JourneyLeg({
+    required this.lineCode,
+    required this.lineName,
+    required this.boardStopName,
+    required this.alightStopName,
+    this.lineColor,
+    this.stopsCount = 0,
+    this.rideMinutes = 0,
+    this.headwayMinutes,
+  });
+
+  final String lineCode;
+  final String lineName;
+  final String boardStopName;
+  final String alightStopName;
+  final String? lineColor;
+  final int stopsCount;
+  final int rideMinutes;
+  final int? headwayMinutes;
+
+  factory JourneyLeg.fromJson(Map<String, dynamic> json) {
+    final line = _as<Map<String, dynamic>>(json['line']) ?? const {};
+    final board = _as<Map<String, dynamic>>(json['board_at']) ?? const {};
+    final alight = _as<Map<String, dynamic>>(json['alight_at']) ?? const {};
+
+    return JourneyLeg(
+      lineCode: _as<String>(line['code']) ?? '—',
+      lineName: _as<String>(line['name']) ?? '',
+      lineColor: _as<String>(line['color']),
+      boardStopName: _as<String>(board['name']) ?? '—',
+      alightStopName: _as<String>(alight['name']) ?? '—',
+      stopsCount: _int(json['stops_count']) ?? 0,
+      rideMinutes: _int(json['ride_minutes']) ?? 0,
+      headwayMinutes: _int(json['headway_minutes']),
+    );
+  }
+
+  @override
+  List<Object?> get props => [lineCode, boardStopName, alightStopName];
+}
+
+/// The planner's answer: options, and — when there are none — why.
+class JourneyPlan extends Equatable {
+  const JourneyPlan({required this.options, this.reason});
+
+  final List<JourneyOption> options;
+
+  /// `no_stop_within_walking_distance` or `no_route_found`. Present only when
+  /// there is nothing to offer, so the app can say why rather than show a
+  /// blank list.
+  final String? reason;
+
+  factory JourneyPlan.fromJson(Map<String, dynamic> json) => JourneyPlan(
+        options: (_as<List<dynamic>>(json['options']) ?? const [])
+            .cast<Map<String, dynamic>>()
+            .map(JourneyOption.fromJson)
+            .toList(),
+        reason: _as<String>(json['reason']),
+      );
+
+  @override
+  List<Object?> get props => [options.length, reason];
+}

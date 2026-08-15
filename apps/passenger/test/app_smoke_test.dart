@@ -56,8 +56,7 @@ void main() {
     expect(find.text('کیف پول'), findsOneWidget);
   });
 
-  testWidgets('money-touching tabs ask a signed-out visitor to sign in',
-      (tester) async {
+  testWidgets('money-touching tabs ask a signed-out visitor to sign in', (tester) async {
     await tester.pumpWidget(wrap(const PassengerShell()));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));

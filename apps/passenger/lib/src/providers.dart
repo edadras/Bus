@@ -135,6 +135,102 @@ final linesProvider = FutureProvider<List<BusLine>>(
   (ref) => ref.watch(transitApiProvider).lines(),
 );
 
+/// One end of a planned journey: either a stop the passenger picked, or the
+/// device itself. The device position is deliberately *not* captured here — it
+/// is read at search time, so a fix taken while the screen was open is never
+/// what gets planned from.
+class JourneyEndpoint {
+  const JourneyEndpoint.device() : stop = null;
+
+  const JourneyEndpoint.stop(BusStop this.stop);
+
+  final BusStop? stop;
+
+  bool get isDevice => stop == null;
+
+  String get label => stop?.name ?? Format.tr('plan.my_location');
+}
+
+final journeyOriginProvider = StateProvider<JourneyEndpoint?>(
+  (ref) => const JourneyEndpoint.device(),
+);
+
+final journeyDestinationProvider = StateProvider<JourneyEndpoint?>((ref) => null);
+
+/// How many changes the passenger will accept. The server caps this at two.
+final journeyMaxTransfersProvider = StateProvider<int>((ref) => 2);
+
+/// Stops matching what the passenger typed into the endpoint picker. An empty
+/// query falls back to the stops near them, which is the useful default.
+final stopSearchProvider = FutureProvider.autoDispose.family<List<BusStop>, String>(
+  (ref, query) async {
+    final trimmed = query.trim();
+
+    if (trimmed.isEmpty) return ref.watch(nearbyStopsProvider.future);
+
+    return ref.watch(transitApiProvider).stops(query: trimmed, limit: 25);
+  },
+);
+
+/// Journey planning is a request, not a subscription: it runs when the
+/// passenger asks for it and the answer stays until they ask again. Null means
+/// "nothing asked yet", which the screen shows differently from "no results".
+class JourneyPlanNotifier extends StateNotifier<AsyncValue<JourneyPlan>?> {
+  JourneyPlanNotifier(this._ref) : super(null);
+
+  final Ref _ref;
+
+  Future<void> search() async {
+    final origin = _ref.read(journeyOriginProvider);
+    final destination = _ref.read(journeyDestinationProvider);
+
+    if (origin == null || destination == null) return;
+
+    state = const AsyncValue.loading();
+
+    try {
+      final from = await _resolve(origin);
+      final to = await _resolve(destination);
+
+      final plan = await _ref.read(transitApiProvider).planJourney(
+            fromLat: from.lat,
+            fromLng: from.lng,
+            toLat: to.lat,
+            toLng: to.lng,
+            maxTransfers: _ref.read(journeyMaxTransfersProvider),
+          );
+
+      if (mounted) state = AsyncValue.data(plan);
+    } catch (error, stack) {
+      if (mounted) state = AsyncValue.error(error, stack);
+    }
+  }
+
+  void clear() {
+    if (mounted) state = null;
+  }
+
+  Future<LatLngPoint> _resolve(JourneyEndpoint endpoint) async {
+    if (endpoint.stop != null) return endpoint.stop!.position;
+
+    final position = await _ref.read(devicePositionProvider.future);
+
+    if (position == null) {
+      // Carried as an ApiException so the screen has one error branch: the
+      // code is what it reads, and this one never came from the server.
+      throw ApiException(
+        code: 'location_unavailable',
+        message: Format.tr('plan.location_unavailable'),
+      );
+    }
+
+    return LatLngPoint(position.latitude, position.longitude);
+  }
+}
+
+final journeyPlanProvider =
+    StateNotifierProvider<JourneyPlanNotifier, AsyncValue<JourneyPlan>?>(JourneyPlanNotifier.new);
+
 /// The in-app notification inbox.
 ///
 /// State is held rather than re-fetched on every read so marking one item read
