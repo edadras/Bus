@@ -46,10 +46,11 @@ live map is already enough motion.
 | Map | Live buses, stops, user position, arrival board for the nearest stop. **Usable signed-out.** |
 | Bus sheet | Line, destination, next stop, ETA, occupancy, speed, staleness |
 | Plan | Origin and destination pickers, transfer tolerance, itineraries with per-leg board/alight rows. **Usable signed-out.** |
+| Lines | Every line, each direction's stop timeline with offsets; tapping a stop opens its arrival board. **Usable signed-out.** |
 | Ride | Active journey with next stop and ETA, or the scan entry point |
 | Scanner | Camera QR with viewfinder; expired and replayed codes are recoverable states, not errors |
 | Wallet | Balance, quick top-up amounts, gateway hand-off with status polling, statement |
-| Complaints | List, intake with up to five photos and optional position, threaded replies |
+| Complaints | List, intake with up to five photos and optional position, threaded replies, and a satisfaction rating once resolved |
 | Notifications | In-app inbox with unread badge; tapping a card marks it read |
 | Account | Profile, ride history, notification entry point, language switch, plain-language privacy disclosure |
 

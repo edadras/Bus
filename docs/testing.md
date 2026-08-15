@@ -2,7 +2,7 @@
 
 ```bash
 php artisan test          # 300 PHP tests
-make apps-test            # 55 Dart tests
+make apps-test            # 57 Dart tests
 make apps-analyze         # static analysis across all four Dart packages
 ```
 
@@ -296,12 +296,13 @@ Mirrors the server's parity checks, plus the one that keeps it that way:
   whoever asked for English
 - **no widget in any of the three apps holds an inline Persian string**
 
-### Flutter (55)
+### Flutter (57)
 
-`packages/hamsafar_core` (42) — formatters (rial→toman, Persian digits and
+`packages/hamsafar_core` (44) — formatters (rial→toman, Persian digits and
 separator, mobile normalisation across six input forms, ETA never showing zero
 minutes), defensive model parsing including a journey plan with a malformed
-option and a walk-only answer, and `ApiException` classification including the
+option and a walk-only answer and a line's two directions being separate
+routes rather than one reversed, and `ApiException` classification including the
 distinction between a QR that needs re-scanning and one that is revoked.
 
 App smoke tests build the real widget tree against an in-memory token store and

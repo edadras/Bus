@@ -20,6 +20,7 @@ class ComplaintThreadScreen extends ConsumerStatefulWidget {
 class _ComplaintThreadScreenState extends ConsumerState<ComplaintThreadScreen> {
   final _replyController = TextEditingController();
   bool _sending = false;
+  bool _rating = false;
 
   @override
   void dispose() {
@@ -45,6 +46,28 @@ class _ComplaintThreadScreenState extends ConsumerState<ComplaintThreadScreen> {
       }
     } finally {
       if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  Future<void> _rate(int rating) async {
+    setState(() => _rating = true);
+
+    try {
+      await ref.read(transitApiProvider).rateComplaint(widget.uuid, rating);
+
+      ref.invalidate(_complaintProvider(widget.uuid));
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(Format.tr('complaints.rating_thanks'))),
+        );
+      }
+    } on ApiException catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+      }
+    } finally {
+      if (mounted) setState(() => _rating = false);
     }
   }
 
@@ -94,6 +117,32 @@ class _ComplaintThreadScreenState extends ConsumerState<ComplaintThreadScreen> {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.lg),
+                  // Asked once, at the only moment it means anything: the case
+                  // is closed and the passenger has not yet said whether that
+                  // was the right outcome.
+                  if (data.awaitsRating) ...[
+                    _RatingCard(
+                      onRate: (rating) => _rate(rating),
+                      busy: _rating,
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                  ],
+                  if (data.satisfactionRating != null) ...[
+                    GlassCard(
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              Format.tr('complaints.rated'),
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ),
+                          _Stars(value: data.satisfactionRating!),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                  ],
                   for (final message in data.messages) ...[
                     _MessageBubble(message: message),
                     const SizedBox(height: AppSpacing.sm),
@@ -139,6 +188,64 @@ class _ComplaintThreadScreenState extends ConsumerState<ComplaintThreadScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _RatingCard extends StatelessWidget {
+  const _RatingCard({required this.onRate, required this.busy});
+
+  final ValueChanged<int> onRate;
+  final bool busy;
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      strong: true,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(Format.tr('complaints.rate_title'), style: Theme.of(context).textTheme.titleSmall),
+          const SizedBox(height: 4),
+          Text(Format.tr('complaints.rate_body'), style: Theme.of(context).textTheme.labelSmall),
+          const SizedBox(height: AppSpacing.md),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              for (var value = 1; value <= 5; value++)
+                IconButton(
+                  onPressed: busy ? null : () => onRate(value),
+                  icon: const Icon(Icons.star_rounded, size: 30),
+                  color: AppColors.brand300,
+                  tooltip: Format.tr('complaints.rate_of_five', {
+                    'count': Format.number(value),
+                  }),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Stars extends StatelessWidget {
+  const _Stars({required this.value});
+
+  final int value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (var index = 1; index <= 5; index++)
+          Icon(
+            index <= value ? Icons.star_rounded : Icons.star_outline_rounded,
+            size: 18,
+            color: index <= value ? AppColors.brand300 : AppColors.ink500,
+          ),
+      ],
     );
   }
 }

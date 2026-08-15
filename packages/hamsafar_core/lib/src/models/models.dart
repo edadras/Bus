@@ -454,6 +454,9 @@ class Complaint extends Equatable {
     this.body,
     this.categoryLabel,
     this.createdAt,
+    this.status,
+    this.satisfactionRating,
+    this.resolutionNote,
     this.messages = const [],
   });
 
@@ -466,7 +469,16 @@ class Complaint extends Equatable {
   final String? body;
   final String? categoryLabel;
   final DateTime? createdAt;
+  final String? status;
+
+  /// One to five, once the passenger has said whether the outcome was any
+  /// good. Null means they have not been asked yet or have not answered.
+  final int? satisfactionRating;
+  final String? resolutionNote;
   final List<ComplaintMessage> messages;
+
+  /// Resolved, and not yet rated: the only moment worth asking.
+  bool get awaitsRating => status == 'resolved' && satisfactionRating == null;
 
   factory Complaint.fromJson(Map<String, dynamic> json) => Complaint(
         uuid: _as<String>(json['uuid']) ?? '',
@@ -478,6 +490,9 @@ class Complaint extends Equatable {
         body: _as<String>(json['body']),
         categoryLabel: _as<String>(json['category_label']),
         createdAt: _date(json['created_at']),
+        status: _as<String>(json['status']),
+        satisfactionRating: _int(json['satisfaction_rating']),
+        resolutionNote: _as<String>(json['resolution_note']),
         messages: (_as<List<dynamic>>(json['messages']) ?? const [])
             .cast<Map<String, dynamic>>()
             .map(ComplaintMessage.fromJson)
@@ -485,7 +500,7 @@ class Complaint extends Equatable {
       );
 
   @override
-  List<Object?> get props => [uuid, statusLabel, messages.length];
+  List<Object?> get props => [uuid, statusLabel, satisfactionRating, messages.length];
 }
 
 class ComplaintMessage extends Equatable {
@@ -721,4 +736,111 @@ class JourneyPlan extends Equatable {
 
   @override
   List<Object?> get props => [options.length, reason];
+}
+
+/// A line with the routes it runs.
+class LineDetail extends Equatable {
+  const LineDetail({required this.line, this.routes = const []});
+
+  final BusLine line;
+  final List<RouteSummary> routes;
+
+  factory LineDetail.fromJson(Map<String, dynamic> json) => LineDetail(
+        line: BusLine.fromJson(json),
+        routes: (_as<List<dynamic>>(json['routes']) ?? const [])
+            .cast<Map<String, dynamic>>()
+            .map(RouteSummary.fromJson)
+            .toList(),
+      );
+
+  @override
+  List<Object?> get props => [line.id, routes.length];
+}
+
+/// One direction of a line, as listed on the line itself.
+class RouteSummary extends Equatable {
+  const RouteSummary({
+    required this.id,
+    required this.name,
+    required this.directionLabel,
+    this.distanceMeters,
+    this.originName,
+    this.destinationName,
+  });
+
+  final int id;
+  final String name;
+  final String directionLabel;
+  final int? distanceMeters;
+  final String? originName;
+  final String? destinationName;
+
+  factory RouteSummary.fromJson(Map<String, dynamic> json) => RouteSummary(
+        id: _int(json['id']) ?? 0,
+        name: _as<String>(json['name']) ?? '',
+        directionLabel: _as<String>(json['direction_label']) ?? '',
+        distanceMeters: _int(json['distance_meters']),
+        originName: _as<Map<String, dynamic>>(json['origin'])?['name'] as String?,
+        destinationName: _as<Map<String, dynamic>>(json['destination'])?['name'] as String?,
+      );
+
+  @override
+  List<Object?> get props => [id];
+}
+
+/// One route with its stops in order — the timeline a passenger reads to work
+/// out whether this line goes anywhere near them.
+class RouteDetail extends Equatable {
+  const RouteDetail({
+    required this.id,
+    required this.name,
+    required this.directionLabel,
+    this.distanceMeters,
+    this.stops = const [],
+  });
+
+  final int id;
+  final String name;
+  final String directionLabel;
+  final int? distanceMeters;
+  final List<RouteStop> stops;
+
+  factory RouteDetail.fromJson(Map<String, dynamic> json) => RouteDetail(
+        id: _int(json['id']) ?? 0,
+        name: _as<String>(json['name']) ?? '',
+        directionLabel: _as<String>(json['direction_label']) ?? '',
+        distanceMeters: _int(json['distance_meters']),
+        stops: (_as<List<dynamic>>(json['stops']) ?? const [])
+            .cast<Map<String, dynamic>>()
+            .map(RouteStop.fromJson)
+            .toList(),
+      );
+
+  @override
+  List<Object?> get props => [id, stops.length];
+}
+
+/// A stop's place in a route.
+class RouteStop extends Equatable {
+  const RouteStop({
+    required this.sequence,
+    required this.stop,
+    this.distanceFromStart,
+    this.isTimepoint = false,
+  });
+
+  final int sequence;
+  final BusStop stop;
+  final int? distanceFromStart;
+  final bool isTimepoint;
+
+  factory RouteStop.fromJson(Map<String, dynamic> json) => RouteStop(
+        sequence: _int(json['sequence']) ?? 0,
+        stop: BusStop.fromJson(_as<Map<String, dynamic>>(json['stop']) ?? const {}),
+        distanceFromStart: _int(json['distance_from_start']),
+        isTimepoint: json['is_timepoint'] == true,
+      );
+
+  @override
+  List<Object?> get props => [sequence, stop.id];
 }

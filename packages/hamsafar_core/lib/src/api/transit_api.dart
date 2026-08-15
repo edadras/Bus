@@ -93,6 +93,22 @@ class TransitApi {
     return result.asList.map(BusLine.fromJson).toList();
   }
 
+  /// One line with the routes it runs. The stop sequence lives on the route,
+  /// not the line — a line usually has an outward and a return that are not
+  /// mirror images of each other.
+  Future<LineDetail> line(int id) async {
+    final result = await _client.get('/lines/$id');
+
+    return LineDetail.fromJson(result.asMap);
+  }
+
+  /// One route, with its stops in order.
+  Future<RouteDetail> route(int id) async {
+    final result = await _client.get('/routes/$id');
+
+    return RouteDetail.fromJson(result.asMap);
+  }
+
   Future<List<Arrival>> arrivals(int stopId, {int? lineId, int limit = 10}) async {
     final result = await _client.get(
       '/stops/$stopId/arrivals',
@@ -286,6 +302,13 @@ class TransitApi {
 
   Future<Complaint> replyToComplaint(String uuid, String body) async {
     final result = await _client.post('/complaints/$uuid/reply', body: {'body': body});
+
+    return Complaint.fromJson(result.asMap);
+  }
+
+  /// Say whether a resolved complaint was actually resolved, one to five.
+  Future<Complaint> rateComplaint(String uuid, int rating) async {
+    final result = await _client.post('/complaints/$uuid/rate', body: {'rating': rating});
 
     return Complaint.fromJson(result.asMap);
   }

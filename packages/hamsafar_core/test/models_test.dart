@@ -233,6 +233,59 @@ void main() {
       expect(plan.options.single.legs, isEmpty);
     });
 
+    test('a line carries the routes it runs, in both directions', () {
+      final detail = LineDetail.fromJson(const {
+        'id': 7,
+        'code': '4',
+        'name': 'رسالت — بندر',
+        'color': '#12B76A',
+        'routes': [
+          {
+            'id': 11,
+            'name': 'رفت',
+            'direction_label': 'رفت',
+            'distance_meters': 8400,
+            'origin': {'name': 'میدان شهدا'},
+            'destination': {'name': 'اسکله'},
+          },
+          {'id': 12, 'name': 'برگشت', 'direction_label': 'برگشت'},
+        ],
+      });
+
+      // The two directions are separate routes, not one reversed: a passenger
+      // reading the wrong one is reading a different set of stops.
+      expect(detail.line.code, '4');
+      expect(detail.routes, hasLength(2));
+      expect(detail.routes.first.originName, 'میدان شهدا');
+      expect(detail.routes.last.distanceMeters, isNull);
+    });
+
+    test('a route reports its stops in order with their offsets', () {
+      final route = RouteDetail.fromJson(const {
+        'id': 11,
+        'name': 'رفت',
+        'direction_label': 'رفت',
+        'distance_meters': 8400,
+        'stops': [
+          {
+            'sequence': 1,
+            'distance_from_start': 0,
+            'stop': {'id': 1, 'name': 'میدان شهدا', 'lat': 27.1, 'lng': 56.2},
+          },
+          {
+            'sequence': 2,
+            'distance_from_start': 1200,
+            'is_timepoint': true,
+            'stop': {'id': 2, 'name': 'چهارراه فاطمیه', 'lat': 27.1, 'lng': 56.21},
+          },
+        ],
+      });
+
+      expect(route.stops.map((item) => item.sequence), [1, 2]);
+      expect(route.stops.last.isTimepoint, isTrue);
+      expect(route.stops.last.distanceFromStart, 1200);
+    });
+
     test('a malformed option degrades instead of throwing', () {
       final plan = JourneyPlan.fromJson(const {
         'options': [

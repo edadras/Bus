@@ -5,6 +5,7 @@ import 'package:hamsafar_core/hamsafar_core.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../providers.dart';
+import '../lines/lines_screen.dart';
 import '../plan/plan_screen.dart';
 import 'widgets/arrival_tile.dart';
 import 'widgets/bus_marker.dart';
@@ -234,6 +235,15 @@ class _Header extends ConsumerWidget {
               icon: const Icon(Icons.alt_route_rounded, size: 20),
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(builder: (_) => const PlanScreen()),
+              ),
+            ),
+            IconButton(
+              tooltip: Format.tr('lines.title'),
+              visualDensity: VisualDensity.compact,
+              color: AppColors.brand300,
+              icon: const Icon(Icons.format_list_bulleted_rounded, size: 20),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => const LinesScreen()),
               ),
             ),
             const SampleDataNotice(compact: true),
