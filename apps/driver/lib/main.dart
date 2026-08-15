@@ -20,7 +20,7 @@ void main() {
 
   unawaited(SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]));
 
-  final config = AppConfig.fromEnvironment(appName: 'همسفر راننده', client: 'driver');
+  final config = AppConfig.fromEnvironment(appName: Format.tr('driver.app_name'), client: 'driver');
 
   runApp(
     ProviderScope(
@@ -35,6 +35,6 @@ class DriverApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const HamsafarApp(title: 'همسفر راننده', home: DriverShell());
+    return HamsafarApp(title: Format.tr('driver.app_name'), home: const DriverShell());
   }
 }

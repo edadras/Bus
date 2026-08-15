@@ -18,8 +18,8 @@ class PassengersScreen extends ConsumerWidget {
     final theme = Theme.of(context);
 
     return AppScaffold(
-      title: 'مسافران',
-      subtitle: 'به‌روزرسانی زنده',
+      title: Format.tr('passengers.title'),
+      subtitle: Format.tr('passengers.subtitle'),
       onRefresh: () async {
         ref.invalidate(passengersProvider);
         await ref.read(passengersProvider.future);
@@ -28,8 +28,8 @@ class PassengersScreen extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator(color: AppColors.info)),
         error: (error, _) => ErrorState(
           message: error is ApiException && error.code == 'no_active_trip'
-              ? 'در حال حاضر سرویس فعالی ندارید.'
-              : 'دریافت اطلاعات مسافران ممکن نشد.',
+              ? Format.tr('passengers.no_active_trip')
+              : Format.tr('passengers.load_failed'),
           isOffline: error is NetworkException,
           onRetry: () => ref.invalidate(passengersProvider),
         ),
@@ -53,7 +53,7 @@ class PassengersScreen extends ConsumerWidget {
                       children: [
                         const LiveDot(),
                         const SizedBox(width: 8),
-                        Text('مسافران داخل اتوبوس', style: theme.textTheme.labelMedium),
+                        Text(Format.tr('passengers.on_board'), style: theme.textTheme.labelMedium),
                       ],
                     ),
                     const SizedBox(height: AppSpacing.lg),
@@ -66,8 +66,7 @@ class PassengersScreen extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: AppSpacing.sm),
-                    Text('نفر', style: theme.textTheme.bodySmall),
-
+                    Text(Format.tr('passengers.people'), style: theme.textTheme.bodySmall),
                     if (capacity > 0) ...[
                       const SizedBox(height: AppSpacing.xl),
                       ClipRRect(
@@ -87,53 +86,54 @@ class PassengersScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: AppSpacing.sm),
                       Text(
-                        '${Format.number((occupancy * 100).round())}٪ از ظرفیت ${Format.number(capacity)} نفر',
+                        Format.tr('passengers.occupancy', {
+                          'percent': Format.number((occupancy * 100).round()),
+                          'capacity': Format.number(capacity),
+                        }),
                         style: theme.textTheme.labelSmall,
                       ),
                     ],
                   ],
                 ),
               ),
-
               const SizedBox(height: AppSpacing.md),
-
               Row(
                 children: [
                   Expanded(
                     child: StatTile(
-                      label: 'کل سوارشدگان',
+                      label: Format.tr('passengers.total_boardings'),
                       value: Format.number((data['boarding_count'] as num?)?.toInt() ?? 0),
                     ),
                   ),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: StatTile(
-                      label: 'بیشترین همزمان',
+                      label: Format.tr('passengers.peak'),
                       value: Format.number((data['peak_passenger_count'] as num?)?.toInt() ?? 0),
                     ),
                   ),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: StatTile(
-                      label: 'درآمد سفر',
-                      value: (data['revenue'] as Map<String, dynamic>?)?['formatted'] as String? ?? '—',
+                      label: Format.tr('passengers.trip_revenue'),
+                      value: (data['revenue'] as Map<String, dynamic>?)?['formatted'] as String? ??
+                          '—',
                       accent: AppColors.brand300,
                     ),
                   ),
                 ],
               ),
-
               const SizedBox(height: AppSpacing.lg),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: Text('آخرین پرداخت‌ها', style: theme.textTheme.titleSmall),
+                child: Text(Format.tr('passengers.recent_payments'),
+                    style: theme.textTheme.titleSmall),
               ),
               const SizedBox(height: AppSpacing.sm),
-
               if (boardings.isEmpty)
-                const EmptyState(
+                EmptyState(
                   icon: Icons.confirmation_number_outlined,
-                  message: 'هنوز مسافری سوار نشده است.',
+                  message: Format.tr('passengers.none_yet'),
                 )
               else
                 for (final boarding in boardings) ...[
@@ -154,7 +154,7 @@ class PassengersScreen extends ConsumerWidget {
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            'مسافر سوار شد',
+                            Format.tr('passengers.boarded'),
                             style: theme.textTheme.titleSmall,
                           ),
                         ),

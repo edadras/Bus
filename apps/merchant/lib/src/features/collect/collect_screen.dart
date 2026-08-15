@@ -44,7 +44,7 @@ class _CollectScreenState extends ConsumerState<CollectScreen> {
     final theme = Theme.of(context);
 
     return AppScaffold(
-      title: 'دریافت وجه',
+      title: Format.tr('collect.title'),
       actions: [
         IconButton(
           onPressed: () => ref.read(authControllerProvider.notifier).signOut(),
@@ -58,22 +58,22 @@ class _CollectScreenState extends ConsumerState<CollectScreen> {
       body: state.when(
         loading: () => const Center(child: CircularProgressIndicator(color: AppColors.warning)),
         error: (error, _) => ErrorState(
-          message: error is ApiException ? error.message : 'دریافت اطلاعات پذیرنده ممکن نشد.',
+          message: error is ApiException ? error.message : Format.tr('collect.load_failed'),
           isOffline: error is NetworkException,
           onRetry: () => ref.invalidate(merchantStateProvider),
         ),
         data: (merchant) {
           if (!merchant.isActive) {
-            return const EmptyState(
+            return EmptyState(
               icon: Icons.pending_outlined,
-              message: 'حساب پذیرنده شما هنوز فعال نشده است.\nپس از تأیید مدیر سامانه، امکان دریافت وجه فعال می‌شود.',
+              message: Format.tr('collect.not_active'),
             );
           }
 
           if (merchant.terminals.isEmpty) {
-            return const EmptyState(
+            return EmptyState(
               icon: Icons.point_of_sale_outlined,
-              message: 'صندوقی برای این پذیرنده تعریف نشده است.',
+              message: Format.tr('collect.no_terminal'),
             );
           }
 
@@ -111,7 +111,7 @@ class _CollectScreenState extends ConsumerState<CollectScreen> {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text('موجودی', style: theme.textTheme.labelSmall),
+                        Text(Format.tr('collect.balance'), style: theme.textTheme.labelSmall),
                         Text(
                           merchant.formattedBalance,
                           style: theme.textTheme.titleSmall?.copyWith(color: AppColors.brand300),
@@ -121,7 +121,6 @@ class _CollectScreenState extends ConsumerState<CollectScreen> {
                   ],
                 ),
               ),
-
               if (merchant.terminals.length > 1) ...[
                 const SizedBox(height: AppSpacing.md),
                 SizedBox(
@@ -144,29 +143,28 @@ class _CollectScreenState extends ConsumerState<CollectScreen> {
                   ),
                 ),
               ],
-
               const SizedBox(height: AppSpacing.lg),
               _TerminalQr(terminalId: terminalId),
-
               const SizedBox(height: AppSpacing.lg),
               GlassCard(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('تسویه در انتظار', style: theme.textTheme.titleSmall),
+                    Text(Format.tr('collect.pending_settlement'),
+                        style: theme.textTheme.titleSmall),
                     const SizedBox(height: AppSpacing.md),
                     Row(
                       children: [
                         Expanded(
                           child: StatTile(
-                            label: 'تراکنش',
+                            label: Format.tr('collect.transactions'),
                             value: Format.number(merchant.pendingSettlement.transactionCount),
                           ),
                         ),
                         const SizedBox(width: AppSpacing.sm),
                         Expanded(
                           child: StatTile(
-                            label: 'قابل تسویه',
+                            label: Format.tr('collect.settleable'),
                             value: Format.money(merchant.pendingSettlement.netAmount),
                             accent: AppColors.brand300,
                           ),
@@ -180,7 +178,7 @@ class _CollectScreenState extends ConsumerState<CollectScreen> {
                             ? null
                             : _requestSettlement,
                         icon: const Icon(Icons.account_balance_outlined, size: 18),
-                        label: const Text('درخواست تسویه'),
+                        label: Text(Format.tr('collect.request_settlement')),
                       ),
                     ],
                   ],
@@ -205,14 +203,19 @@ class _CollectScreenState extends ConsumerState<CollectScreen> {
         context: context,
         builder: (context) => AlertDialog(
           icon: const Icon(Icons.check_circle_rounded, color: AppColors.brand400, size: 40),
-          title: const Text('درخواست تسویه ثبت شد'),
+          title: Text(Format.tr('collect.settlement_requested')),
           content: Text(
-            'شماره پیگیری: ${Format.digits('${result['reference']}')}\n'
-            'مبلغ خالص: ${result['formatted_net']}',
+            Format.tr('collect.settlement_detail', {
+              'reference': Format.digits('${result['reference']}'),
+              'amount': result['formatted_net'],
+            }),
             textAlign: TextAlign.center,
           ),
           actions: [
-            FilledButton(onPressed: () => Navigator.pop(context), child: const Text('باشه')),
+            FilledButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(Format.tr('collect.ok')),
+            ),
           ],
         ),
       );
@@ -239,15 +242,14 @@ class _TerminalQr extends ConsumerWidget {
       padding: const EdgeInsets.all(AppSpacing.xl),
       child: Column(
         children: [
-          Text('کد پرداخت', style: theme.textTheme.titleSmall),
+          Text(Format.tr('collect.payment_code'), style: theme.textTheme.titleSmall),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            'مشتری این کد را با اپلیکیشن همسفر اسکن می‌کند.',
+            Format.tr('collect.payment_code_body'),
             textAlign: TextAlign.center,
             style: theme.textTheme.bodySmall,
           ),
           const SizedBox(height: AppSpacing.xl),
-
           token.when(
             loading: () => const SizedBox(
               height: 240,
@@ -256,7 +258,7 @@ class _TerminalQr extends ConsumerWidget {
             error: (error, _) => SizedBox(
               height: 240,
               child: ErrorState(
-                message: error is ApiException ? error.message : 'تولید کد ممکن نشد.',
+                message: error is ApiException ? error.message : Format.tr('collect.code_failed'),
                 isOffline: error is NetworkException,
                 onRetry: () => ref.read(terminalTokenProvider(terminalId).notifier).refresh(),
               ),
@@ -283,7 +285,7 @@ class _TerminalQr extends ConsumerWidget {
                 _Countdown(seconds: data.expiresIn, total: data.rotationSeconds),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
-                  'شناسه صندوق: ${data.publicId}',
+                  Format.tr('collect.terminal_id', {'id': data.publicId}),
                   style: theme.textTheme.labelSmall,
                   textDirection: TextDirection.ltr,
                 ),
@@ -360,7 +362,7 @@ class _CountdownState extends State<_Countdown> {
         ),
         const SizedBox(height: 6),
         Text(
-          'اعتبار کد: ${Format.number(_remaining)} ثانیه',
+          Format.tr('collect.code_validity', {'seconds': Format.number(_remaining)}),
           style: Theme.of(context).textTheme.labelSmall,
         ),
       ],

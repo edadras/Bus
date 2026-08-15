@@ -4,7 +4,7 @@ import 'package:hamsafar_core/hamsafar_core.dart';
 /// One row of the arrival board.
 ///
 /// The confidence flag matters here: a low-confidence estimate is shown in a
-/// muted colour and labelled «تقریبی», because publishing an uncertain figure
+/// muted colour and labelled as approximate, because publishing an uncertain figure
 /// as though it were firm is how riders stop trusting the board entirely.
 class ArrivalTile extends StatelessWidget {
   const ArrivalTile({required this.arrival, this.onTap, super.key});
@@ -53,7 +53,9 @@ class ArrivalTile extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  arrival.destination ?? arrival.lineName ?? 'مقصد نامشخص',
+                  arrival.destination ??
+                      arrival.lineName ??
+                      Format.tr('arrival.unknown_destination'),
                   style: theme.textTheme.titleSmall,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -62,7 +64,7 @@ class ArrivalTile extends StatelessWidget {
                 Row(
                   children: [
                     Text(
-                      'اتوبوس ${Format.digits(arrival.busNumber ?? '—')}',
+                      Format.tr('arrival.bus', {'number': Format.digits(arrival.busNumber ?? '—')}),
                       style: theme.textTheme.labelSmall,
                     ),
                     const SizedBox(width: 8),
@@ -75,7 +77,8 @@ class ArrivalTile extends StatelessWidget {
                     if (arrival.stopsAway > 0) ...[
                       const SizedBox(width: 8),
                       Text(
-                        '${Format.number(arrival.stopsAway)} ایستگاه',
+                        Format.tr(
+                            'arrival.stops_away', {'count': Format.number(arrival.stopsAway)}),
                         style: theme.textTheme.labelSmall,
                       ),
                     ],
@@ -95,10 +98,10 @@ class ArrivalTile extends StatelessWidget {
                   height: 1,
                 ),
               ),
-              Text('دقیقه', style: theme.textTheme.labelSmall),
+              Text(Format.tr('arrival.minutes'), style: theme.textTheme.labelSmall),
               if (!arrival.isReliable)
                 Text(
-                  'تقریبی',
+                  Format.tr('arrival.approximate'),
                   style: theme.textTheme.labelSmall?.copyWith(
                     color: AppColors.warning,
                     fontSize: 9,

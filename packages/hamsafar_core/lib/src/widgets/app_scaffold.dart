@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import '../theme/app_theme.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../l10n/locale_provider.dart';
+import '../util/formatters.dart';
 
 /// Scaffold shared by every screen: RTL, the ambient background, and a
 /// consistent header. Individual screens supply only their content.
@@ -184,7 +187,7 @@ class _NavButton extends StatelessWidget {
 }
 
 /// The Persian-first, RTL app root. Every app wraps its router in this.
-class HamsafarApp extends StatelessWidget {
+class HamsafarApp extends ConsumerWidget {
   const HamsafarApp({required this.title, required this.home, this.navigatorKey, super.key});
 
   final String title;
@@ -192,21 +195,30 @@ class HamsafarApp extends StatelessWidget {
   final GlobalKey<NavigatorState>? navigatorKey;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final locale = ref.watch(localeProvider);
+
+    // Format reads a static rather than taking a locale parameter; this is the
+    // one place that keeps it in step. The key forces the whole tree to
+    // rebuild when the language changes, which is what makes every screen pick
+    // the new strings up — they read Format.tr(), not an inherited widget.
+    Format.locale = locale;
+
     return MaterialApp(
+      key: ValueKey(locale),
       title: title,
       debugShowCheckedModeBanner: false,
       navigatorKey: navigatorKey,
       theme: AppTheme.build(),
-      locale: const Locale('fa', 'IR'),
-      supportedLocales: const [Locale('fa', 'IR'), Locale('en', 'US')],
+      locale: Locale(locale),
+      supportedLocales: const [Locale('fa'), Locale('en')],
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
       builder: (context, child) => Directionality(
-        textDirection: TextDirection.rtl,
+        textDirection: locale == 'en' ? TextDirection.ltr : TextDirection.rtl,
         // Clamp text scaling: beyond 1.3 the fare and ETA figures start to
         // truncate, and a wrong-looking price is worse than a small one.
         child: MediaQuery.withClampedTextScaling(

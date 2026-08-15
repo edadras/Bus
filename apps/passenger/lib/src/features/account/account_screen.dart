@@ -17,7 +17,7 @@ class AccountScreen extends ConsumerWidget {
     final user = auth.user;
 
     return AppScaffold(
-      title: 'حساب کاربری',
+      title: Format.tr('account.title'),
       onRefresh: () async {
         ref.invalidate(rideHistoryProvider);
         await ref.read(rideHistoryProvider.future);
@@ -31,19 +31,19 @@ class AccountScreen extends ConsumerWidget {
                 children: [
                   const Icon(Icons.person_outline_rounded, size: 34, color: AppColors.ink400),
                   const SizedBox(height: AppSpacing.md),
-                  Text('وارد حساب کاربری نشده‌اید.', style: theme.textTheme.bodyMedium),
+                  Text(Format.tr('account.signed_out'), style: theme.textTheme.bodyMedium),
                   const SizedBox(height: AppSpacing.lg),
                   FilledButton(
                     onPressed: () => Navigator.of(context).push(
                       MaterialPageRoute<void>(
-                        builder: (_) => const OtpLoginView(
+                        builder: (_) => OtpLoginView(
                           client: 'passenger',
-                          title: 'ورود به همسفر',
-                          subtitle: 'با شماره موبایل خود وارد شوید',
+                          title: Format.tr('app.sign_in_title'),
+                          subtitle: Format.tr('app.sign_in_subtitle'),
                         ),
                       ),
                     ),
-                    child: const Text('ورود با شماره موبایل'),
+                    child: Text(Format.tr('app.sign_in_with_mobile')),
                   ),
                 ],
               ),
@@ -64,7 +64,9 @@ class AccountScreen extends ConsumerWidget {
                     ),
                     alignment: Alignment.center,
                     child: Text(
-                      user.name.isNotEmpty ? user.name.characters.first : '؟',
+                      user.name.isNotEmpty
+                          ? user.name.characters.first
+                          : Format.tr('account.unknown_initial'),
                       style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w700,
@@ -93,21 +95,23 @@ class AccountScreen extends ConsumerWidget {
             ),
             const SizedBox(height: AppSpacing.lg),
             const _NotificationsTile(),
+            const SizedBox(height: AppSpacing.sm),
+            const _LanguageTile(),
             const SizedBox(height: AppSpacing.lg),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Text('سفرهای اخیر', style: theme.textTheme.titleSmall),
+              child: Text(Format.tr('account.recent_rides'), style: theme.textTheme.titleSmall),
             ),
             const SizedBox(height: AppSpacing.sm),
             history.when(
               loading: () => const Column(
                 children: [ShimmerBox(height: 66), SizedBox(height: 8), ShimmerBox(height: 66)],
               ),
-              error: (_, __) => const EmptyState(message: 'دریافت تاریخچه ممکن نشد.'),
+              error: (_, __) => EmptyState(message: Format.tr('account.history_failed')),
               data: (rides) => rides.isEmpty
-                  ? const EmptyState(
+                  ? EmptyState(
                       icon: Icons.directions_bus_outlined,
-                      message: 'هنوز سفری ثبت نشده است.',
+                      message: Format.tr('account.no_rides'),
                     )
                   : Column(
                       children: [
@@ -132,14 +136,12 @@ class AccountScreen extends ConsumerWidget {
                   children: [
                     const Icon(Icons.shield_outlined, size: 18, color: AppColors.ink400),
                     const SizedBox(width: 8),
-                    Text('حریم خصوصی', style: theme.textTheme.titleSmall),
+                    Text(Format.tr('account.privacy'), style: theme.textTheme.titleSmall),
                   ],
                 ),
                 const SizedBox(height: AppSpacing.md),
                 Text(
-                  'موقعیت مکانی شما فقط هنگام یک سفر فعال و تنها برای تشخیص پیاده شدن '
-                  'استفاده می‌شود. این داده حداکثر تا ۲۴ ساعت نگهداری و سپس حذف می‌شود '
-                  'و در اختیار سایر کاربران قرار نمی‌گیرد.',
+                  Format.tr('account.privacy_body'),
                   style: theme.textTheme.bodySmall,
                 ),
               ],
@@ -156,16 +158,16 @@ class AccountScreen extends ConsumerWidget {
                 final confirmed = await showDialog<bool>(
                   context: context,
                   builder: (context) => AlertDialog(
-                    title: const Text('خروج از حساب'),
-                    content: const Text('برای پرداخت کرایه باید دوباره وارد شوید. ادامه می‌دهید؟'),
+                    title: Text(Format.tr('account.sign_out')),
+                    content: Text(Format.tr('account.sign_out_confirm')),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(context, false),
-                        child: const Text('انصراف'),
+                        child: Text(Format.tr('common.cancel')),
                       ),
                       FilledButton(
                         onPressed: () => Navigator.pop(context, true),
-                        child: const Text('خروج'),
+                        child: Text(Format.tr('account.sign_out_action')),
                       ),
                     ],
                   ),
@@ -176,7 +178,7 @@ class AccountScreen extends ConsumerWidget {
                 }
               },
               icon: const Icon(Icons.logout_rounded, size: 18),
-              label: const Text('خروج از حساب'),
+              label: Text(Format.tr('account.sign_out')),
             ),
           ],
         ],
@@ -218,7 +220,7 @@ class _RideTile extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  ride.lineName ?? 'سفر',
+                  ride.lineName ?? Format.tr('account.ride'),
                   style: theme.textTheme.titleSmall,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -263,7 +265,8 @@ class _NotificationsTile extends ConsumerWidget {
         children: [
           const Icon(Icons.notifications_none_rounded, size: 20, color: AppColors.ink400),
           const SizedBox(width: 12),
-          Expanded(child: Text('اعلان‌ها', style: theme.textTheme.titleSmall)),
+          Expanded(
+              child: Text(Format.tr('notifications.title'), style: theme.textTheme.titleSmall)),
           if (unread > 0)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
@@ -282,6 +285,43 @@ class _NotificationsTile extends ConsumerWidget {
             ),
           const SizedBox(width: 6),
           const Icon(Icons.chevron_left_rounded, size: 20, color: AppColors.ink400),
+        ],
+      ),
+    );
+  }
+}
+
+/// Language choice.
+///
+/// Persian is the default and stays the default; this is here because a
+/// declared second locale nobody can reach is not a supported locale. The
+/// choice is stored, so it survives a restart.
+class _LanguageTile extends ConsumerWidget {
+  const _LanguageTile();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final locale = ref.watch(localeProvider);
+
+    return GlassCard(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      child: Row(
+        children: [
+          const Icon(Icons.translate_rounded, size: 20, color: AppColors.ink400),
+          const SizedBox(width: 12),
+          Expanded(child: Text(Format.tr('account.language'), style: theme.textTheme.titleSmall)),
+          SegmentedButton<String>(
+            style: const ButtonStyle(visualDensity: VisualDensity.compact),
+            segments: [
+              ButtonSegment(value: 'fa', label: Text(Format.tr('account.language_fa'))),
+              ButtonSegment(value: 'en', label: Text(Format.tr('account.language_en'))),
+            ],
+            selected: {locale},
+            showSelectedIcon: false,
+            onSelectionChanged: (selection) =>
+                ref.read(localeProvider.notifier).set(selection.first),
+          ),
         ],
       ),
     );

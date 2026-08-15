@@ -6,7 +6,6 @@ import 'package:geolocator/geolocator.dart';
 import 'package:hamsafar_core/hamsafar_core.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
-
 /// Scanning the in-bus code to open a shift.
 ///
 /// The refusals here are all authorisation decisions made by the server — an
@@ -32,14 +31,14 @@ class _ShiftScanScreenState extends ConsumerState<ShiftScanScreen> {
   }
 
   String _explain(ApiException error) => switch (error.code) {
-        'bus_not_assigned' => 'این اتوبوس به شما تخصیص داده نشده است. با مدیر ناوگان تماس بگیرید.',
-        'driver_not_active' => 'حساب راننده شما هنوز تأیید نشده است.',
-        'license_expired' => 'گواهینامه شما منقضی شده و امکان شروع شیفت وجود ندارد.',
-        'contract_ended' => 'قرارداد همکاری شما به پایان رسیده است.',
-        'city_mismatch' => 'این اتوبوس متعلق به شهر دیگری است.',
-        'bus_already_in_service' => 'راننده دیگری روی این اتوبوس شیفت باز دارد.',
-        'driver_already_on_shift' => 'شما روی اتوبوس دیگری شیفت باز دارید.',
-        'bus_not_deployable' => 'این اتوبوس در وضعیت آماده سرویس نیست.',
+        'bus_not_assigned' => Format.tr('shift_scan.bus_not_assigned'),
+        'driver_not_active' => Format.tr('shift_scan.driver_not_active'),
+        'license_expired' => Format.tr('shift_scan.license_expired'),
+        'contract_ended' => Format.tr('shift_scan.contract_ended'),
+        'city_mismatch' => Format.tr('shift_scan.city_mismatch'),
+        'bus_already_in_service' => Format.tr('shift_scan.bus_already_in_service'),
+        'driver_already_on_shift' => Format.tr('shift_scan.driver_already_on_shift'),
+        'bus_not_deployable' => Format.tr('shift_scan.bus_not_deployable'),
         _ => error.message,
       };
 
@@ -66,7 +65,9 @@ class _ShiftScanScreenState extends ConsumerState<ShiftScanScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('شیفت روی اتوبوس ${Format.digits('${bus['bus_number']}')} آغاز شد.'),
+          content: Text(
+            Format.tr('shift_scan.started', {'number': Format.digits('${bus['bus_number']}')}),
+          ),
         ),
       );
 
@@ -86,7 +87,7 @@ class _ShiftScanScreenState extends ConsumerState<ShiftScanScreen> {
     return Scaffold(
       backgroundColor: AppColors.ink950,
       appBar: AppBar(
-        title: const Text('اسکن کد اتوبوس'),
+        title: Text(Format.tr('shift_scan.title')),
         actions: [
           IconButton(
             onPressed: () => _controller.toggleTorch(),
@@ -103,11 +104,10 @@ class _ShiftScanScreenState extends ConsumerState<ShiftScanScreen> {
 
               if (value != null) _scan(value);
             },
-            errorBuilder: (context, error, child) => const ErrorState(
-              message: 'دسترسی به دوربین ممکن نیست. مجوز دوربین را در تنظیمات فعال کنید.',
+            errorBuilder: (context, error, child) => ErrorState(
+              message: Format.tr('scan.camera_denied'),
             ),
           ),
-
           IgnorePointer(
             child: Center(
               child: Container(
@@ -120,7 +120,6 @@ class _ShiftScanScreenState extends ConsumerState<ShiftScanScreen> {
               ),
             ),
           ),
-
           Positioned(
             left: 0,
             right: 0,
@@ -136,7 +135,7 @@ class _ShiftScanScreenState extends ConsumerState<ShiftScanScreen> {
                       if (_processing) ...[
                         const CircularProgressIndicator(color: AppColors.info),
                         const SizedBox(height: AppSpacing.md),
-                        const Text('در حال بررسی مجوز…'),
+                        Text(Format.tr('shift_scan.checking_permission')),
                       ] else if (_error != null) ...[
                         Text(
                           _error!,
@@ -149,11 +148,11 @@ class _ShiftScanScreenState extends ConsumerState<ShiftScanScreen> {
                         const SizedBox(height: AppSpacing.sm),
                         TextButton(
                           onPressed: () => setState(() => _error = null),
-                          child: const Text('اسکن دوباره'),
+                          child: Text(Format.tr('scan.retry')),
                         ),
                       ] else
                         Text(
-                          'کد QR نصب‌شده داخل اتوبوس را در کادر قرار دهید.',
+                          Format.tr('shift_scan.instruction'),
                           textAlign: TextAlign.center,
                           style: Theme.of(context).textTheme.bodySmall,
                         ),

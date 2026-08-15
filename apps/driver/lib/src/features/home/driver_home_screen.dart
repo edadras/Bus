@@ -47,7 +47,7 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
         ref.invalidate(driverStateProvider);
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('سفر پایان یافت. ارسال موقعیت متوقف شد.')),
+          SnackBar(content: Text(Format.tr('shift.trip_ended'))),
         );
       }
     });
@@ -77,13 +77,19 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('پایان شیفت'),
-        content: const Text(
-          'با پایان شیفت، سفر جاری بسته می‌شود و مسافران باقی‌مانده پیاده‌شده ثبت می‌شوند. ادامه می‌دهید؟',
+        title: Text(Format.tr('shift.end_title')),
+        content: Text(
+          Format.tr('shift.end_confirm'),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('انصراف')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('پایان شیفت')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(Format.tr('common.cancel')),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(Format.tr('shift.end_title')),
+          ),
         ],
       ),
     );
@@ -135,7 +141,7 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
     final locationStatus = ref.watch(locationStatusProvider).valueOrNull;
 
     return AppScaffold(
-      title: 'شیفت من',
+      title: Format.tr('shift.title'),
       actions: [
         IconButton(
           onPressed: () => ref.read(authControllerProvider.notifier).signOut(),
@@ -149,7 +155,7 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
       body: state.when(
         loading: () => const Center(child: CircularProgressIndicator(color: AppColors.info)),
         error: (error, _) => ErrorState(
-          message: error is ApiException ? error.message : 'دریافت اطلاعات ممکن نشد.',
+          message: error is ApiException ? error.message : Format.tr('shift.load_failed'),
           isOffline: error is NetworkException,
           onRetry: () => ref.invalidate(driverStateProvider),
         ),
@@ -157,17 +163,15 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
           padding: const EdgeInsets.only(bottom: 110),
           children: [
             _DriverHeader(driver: driver),
-
             if (driver.licenseExpiringSoon) ...[
               const SizedBox(height: AppSpacing.md),
               _Warning(
-                message: 'گواهینامه شما در تاریخ '
-                    '${Format.dateTime(driver.licenseExpiresAt)} منقضی می‌شود.',
+                message: Format.tr('shift.licence_expiring', {
+                  'date': Format.dateTime(driver.licenseExpiresAt),
+                }),
               ),
             ],
-
             const SizedBox(height: AppSpacing.lg),
-
             if (!driver.hasOpenShift)
               _StartShiftCard(onStart: _busy ? null : _startShift, driver: driver)
             else ...[
@@ -183,18 +187,18 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> {
                   busy: _busy,
                   onPause: () => _tripAction(
                     ref.read(transitApiProvider).pauseTrip,
-                    'توقف سفر ناموفق بود',
+                    Format.tr('shift.pause_failed'),
                   ),
                   onResume: () => _tripAction(
                     ref.read(transitApiProvider).resumeTrip,
-                    'ادامه سفر ناموفق بود',
+                    Format.tr('shift.resume_failed'),
                   ),
                   onComplete: () => _tripAction(
                     () async {
                       await ref.read(transitApiProvider).completeTrip();
                       await ref.read(locationServiceProvider).stop();
                     },
-                    'پایان سفر ناموفق بود',
+                    Format.tr('shift.complete_failed'),
                   ),
                 )
               else
@@ -246,7 +250,7 @@ class _DriverHeader extends StatelessWidget {
                 Text(
                   [
                     if (driver.employeeCode != null) Format.digits(driver.employeeCode!),
-                    '${Format.number(driver.totalTrips)} سفر',
+                    Format.tr('shift.trip_count', {'count': Format.number(driver.totalTrips)}),
                   ].join(' · '),
                   style: theme.textTheme.labelSmall,
                 ),
@@ -254,7 +258,7 @@ class _DriverHeader extends StatelessWidget {
             ),
           ),
           StatusBadge(
-            label: driver.status == 'active' ? 'فعال' : 'غیرفعال',
+            label: driver.status == 'active' ? Format.tr('ride.active') : Format.tr('shift.idle'),
             colorToken: driver.status == 'active' ? 'success' : 'danger',
           ),
         ],
@@ -290,17 +294,17 @@ class _StartShiftCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.xl),
-          Text('شروع شیفت', textAlign: TextAlign.center, style: theme.textTheme.titleLarge),
+          Text(Format.tr('shift.start'),
+              textAlign: TextAlign.center, style: theme.textTheme.titleLarge),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            'کد QR داخل اتوبوس را اسکن کنید. سامانه بررسی می‌کند که این اتوبوس به شما تخصیص داده شده باشد.',
+            Format.tr('shift.start_body'),
             textAlign: TextAlign.center,
             style: theme.textTheme.bodySmall,
           ),
-
           if (driver.assignedBuses.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.xl),
-            Text('اتوبوس‌های تخصیص‌یافته', style: theme.textTheme.labelMedium),
+            Text(Format.tr('shift.assigned_buses'), style: theme.textTheme.labelMedium),
             const SizedBox(height: AppSpacing.sm),
             for (final bus in driver.assignedBuses)
               Padding(
@@ -315,24 +319,23 @@ class _StartShiftCard extends StatelessWidget {
                     children: [
                       const Icon(Icons.directions_bus_rounded, size: 16, color: AppColors.ink400),
                       const SizedBox(width: 8),
-                      Text('اتوبوس ${Format.digits(bus.number)}',
+                      Text(Format.tr('shift.bus', {'number': Format.digits(bus.number)}),
                           style: theme.textTheme.titleSmall),
                       const Spacer(),
                       if (bus.lineCode != null)
-                        Text('خط ${Format.digits(bus.lineCode!)}',
+                        Text(Format.tr('shift.line', {'code': Format.digits(bus.lineCode!)}),
                             style: theme.textTheme.labelSmall),
                     ],
                   ),
                 ),
               ),
           ],
-
           const SizedBox(height: AppSpacing.xl),
           FilledButton.icon(
             onPressed: onStart,
             style: FilledButton.styleFrom(backgroundColor: AppColors.info),
             icon: const Icon(Icons.play_arrow_rounded),
-            label: const Text('اسکن و شروع شیفت'),
+            label: Text(Format.tr('shift.scan_and_start')),
           ),
         ],
       ),
@@ -348,15 +351,31 @@ class _ShiftCard extends StatelessWidget {
   final VoidCallback? onEnd;
 
   ({String label, String token, IconData icon}) get _locationBadge => switch (locationStatus) {
-        LocationReportStatus.reporting =>
-          (label: 'ارسال موقعیت فعال', token: 'success', icon: Icons.gps_fixed_rounded),
-        LocationReportStatus.waitingForFix =>
-          (label: 'در انتظار GPS', token: 'warning', icon: Icons.gps_not_fixed_rounded),
-        LocationReportStatus.gpsUnavailable =>
-          (label: 'GPS در دسترس نیست', token: 'danger', icon: Icons.gps_off_rounded),
-        LocationReportStatus.offline =>
-          (label: 'ارتباط با سرور قطع است', token: 'danger', icon: Icons.cloud_off_rounded),
-        _ => (label: 'آماده', token: 'neutral', icon: Icons.pause_circle_outline_rounded),
+        LocationReportStatus.reporting => (
+            label: Format.tr('shift.gps_reporting'),
+            token: 'success',
+            icon: Icons.gps_fixed_rounded
+          ),
+        LocationReportStatus.waitingForFix => (
+            label: Format.tr('shift.gps_waiting'),
+            token: 'warning',
+            icon: Icons.gps_not_fixed_rounded
+          ),
+        LocationReportStatus.gpsUnavailable => (
+            label: Format.tr('shift.gps_unavailable'),
+            token: 'danger',
+            icon: Icons.gps_off_rounded
+          ),
+        LocationReportStatus.offline => (
+            label: Format.tr('shift.server_unreachable'),
+            token: 'danger',
+            icon: Icons.cloud_off_rounded
+          ),
+        _ => (
+            label: Format.tr('shift.idle'),
+            token: 'neutral',
+            icon: Icons.pause_circle_outline_rounded
+          ),
       };
 
   @override
@@ -373,25 +392,24 @@ class _ShiftCard extends StatelessWidget {
             children: [
               const LiveDot(color: AppColors.info),
               const SizedBox(width: 8),
-              Text('شیفت باز', style: theme.textTheme.titleSmall),
+              Text(Format.tr('shift.open'), style: theme.textTheme.titleSmall),
               const Spacer(),
               StatusBadge(label: badge.label, colorToken: badge.token, icon: badge.icon),
             ],
           ),
           const SizedBox(height: AppSpacing.lg),
-
           Row(
             children: [
               Expanded(
                 child: StatTile(
-                  label: 'اتوبوس',
+                  label: Format.tr('shift.bus_label'),
                   value: Format.digits(shift.busNumber ?? '—'),
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: StatTile(
-                  label: 'مدت شیفت',
+                  label: Format.tr('shift.duration'),
                   value: Format.duration(shift.durationMinutes * 60),
                 ),
               ),
@@ -401,28 +419,28 @@ class _ShiftCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: StatTile(label: 'سفرها', value: Format.number(shift.tripCount)),
+                child: StatTile(
+                    label: Format.tr('shift.trips'), value: Format.number(shift.tripCount)),
               ),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: StatTile(
-                  label: 'مسافران',
+                  label: Format.tr('shift.passengers'),
                   value: Format.number(shift.passengerCount),
                   accent: AppColors.brand300,
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
-                child: StatTile(label: 'درآمد', value: shift.formattedRevenue),
+                child: StatTile(label: Format.tr('shift.revenue'), value: shift.formattedRevenue),
               ),
             ],
           ),
-
           const SizedBox(height: AppSpacing.lg),
           OutlinedButton.icon(
             onPressed: onEnd,
             icon: const Icon(Icons.stop_circle_outlined, size: 18),
-            label: const Text('پایان شیفت'),
+            label: Text(Format.tr('shift.end_title')),
           ),
         ],
       ),
@@ -460,7 +478,13 @@ class _StartTripCardState extends ConsumerState<_StartTripCard> {
       final routes = <Map<String, dynamic>>[];
 
       for (final line in lines) {
-        routes.add({'id': line.id, 'label': 'خط ${line.code} — ${line.destination ?? line.name}'});
+        routes.add({
+          'id': line.id,
+          'label': Format.tr('shift.route_option', {
+            'code': line.code,
+            'destination': line.destination ?? line.name,
+          }),
+        });
       }
 
       if (mounted) {
@@ -495,21 +519,20 @@ class _StartTripCardState extends ConsumerState<_StartTripCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('شروع سرویس', style: theme.textTheme.titleSmall),
+          Text(Format.tr('shift.start_service'), style: theme.textTheme.titleSmall),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            'مسیری که در این شیفت اجرا می‌کنید را انتخاب کنید.',
+            Format.tr('shift.start_service_body'),
             style: theme.textTheme.bodySmall,
           ),
           const SizedBox(height: AppSpacing.lg),
-
           if (_loading)
             const ShimmerBox(height: 52)
           else
             DropdownButtonFormField<int>(
               initialValue: _selectedRouteId,
               dropdownColor: AppColors.ink800,
-              hint: const Text('انتخاب مسیر'),
+              hint: Text(Format.tr('shift.choose_route')),
               isExpanded: true,
               items: [
                 for (final route in _routes)
@@ -523,12 +546,11 @@ class _StartTripCardState extends ConsumerState<_StartTripCard> {
               ],
               onChanged: (value) => setState(() => _selectedRouteId = value),
             ),
-
           const SizedBox(height: AppSpacing.lg),
           FilledButton.icon(
             onPressed: widget.busy || _selectedRouteId == null ? null : _start,
             icon: const Icon(Icons.play_arrow_rounded),
-            label: const Text('شروع سرویس و ارسال موقعیت'),
+            label: Text(Format.tr('shift.start_service_action')),
           ),
         ],
       ),
@@ -562,29 +584,30 @@ class _TripCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text('سرویس جاری', style: theme.textTheme.titleSmall),
+              Text(Format.tr('shift.current_service'), style: theme.textTheme.titleSmall),
               const Spacer(),
               if (trip.isOffRoute)
-                const StatusBadge(label: 'خارج از مسیر', colorToken: 'warning')
+                StatusBadge(label: Format.tr('shift.off_route'), colorToken: 'warning')
               else if (trip.isPaused)
-                const StatusBadge(label: 'متوقف موقت', colorToken: 'warning')
+                StatusBadge(label: Format.tr('shift.paused'), colorToken: 'warning')
               else
-                const StatusBadge(label: 'در حال سرویس', colorToken: 'success'),
+                StatusBadge(label: Format.tr('shift.in_service'), colorToken: 'success'),
             ],
           ),
           const SizedBox(height: AppSpacing.md),
-
           Text(
-            'خط ${Format.digits(trip.lineCode ?? '—')} — ${trip.destination ?? trip.lineName ?? ''}',
+            Format.tr('shift.line_summary', {
+              'code': Format.digits(trip.lineCode ?? '—'),
+              'destination': trip.destination ?? trip.lineName ?? '',
+            }),
             style: theme.textTheme.titleMedium,
           ),
-
           const SizedBox(height: AppSpacing.lg),
           Row(
             children: [
               Expanded(
                 child: StatTile(
-                  label: 'مسافران داخل اتوبوس',
+                  label: Format.tr('shift.passengers_on_board'),
                   value: Format.number(trip.passengerCount),
                   accent: AppColors.brand300,
                 ),
@@ -592,11 +615,10 @@ class _TripCard extends StatelessWidget {
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: StatTile(
-                  label: 'ایستگاه بعدی',
+                  label: Format.tr('shift.next_stop'),
                   value: trip.nextStop ?? '—',
-                  caption: trip.nextStopDistance == null
-                      ? null
-                      : Format.distance(trip.nextStopDistance),
+                  caption:
+                      trip.nextStopDistance == null ? null : Format.distance(trip.nextStopDistance),
                 ),
               ),
             ],
@@ -606,20 +628,19 @@ class _TripCard extends StatelessWidget {
             children: [
               Expanded(
                 child: StatTile(
-                  label: 'زمان تا ایستگاه بعدی',
+                  label: Format.tr('shift.eta_next_stop'),
                   value: Format.minutes(trip.nextStopEtaSeconds),
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: StatTile(
-                  label: 'مسافت طی‌شده',
+                  label: Format.tr('shift.distance'),
                   value: Format.distance(trip.distanceMeters),
                 ),
               ),
             ],
           ),
-
           const SizedBox(height: AppSpacing.lg),
           Row(
             children: [
@@ -630,7 +651,7 @@ class _TripCard extends StatelessWidget {
                     trip.isPaused ? Icons.play_arrow_rounded : Icons.pause_rounded,
                     size: 18,
                   ),
-                  label: Text(trip.isPaused ? 'ادامه' : 'توقف موقت'),
+                  label: Text(trip.isPaused ? Format.tr('shift.resume') : Format.tr('shift.pause')),
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
@@ -639,7 +660,7 @@ class _TripCard extends StatelessWidget {
                   onPressed: busy ? null : onComplete,
                   style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
                   icon: const Icon(Icons.flag_rounded, size: 18),
-                  label: const Text('پایان سفر'),
+                  label: Text(Format.tr('shift.end_trip')),
                 ),
               ),
             ],
@@ -671,10 +692,7 @@ class _Warning extends StatelessWidget {
           Expanded(
             child: Text(
               message,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodySmall
-                  ?.copyWith(color: AppColors.warning),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.warning),
             ),
           ),
         ],

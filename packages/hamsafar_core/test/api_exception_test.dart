@@ -30,7 +30,9 @@ void main() {
         code: 'validation_failed',
         message: '',
         status: 422,
-        details: {'mobile': ['شماره موبایل معتبر نیست.']},
+        details: {
+          'mobile': ['شماره موبایل معتبر نیست.'],
+        },
       );
 
       expect(error.fieldError('mobile'), 'شماره موبایل معتبر نیست.');
@@ -38,8 +40,8 @@ void main() {
     });
 
     test('a network failure is distinguishable from a server rejection', () {
-      expect(const NetworkException().code, 'network_unavailable');
-      expect(const NetworkException().isAuthFailure, isFalse);
+      expect(NetworkException().code, 'network_unavailable');
+      expect(NetworkException().isAuthFailure, isFalse);
     });
   });
 }

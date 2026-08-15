@@ -9,6 +9,7 @@ import '../config/app_config.dart';
 import '../models/models.dart';
 import '../realtime/realtime_client.dart';
 import '../storage/token_store.dart';
+import '../util/formatters.dart';
 
 /// Injected at app start, so each app can point at its own backend without
 /// recompiling the shared package.
@@ -183,8 +184,9 @@ class AuthController extends StateNotifier<AuthState> {
     state = const AuthState(isRestoring: false);
   }
 
-  String _message(Object error) =>
-      error is Exception ? error.toString().replaceFirst('Exception: ', '') : 'خطای نامشخص';
+  String _message(Object error) => error is Exception
+      ? error.toString().replaceFirst('Exception: ', '')
+      : Format.tr('common.unknown_error');
 }
 
 final authControllerProvider = StateNotifierProvider<AuthController, AuthState>(AuthController.new);

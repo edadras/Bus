@@ -84,7 +84,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
 
       // A stale or replayed code just needs another look at the screen.
       if (error.isStaleQr) {
-        setState(() => _error = 'کد منقضی شده است. تا تغییر کد روی صفحه اتوبوس صبر کنید.');
+        setState(() => _error = Format.tr('scan.expired'));
       }
 
       if (error.isInsufficientFunds && mounted) {
@@ -102,24 +102,24 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
       context: context,
       builder: (context) => AlertDialog(
         icon: const Icon(Icons.check_circle_rounded, color: AppColors.brand400, size: 44),
-        title: const Text('سفر شما ثبت شد'),
+        title: Text(Format.tr('scan.boarded_title')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'کرایه ${fare['formatted'] ?? '—'} از کیف پول شما کسر شد.',
+              Format.tr('scan.fare_charged', {'amount': fare['formatted'] ?? '—'}),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
-              'موجودی جدید: ${balance['formatted'] ?? '—'}',
+              Format.tr('scan.new_balance', {'amount': balance['formatted'] ?? '—'}),
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodySmall,
             ),
             if (trip['destination'] != null) ...[
               const SizedBox(height: AppSpacing.sm),
               Text(
-                'مقصد: ${trip['destination']}',
+                Format.tr('scan.destination', {'name': trip['destination']}),
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.labelSmall,
               ),
@@ -129,7 +129,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
         actions: [
           FilledButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('باشه'),
+            child: Text(Format.tr('scan.ok')),
           ),
         ],
       ),
@@ -143,13 +143,16 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
       context: context,
       builder: (context) => AlertDialog(
         icon: const Icon(Icons.account_balance_wallet_outlined, color: AppColors.warning, size: 40),
-        title: const Text('موجودی کافی نیست'),
+        title: Text(Format.tr('scan.insufficient_title')),
         content: Text(
-          shortfall is int ? 'برای این سفر ${Format.money(shortfall)} کم دارید.' : error.message,
+          shortfall is int
+              ? Format.tr('scan.shortfall', {'amount': Format.money(shortfall)})
+              : error.message,
           textAlign: TextAlign.center,
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('بستن')),
+          TextButton(
+              onPressed: () => Navigator.pop(context), child: Text(Format.tr('common.close'))),
         ],
       ),
     );
@@ -160,7 +163,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     return Scaffold(
       backgroundColor: AppColors.ink950,
       appBar: AppBar(
-        title: const Text('اسکن کد اتوبوس'),
+        title: Text(Format.tr('ride.scan_bus_code')),
         actions: [
           IconButton(
             onPressed: () => _controller.toggleTorch(),
@@ -178,7 +181,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
               if (value != null) _board(value);
             },
             errorBuilder: (context, error, child) => ErrorState(
-              message: 'دسترسی به دوربین ممکن نیست. مجوز دوربین را در تنظیمات فعال کنید.',
+              message: Format.tr('scan.camera_denied'),
               onRetry: () => setState(() {}),
             ),
           ),
@@ -212,7 +215,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                       if (_processing) ...[
                         const CircularProgressIndicator(color: AppColors.brand400),
                         const SizedBox(height: AppSpacing.md),
-                        const Text('در حال پردازش پرداخت…'),
+                        Text(Format.tr('scan.processing')),
                       ] else if (_error != null) ...[
                         Text(
                           _error!,
@@ -228,11 +231,11 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                             _error = null;
                             _lastAttemptedToken = null;
                           }),
-                          child: const Text('اسکن دوباره'),
+                          child: Text(Format.tr('scan.retry')),
                         ),
                       ] else
                         Text(
-                          'کد QR نمایش‌داده‌شده در اتوبوس را در کادر قرار دهید.',
+                          Format.tr('scan.instruction'),
                           textAlign: TextAlign.center,
                           style: Theme.of(context).textTheme.bodySmall,
                         ),

@@ -26,7 +26,7 @@ void main() {
     DeviceOrientation.portraitDown,
   ]));
 
-  final config = AppConfig.fromEnvironment(appName: 'همسفر', client: 'passenger');
+  final config = AppConfig.fromEnvironment(appName: Format.tr('app.name'), client: 'passenger');
 
   runApp(
     ProviderScope(
@@ -41,6 +41,6 @@ class PassengerApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return const HamsafarApp(title: 'همسفر', home: PassengerShell());
+    return HamsafarApp(title: Format.tr('app.name'), home: const PassengerShell());
   }
 }

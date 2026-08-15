@@ -53,7 +53,7 @@ class _OtpLoginViewState extends ConsumerState<OtpLoginView> {
     final mobile = Format.normalizeMobile(_mobileController.text);
 
     if (!Format.isValidMobile(mobile)) {
-      setState(() => _error = 'شماره موبایل وارد شده معتبر نیست.');
+      setState(() => _error = Format.tr('auth.invalid_mobile'));
 
       return;
     }
@@ -182,7 +182,7 @@ class _OtpLoginViewState extends ConsumerState<OtpLoginView> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text('شماره موبایل', style: theme.textTheme.labelMedium),
+        Text(Format.tr('auth.mobile_label'), style: theme.textTheme.labelMedium),
         const SizedBox(height: AppSpacing.sm),
         TextField(
           controller: _mobileController,
@@ -191,7 +191,7 @@ class _OtpLoginViewState extends ConsumerState<OtpLoginView> {
           autofocus: true,
           style: const TextStyle(fontSize: 18, letterSpacing: 2, fontWeight: FontWeight.w600),
           inputFormatters: [LengthLimitingTextInputFormatter(15)],
-          decoration: const InputDecoration(hintText: '۰۹۱۲۳۴۵۶۷۸۹'),
+          decoration: InputDecoration(hintText: Format.tr('auth.mobile_hint')),
           onSubmitted: (_) => _requestCode(),
         ),
         const SizedBox(height: AppSpacing.lg),
@@ -203,7 +203,7 @@ class _OtpLoginViewState extends ConsumerState<OtpLoginView> {
                   height: 20,
                   child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                 )
-              : const Text('دریافت کد تأیید'),
+              : Text(Format.tr('auth.request_code')),
         ),
       ],
     );
@@ -215,7 +215,7 @@ class _OtpLoginViewState extends ConsumerState<OtpLoginView> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          'کد پنج‌رقمی ارسال‌شده به ${Format.digits(_mobileController.text)} را وارد کنید.',
+          Format.tr('auth.code_sent_to', {'mobile': Format.digits(_mobileController.text)}),
           textAlign: TextAlign.center,
           style: theme.textTheme.bodySmall,
         ),
@@ -242,7 +242,7 @@ class _OtpLoginViewState extends ConsumerState<OtpLoginView> {
                   height: 20,
                   child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                 )
-              : const Text('ورود'),
+              : Text(Format.tr('auth.sign_in')),
         ),
         const SizedBox(height: AppSpacing.sm),
         Row(
@@ -253,12 +253,14 @@ class _OtpLoginViewState extends ConsumerState<OtpLoginView> {
                 _codeSent = false;
                 _codeController.clear();
               }),
-              child: const Text('تغییر شماره'),
+              child: Text(Format.tr('auth.change_number')),
             ),
             TextButton(
               onPressed: _resendIn > 0 ? null : _requestCode,
               child: Text(
-                _resendIn > 0 ? 'ارسال مجدد تا ${Format.number(_resendIn)} ثانیه' : 'ارسال مجدد کد',
+                _resendIn > 0
+                    ? Format.tr('auth.resend_in', {'seconds': Format.number(_resendIn)})
+                    : Format.tr('auth.resend'),
               ),
             ),
           ],
@@ -274,7 +276,7 @@ class _OtpLoginViewState extends ConsumerState<OtpLoginView> {
               borderRadius: AppRadii.fieldBorder,
             ),
             child: Text(
-              'کد آزمایشی: ${Format.digits(_debugCode!)}',
+              Format.tr('auth.debug_code', {'code': Format.digits(_debugCode!)}),
               textAlign: TextAlign.center,
               style: theme.textTheme.bodySmall?.copyWith(color: AppColors.warning),
             ),

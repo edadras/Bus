@@ -16,7 +16,7 @@ class RouteScreen extends ConsumerWidget {
     final theme = Theme.of(context);
 
     return AppScaffold(
-      title: 'مسیر',
+      title: Format.tr('route.title'),
       onRefresh: () async {
         ref.invalidate(driverRouteProvider);
         await ref.read(driverRouteProvider.future);
@@ -25,19 +25,19 @@ class RouteScreen extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator(color: AppColors.info)),
         error: (error, _) => ErrorState(
           message: error is ApiException && error.code == 'no_active_trip'
-              ? 'برای مشاهده مسیر، ابتدا سرویس را شروع کنید.'
-              : 'دریافت مسیر ممکن نشد.',
+              ? Format.tr('route.start_service_first')
+              : Format.tr('route.load_failed'),
           isOffline: error is NetworkException,
           onRetry: () => ref.invalidate(driverRouteProvider),
         ),
         data: (data) {
-          final stops = ((data['stops'] as List<dynamic>?) ?? const [])
-              .cast<Map<String, dynamic>>();
+          final stops =
+              ((data['stops'] as List<dynamic>?) ?? const []).cast<Map<String, dynamic>>();
 
           if (stops.isEmpty) {
-            return const EmptyState(
+            return EmptyState(
               icon: Icons.route_outlined,
-              message: 'ایستگاهی برای این مسیر ثبت نشده است.',
+              message: Format.tr('route.no_stops'),
             );
           }
 
@@ -107,22 +107,25 @@ class RouteScreen extends ConsumerWidget {
                                     Text(
                                       stop['name'] as String? ?? '—',
                                       style: theme.textTheme.titleSmall?.copyWith(
-                                        color: passed && !isNext
-                                            ? AppColors.ink500
-                                            : AppColors.ink50,
+                                        color:
+                                            passed && !isNext ? AppColors.ink500 : AppColors.ink50,
                                         fontSize: isNext ? 16 : 14,
                                       ),
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
-                                      'ایستگاه ${Format.number((stop['sequence'] as num?)?.toInt() ?? 0)}',
+                                      Format.tr('route.stop_number', {
+                                        'number':
+                                            Format.number((stop['sequence'] as num?)?.toInt() ?? 0)
+                                      }),
                                       style: theme.textTheme.labelSmall,
                                     ),
                                   ],
                                 ),
                               ),
                               if (isNext)
-                                const StatusBadge(label: 'ایستگاه بعدی', colorToken: 'success')
+                                StatusBadge(
+                                    label: Format.tr('shift.next_stop'), colorToken: 'success')
                               else if (passed)
                                 const Icon(Icons.check_rounded, size: 16, color: AppColors.ink500),
                             ],

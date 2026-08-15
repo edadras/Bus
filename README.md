@@ -21,11 +21,10 @@
 | Landing page & public viewer | Blade, installable PWA | `resources/views` |
 
 Persian-first throughout: RTL layout, Persian digits and thousands separator.
-Every string the **server** produces — errors, notifications, SMS, enum labels,
-validation — is translated in both `lang/fa` and `lang/en`, and a test fails the
-build if the two drift apart. The admin panel's own chrome and the Flutter
-screens carry their Persian copy inline; see the limitation noted in
-[Security](docs/security.md#known-limitations).
+Nothing user-facing is written inline anywhere — the server, the admin panel,
+the landing page and all three apps read from `lang/fa` / `lang/en` and their
+Dart counterparts. Three tests fail the build if a Persian string is typed into
+a view, a script or a widget, or if the two locales drift apart.
 
 ## Quick start
 
@@ -126,7 +125,7 @@ php artisan webpush:vapid                                         # push key pai
 ## Tests
 
 ```bash
-php artisan test                       # 205 PHP tests
-make apps-test                         # 36 Dart tests
+php artisan test                       # 237 PHP tests
+make apps-test                         # 45 Dart tests
 make apps-analyze                      # static analysis, all four packages
 ```

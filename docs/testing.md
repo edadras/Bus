@@ -1,8 +1,8 @@
 # Testing
 
 ```bash
-php artisan test          # 205 PHP tests
-make apps-test            # 36 Dart tests
+php artisan test          # 237 PHP tests
+make apps-test            # 45 Dart tests
 make apps-analyze         # static analysis across all four Dart packages
 ```
 
@@ -167,7 +167,7 @@ The cases that break naive distance-over-speed maths:
 - a clean import reports 0 skips rather than null — the counters are read back
   from the in-memory batch, so an untouched one must not be blank
 
-### Localisation — `tests/Feature/Web/LocalizationTest.php` (8)
+### Localisation — `tests/Feature/Web/LocalizationTest.php` (11)
 
 Written after `?lang=en` was found rendering raw dotted keys at the user:
 
@@ -179,6 +179,31 @@ Written after `?lang=en` was found rendering raw dotted keys at the user:
 - **two requests in a row do not contaminate each other's locale** — the guard
   against `App::setLocale()` rewriting the very default the next request reads
 
+### Journey planning — `tests/Feature/Network/JourneyPlannerTest.php` (13)
+
+Tested against a network shaped like a real one — two lines that cross, and a
+third sharing no stop but with one across the road:
+
+- a direct journey needs no transfer, and one that does is found
+- **a transfer can be a short walk between two stops**, which is how an
+  interchange actually works
+- capping transfers at zero reports no route rather than inventing one
+- the wait for the second bus is part of the estimate
+- options are ordered by total time and deduplicated per line combination
+- walking is offered when it beats waiting for a bus
+- an inactive line, and a stop that forbids boarding, both remove the journey
+
+### SMS delivery — `tests/Feature/Auth/SmsDeliveryTest.php` (11)
+
+The property that matters is not that it delivers — it is that a provider being
+down never becomes a failed sign-in:
+
+- a provider error, a network failure and a missing API key are all reported,
+  never thrown, and the OTP endpoint still answers 200
+- verification codes go through the provider's approved pattern, not free text
+- each provider's own success code is treated as authoritative over the HTTP one
+- an unknown driver name falls back to the log driver rather than breaking auth
+
 ### Geometry — `tests/Unit/GeoTest.php` (11)
 
 Tested against known distances rather than against itself: haversine against a
@@ -186,7 +211,18 @@ real 11.5 km city pair, one degree of latitude, bearings, segment projection and
 clamping, polyline length and snapping, and that the bounding box never
 under-covers its radius.
 
-### Flutter (36)
+### Localisation, Dart side — `packages/hamsafar_core/test/` (9)
+
+Mirrors the server's parity checks, plus the one that keeps it that way:
+
+- both string tables carry the same keys, and no key resolves to itself
+- a gap in English degrades to Persian rather than to a dotted key
+- money, distance and numerals follow the active locale — English keeps Latin
+  digits, because Persian numerals inside an English sentence are unreadable to
+  whoever asked for English
+- **no widget in any of the three apps holds an inline Persian string**
+
+### Flutter (45)
 
 `packages/hamsafar_core` — formatters (rial→toman, Persian digits and
 separator, mobile normalisation across six input forms, ETA never showing zero

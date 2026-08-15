@@ -30,10 +30,10 @@ class _MerchantShellState extends ConsumerState<MerchantShell> {
     }
 
     if (!auth.isSignedIn) {
-      return const OtpLoginView(
+      return OtpLoginView(
         client: 'merchant',
-        title: 'ورود پذیرندگان',
-        subtitle: 'با شماره موبایل ثبت‌شده در سامانه وارد شوید',
+        title: Format.tr('merchant.sign_in_title'),
+        subtitle: Format.tr('merchant.sign_in_subtitle'),
         icon: Icons.storefront_outlined,
         accent: AppColors.warning,
       );
@@ -50,21 +50,21 @@ class _MerchantShellState extends ConsumerState<MerchantShell> {
       bottomNavigationBar: GlassNavBar(
         currentIndex: _index,
         onTap: (index) => setState(() => _index = index),
-        items: const [
+        items: [
           GlassNavItem(
             icon: Icons.qr_code_2_outlined,
             activeIcon: Icons.qr_code_2_rounded,
-            label: 'دریافت وجه',
+            label: Format.tr('merchant.nav_collect'),
           ),
           GlassNavItem(
             icon: Icons.receipt_long_outlined,
             activeIcon: Icons.receipt_long_rounded,
-            label: 'تراکنش‌ها',
+            label: Format.tr('merchant.nav_transactions'),
           ),
           GlassNavItem(
             icon: Icons.bar_chart_outlined,
             activeIcon: Icons.bar_chart_rounded,
-            label: 'گزارش',
+            label: Format.tr('merchant.nav_reports'),
           ),
         ],
       ),

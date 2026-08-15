@@ -52,25 +52,28 @@ class _TripSheet extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'اتوبوس ${Format.digits(bus.busNumber ?? '—')}',
+                        Format.tr('trip.bus', {'number': Format.digits(bus.busNumber ?? '—')}),
                         style: theme.textTheme.titleLarge,
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        'خط ${Format.digits(bus.lineCode ?? '—')} — ${bus.lineName ?? ''}',
+                        Format.tr('trip.line', {
+                          'code': Format.digits(bus.lineCode ?? '—'),
+                          'name': bus.lineName ?? ''
+                        }),
                         style: theme.textTheme.bodySmall,
                       ),
                     ],
                   ),
                 ),
                 if (bus.isOffRoute)
-                  const StatusBadge(label: 'خارج از مسیر', colorToken: 'warning')
+                  StatusBadge(label: Format.tr('trip.off_route'), colorToken: 'warning')
                 else if (bus.isIdle)
-                  const StatusBadge(label: 'متوقف', colorToken: 'warning')
+                  StatusBadge(label: Format.tr('trip.idle'), colorToken: 'warning')
                 else if (bus.isStale)
-                  const StatusBadge(label: 'اطلاعات قدیمی', colorToken: 'neutral')
+                  StatusBadge(label: Format.tr('trip.stale'), colorToken: 'neutral')
                 else
-                  const StatusBadge(label: 'در حال حرکت', colorToken: 'success'),
+                  StatusBadge(label: Format.tr('trip.moving'), colorToken: 'success'),
               ],
             ),
             const SizedBox(height: AppSpacing.xl),
@@ -78,14 +81,14 @@ class _TripSheet extends StatelessWidget {
               children: [
                 Expanded(
                   child: StatTile(
-                    label: 'ایستگاه بعدی',
+                    label: Format.tr('trip.next_stop'),
                     value: bus.nextStop ?? '—',
                   ),
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: StatTile(
-                    label: 'زمان رسیدن',
+                    label: Format.tr('trip.eta'),
                     value: Format.minutes(bus.etaNextStopSeconds),
                     accent: AppColors.brand300,
                   ),
@@ -97,20 +100,22 @@ class _TripSheet extends StatelessWidget {
               children: [
                 Expanded(
                   child: StatTile(
-                    label: 'مسافران',
+                    label: Format.tr('trip.passengers'),
                     value: Format.number(bus.passengerCount),
                     caption: bus.occupancy > 0
-                        ? '${Format.number((bus.occupancy * 100).round())}٪ ظرفیت'
+                        ? Format.tr('trip.occupancy',
+                            {'percent': Format.number((bus.occupancy * 100).round())})
                         : null,
                   ),
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: StatTile(
-                    label: 'سرعت',
+                    label: Format.tr('trip.speed'),
                     value: bus.speed == null
                         ? '—'
-                        : '${Format.number(bus.speed!.round())} کیلومتر/ساعت',
+                        : Format.tr(
+                            'trip.speed_value', {'value': Format.number(bus.speed!.round())}),
                   ),
                 ),
               ],
@@ -124,7 +129,10 @@ class _TripSheet extends StatelessWidget {
                     const Icon(Icons.flag_outlined, size: 18, color: AppColors.ink400),
                     const SizedBox(width: 10),
                     Expanded(
-                      child: Text('مقصد: ${bus.destination}', style: theme.textTheme.bodyMedium),
+                      child: Text(
+                        Format.tr('trip.destination', {'name': bus.destination}),
+                        style: theme.textTheme.bodyMedium,
+                      ),
                     ),
                   ],
                 ),
@@ -132,7 +140,7 @@ class _TripSheet extends StatelessWidget {
             ],
             const SizedBox(height: AppSpacing.lg),
             Text(
-              'آخرین به‌روزرسانی موقعیت: ${Format.relative(bus.updatedAt)}',
+              Format.tr('trip.last_update', {'when': Format.relative(bus.updatedAt)}),
               textAlign: TextAlign.center,
               style: theme.textTheme.labelSmall,
             ),

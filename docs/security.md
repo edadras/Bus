@@ -160,18 +160,16 @@ Stated plainly rather than left to be discovered:
 - **Alighting is inferred, not measured.** There is no sensor. The engine is
   tuned to fail late rather than early, and anything left open is force-closed
   by the scheduler.
-- **The journey planner covers direct lines only.** It reports
-  `supports_transfers: false` rather than silently returning nothing.
-- **Push is Web Push only.** Browsers and the installable PWA receive pushes;
-  native APNs/FCM delivery needs per-store credentials that cannot live in this
-  repository. The Flutter apps use the in-app inbox and the live socket instead,
-  so no notification is lost — only its out-of-app banner.
+- **The journey planner searches at most two changes.** Three buses across a
+  city this size is almost always worse than the walk it replaces, and an
+  unbounded search would spend its time producing options nobody would take.
+  The frontier is also capped, so on a very large network the far end of the
+  city is dropped before the second relaxation.
+- **Push needs credentials this repository cannot hold.** Web Push works from a
+  VAPID pair generated at deploy; native push needs a Firebase project's
+  service-account key and, on the app side, `google-services.json`. Both are
+  per-deployment secrets. Without them the apps still receive everything
+  through the in-app inbox and the live socket — only the out-of-app banner is
+  missing.
 - **SMS has no provider bound.** `SmsSender` is a one-method seam; OTP codes are
   logged in non-production rather than sent.
-- **Client copy is not externalised.** Everything the API returns is translated
-  in both locales and guarded by a test. The admin panel's Blade views and the
-  Flutter screens hold their Persian copy inline, so switching those surfaces to
-  English is a string-extraction pass, not a configuration change. That is a
-  deliberate scope call for a Persian-first product in one Persian city, not an
-  oversight — the API, which is what a second city or a third-party client
-  consumes, is fully localised.

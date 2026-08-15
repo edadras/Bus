@@ -34,8 +34,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     if (position == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('دسترسی به موقعیت مکانی فعال نیست.'),
+          SnackBar(
+            content: Text(Format.tr('map.location_disabled')),
           ),
         );
       }
@@ -75,8 +75,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                           loading: () => const Center(
                             child: CircularProgressIndicator(color: AppColors.brand400),
                           ),
-                          error: (_, __) => const ErrorState(
-                            message: 'نقشه در دسترس نیست.',
+                          error: (_, __) => ErrorState(
+                            message: Format.tr('map.unavailable'),
                             isOffline: true,
                           ),
                           data: (config) => FlutterMap(
@@ -214,15 +214,15 @@ class _Header extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('همسفر', style: Theme.of(context).textTheme.titleSmall),
-                  Text('بندرعباس', style: Theme.of(context).textTheme.labelSmall),
+                  Text(Format.tr('app.name'), style: Theme.of(context).textTheme.titleSmall),
+                  Text(Format.tr('app.city'), style: Theme.of(context).textTheme.labelSmall),
                 ],
               ),
             ),
             const LiveDot(),
             const SizedBox(width: 6),
             Text(
-              '${Format.number(busCount)} اتوبوس',
+              Format.tr('map.bus_count', {'count': Format.number(busCount)}),
               style: Theme.of(context).textTheme.labelMedium?.copyWith(color: AppColors.brand300),
             ),
             const SizedBox(width: 8),
@@ -252,7 +252,9 @@ class _ArrivalBoard extends ConsumerWidget {
             children: [
               Expanded(
                 child: Text(
-                  stop == null ? 'ایستگاه‌های نزدیک' : 'ایستگاه ${stop.name}',
+                  stop == null
+                      ? Format.tr('map.nearby_stops')
+                      : Format.tr('map.stop_named', {'name': stop.name}),
                   style: Theme.of(context).textTheme.titleSmall,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -279,14 +281,14 @@ class _ArrivalBoard extends ConsumerWidget {
                 itemBuilder: (_, __) => const ShimmerBox(height: 68),
               ),
               error: (error, _) => ErrorState(
-                message: error is ApiException ? error.message : 'دریافت اطلاعات ممکن نشد.',
+                message: error is ApiException ? error.message : Format.tr('map.load_failed'),
                 isOffline: error is NetworkException,
                 onRetry: () => ref.invalidate(arrivalsProvider),
               ),
               data: (items) => items.isEmpty
-                  ? const EmptyState(
+                  ? EmptyState(
                       icon: Icons.schedule_rounded,
-                      message: 'در حال حاضر اتوبوسی به این ایستگاه نزدیک نیست.',
+                      message: Format.tr('map.no_arrivals'),
                     )
                   : ListView.separated(
                       padding: const EdgeInsets.only(bottom: 90),

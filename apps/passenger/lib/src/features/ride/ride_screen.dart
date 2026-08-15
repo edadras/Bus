@@ -80,16 +80,16 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('پایان سفر'),
-        content: const Text('آیا از اتوبوس پیاده شده‌اید؟'),
+        title: Text(Format.tr('ride.end_title')),
+        content: Text(Format.tr('ride.end_question')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('خیر'),
+            child: Text(Format.tr('ride.end_no')),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('بله، پیاده شدم'),
+            child: Text(Format.tr('ride.end_yes')),
           ),
         ],
       ),
@@ -115,7 +115,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
       ref.invalidate(rideHistoryProvider);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('سفر شما پایان یافت. سفر بخیر!')),
+        SnackBar(content: Text(Format.tr('ride.ended'))),
       );
     } on ApiException catch (error) {
       if (mounted) {
@@ -129,7 +129,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     final ride = ref.watch(activeRideProvider);
 
     return AppScaffold(
-      title: 'سفر',
+      title: Format.tr('ride.title'),
       onRefresh: () async {
         ref.invalidate(activeRideProvider);
         await ref.read(activeRideProvider.future);
@@ -137,7 +137,7 @@ class _RideScreenState extends ConsumerState<RideScreen> {
       body: ride.when(
         loading: () => const Center(child: CircularProgressIndicator(color: AppColors.brand400)),
         error: (error, _) => ErrorState(
-          message: error is ApiException ? error.message : 'دریافت اطلاعات سفر ممکن نشد.',
+          message: error is ApiException ? error.message : Format.tr('ride.load_failed'),
           isOffline: error is NetworkException,
           onRetry: () => ref.invalidate(activeRideProvider),
         ),
@@ -189,31 +189,37 @@ class _ActiveRideCard extends StatelessWidget {
                 children: [
                   const LiveDot(),
                   const SizedBox(width: 8),
-                  Text('سفر در حال انجام', style: theme.textTheme.titleSmall),
+                  Text(Format.tr('ride.in_progress'), style: theme.textTheme.titleSmall),
                   const Spacer(),
                   StatusBadge(
-                    label: ride.status == 'pending_alighting' ? 'در انتظار تأیید' : 'فعال',
+                    label: ride.status == 'pending_alighting'
+                        ? Format.tr('ride.pending_alighting')
+                        : Format.tr('ride.active'),
                     colorToken: ride.status == 'pending_alighting' ? 'warning' : 'success',
                   ),
                 ],
               ),
               const SizedBox(height: AppSpacing.lg),
-              Text(ride.lineName ?? 'خط نامشخص', style: theme.textTheme.headlineMedium),
+              Text(ride.lineName ?? Format.tr('ride.unknown_line'),
+                  style: theme.textTheme.headlineMedium),
               const SizedBox(height: 4),
-              Text('مقصد: ${ride.destination ?? '—'}', style: theme.textTheme.bodySmall),
+              Text(
+                Format.tr('trip.destination', {'name': ride.destination ?? '—'}),
+                style: theme.textTheme.bodySmall,
+              ),
               const SizedBox(height: AppSpacing.xl),
               Row(
                 children: [
                   Expanded(
                     child: StatTile(
-                      label: 'ایستگاه بعدی',
+                      label: Format.tr('trip.next_stop'),
                       value: ride.nextStop ?? '—',
                     ),
                   ),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: StatTile(
-                      label: 'زمان رسیدن',
+                      label: Format.tr('trip.eta'),
                       value: Format.minutes(ride.nextStopEtaSeconds),
                       accent: AppColors.brand300,
                     ),
@@ -224,12 +230,12 @@ class _ActiveRideCard extends StatelessWidget {
               Row(
                 children: [
                   Expanded(
-                    child: StatTile(label: 'کرایه پرداختی', value: ride.formattedFare),
+                    child: StatTile(label: Format.tr('ride.fare_paid'), value: ride.formattedFare),
                   ),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: StatTile(
-                      label: 'مسافران داخل اتوبوس',
+                      label: Format.tr('ride.passengers_on_board'),
                       value: Format.number(ride.passengerCount),
                     ),
                   ),
@@ -257,10 +263,10 @@ class _ActiveRideCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('تشخیص خودکار پیاده شدن', style: theme.textTheme.titleSmall),
+                    Text(Format.tr('ride.auto_alighting'), style: theme.textTheme.titleSmall),
                     const SizedBox(height: 2),
                     Text(
-                      'موقعیت شما فقط تا پایان همین سفر و برای بستن خودکار آن استفاده می‌شود.',
+                      Format.tr('ride.auto_alighting_body'),
                       style: theme.textTheme.labelSmall,
                     ),
                   ],
@@ -275,7 +281,7 @@ class _ActiveRideCard extends StatelessWidget {
         OutlinedButton.icon(
           onPressed: onEnd,
           icon: const Icon(Icons.logout_rounded, size: 18),
-          label: const Text('پیاده شدم'),
+          label: Text(Format.tr('ride.i_got_off')),
         ),
       ],
     );
@@ -309,10 +315,10 @@ class _ScanPrompt extends ConsumerWidget {
                     const Icon(Icons.qr_code_scanner_rounded, size: 38, color: AppColors.brand300),
               ),
               const SizedBox(height: AppSpacing.xl),
-              Text('پرداخت کرایه', style: theme.textTheme.titleLarge),
+              Text(Format.tr('ride.pay_fare'), style: theme.textTheme.titleLarge),
               const SizedBox(height: AppSpacing.sm),
               Text(
-                'کد QR داخل اتوبوس را اسکن کنید. کرایه بر اساس نرخ مصوب محاسبه و از کیف پول شما کسر می‌شود.',
+                Format.tr('ride.pay_fare_body'),
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodySmall,
               ),
@@ -331,7 +337,7 @@ class _ScanPrompt extends ConsumerWidget {
                       const Icon(Icons.account_balance_wallet_outlined,
                           size: 18, color: AppColors.ink400),
                       const SizedBox(width: 10),
-                      Text('موجودی', style: theme.textTheme.labelMedium),
+                      Text(Format.tr('ride.balance'), style: theme.textTheme.labelMedium),
                       const Spacer(),
                       Text(
                         data.formattedBalance,
@@ -356,7 +362,7 @@ class _ScanPrompt extends ConsumerWidget {
                   }
                 },
                 icon: const Icon(Icons.qr_code_scanner_rounded, size: 20),
-                label: const Text('اسکن کد اتوبوس'),
+                label: Text(Format.tr('ride.scan_bus_code')),
               ),
             ],
           ),

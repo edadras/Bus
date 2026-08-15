@@ -18,7 +18,7 @@ class TransactionsScreen extends ConsumerWidget {
     final merchant = ref.watch(merchantStateProvider).valueOrNull;
 
     return AppScaffold(
-      title: 'تراکنش‌ها',
+      title: Format.tr('transactions.title'),
       onRefresh: () async {
         ref.invalidate(merchantTransactionsProvider);
         await ref.read(merchantTransactionsProvider.future);
@@ -30,14 +30,14 @@ class TransactionsScreen extends ConsumerWidget {
           itemBuilder: (_, __) => const ShimmerBox(height: 76),
         ),
         error: (error, _) => ErrorState(
-          message: error is ApiException ? error.message : 'دریافت تراکنش‌ها ممکن نشد.',
+          message: error is ApiException ? error.message : Format.tr('transactions.load_failed'),
           isOffline: error is NetworkException,
           onRetry: () => ref.invalidate(merchantTransactionsProvider),
         ),
         data: (items) => items.isEmpty
-            ? const EmptyState(
+            ? EmptyState(
                 icon: Icons.receipt_long_outlined,
-                message: 'هنوز تراکنشی ثبت نشده است.',
+                message: Format.tr('transactions.empty'),
               )
             : ListView.separated(
                 padding: const EdgeInsets.only(bottom: 110),
@@ -63,14 +63,15 @@ class TransactionsScreen extends ConsumerWidget {
     final reason = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('بازگشت وجه'),
+        title: Text(Format.tr('transactions.refund')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'مبلغ ${transaction['formatted_amount']} به کیف پول مشتری بازگردانده می‌شود. '
-              'کارمزد سامانه نیز برگشت می‌خورد.',
+              Format.tr('transactions.refund_body', {
+                'amount': transaction['formatted_amount'],
+              }),
               style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: AppSpacing.lg),
@@ -78,19 +79,22 @@ class TransactionsScreen extends ConsumerWidget {
               controller: controller,
               autofocus: true,
               maxLength: 200,
-              decoration: const InputDecoration(
-                labelText: 'دلیل بازگشت وجه',
+              decoration: InputDecoration(
+                labelText: Format.tr('transactions.refund_reason'),
                 counterText: '',
               ),
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('انصراف')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(Format.tr('common.cancel')),
+          ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
             onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: const Text('بازگشت وجه'),
+            child: Text(Format.tr('transactions.refund')),
           ),
         ],
       ),
@@ -110,7 +114,7 @@ class TransactionsScreen extends ConsumerWidget {
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('وجه با موفقیت بازگردانده شد.')),
+          SnackBar(content: Text(Format.tr('transactions.refunded'))),
         );
       }
     } on ApiException catch (error) {
@@ -173,7 +177,6 @@ class _TransactionCard extends StatelessWidget {
               ),
             ],
           ),
-
           const SizedBox(height: AppSpacing.md),
           Row(
             children: [
@@ -196,12 +199,10 @@ class _TransactionCard extends StatelessWidget {
               ),
             ],
           ),
-
           if (transaction['description'] != null) ...[
             const SizedBox(height: 6),
             Text(transaction['description'] as String, style: theme.textTheme.bodySmall),
           ],
-
           if (canRefund && !isRefunded && !isSettled) ...[
             const Divider(height: AppSpacing.xl),
             Align(
@@ -210,13 +211,13 @@ class _TransactionCard extends StatelessWidget {
                 onPressed: onRefund,
                 style: TextButton.styleFrom(foregroundColor: AppColors.danger),
                 icon: const Icon(Icons.undo_rounded, size: 16),
-                label: const Text('بازگشت وجه'),
+                label: Text(Format.tr('transactions.refund')),
               ),
             ),
           ] else if (isSettled && !isRefunded) ...[
             const SizedBox(height: 8),
             Text(
-              'این تراکنش تسویه شده و دیگر قابل بازگشت نیست.',
+              Format.tr('transactions.settled_note'),
               style: theme.textTheme.labelSmall?.copyWith(color: AppColors.ink500),
             ),
           ],

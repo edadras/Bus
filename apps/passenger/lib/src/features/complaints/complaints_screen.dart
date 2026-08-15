@@ -20,8 +20,8 @@ class ComplaintsScreen extends ConsumerWidget {
     final complaints = ref.watch(complaintsProvider);
 
     return AppScaffold(
-      title: 'پشتیبانی',
-      subtitle: 'ثبت و پیگیری شکایات',
+      title: Format.tr('complaints.title'),
+      subtitle: Format.tr('complaints.subtitle'),
       onRefresh: () async {
         ref.invalidate(complaintsProvider);
         await ref.read(complaintsProvider.future);
@@ -39,7 +39,7 @@ class ComplaintsScreen extends ConsumerWidget {
             if (created == true) ref.invalidate(complaintsProvider);
           },
           icon: const Icon(Icons.add_rounded, color: Colors.white),
-          label: const Text('ثبت شکایت', style: TextStyle(color: Colors.white)),
+          label: Text(Format.tr('complaints.new'), style: const TextStyle(color: Colors.white)),
         ),
       ),
       body: complaints.when(
@@ -49,14 +49,14 @@ class ComplaintsScreen extends ConsumerWidget {
           itemBuilder: (_, __) => const ShimmerBox(height: 78),
         ),
         error: (error, _) => ErrorState(
-          message: error is ApiException ? error.message : 'دریافت شکایات ممکن نشد.',
+          message: error is ApiException ? error.message : Format.tr('complaints.load_failed'),
           isOffline: error is NetworkException,
           onRetry: () => ref.invalidate(complaintsProvider),
         ),
         data: (items) => items.isEmpty
-            ? const EmptyState(
+            ? EmptyState(
                 icon: Icons.support_agent_rounded,
-                message: 'شکایتی ثبت نکرده‌اید.\nدر صورت بروز مشکل، از دکمه پایین استفاده کنید.',
+                message: Format.tr('complaints.empty'),
               )
             : ListView.separated(
                 padding: const EdgeInsets.only(bottom: 150),
@@ -201,7 +201,7 @@ class _ComplaintFormScreenState extends ConsumerState<_ComplaintFormScreen> {
       Navigator.of(context).pop(true);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('شکایت شما ثبت شد و در حال بررسی است.')),
+        SnackBar(content: Text(Format.tr('complaints.submitted'))),
       );
     } on ApiException catch (error) {
       if (mounted) {
@@ -214,7 +214,7 @@ class _ComplaintFormScreenState extends ConsumerState<_ComplaintFormScreen> {
   @override
   Widget build(BuildContext context) {
     return AppScaffold(
-      title: 'ثبت شکایت',
+      title: Format.tr('complaints.new'),
       leading: const BackButton(),
       body: Form(
         key: _formKey,
@@ -225,7 +225,8 @@ class _ComplaintFormScreenState extends ConsumerState<_ComplaintFormScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text('دسته‌بندی', style: Theme.of(context).textTheme.labelMedium),
+                  Text(Format.tr('complaints.category'),
+                      style: Theme.of(context).textTheme.labelMedium),
                   const SizedBox(height: AppSpacing.sm),
                   DropdownButtonFormField<String>(
                     initialValue: _category,
@@ -235,34 +236,38 @@ class _ComplaintFormScreenState extends ConsumerState<_ComplaintFormScreen> {
                         DropdownMenuItem(value: category.value, child: Text(category.label)),
                     ],
                     onChanged: (value) => setState(() => _category = value),
-                    validator: (value) => value == null ? 'یک دسته‌بندی انتخاب کنید.' : null,
+                    validator: (value) =>
+                        value == null ? Format.tr('complaints.category_required') : null,
                   ),
                   const SizedBox(height: AppSpacing.lg),
-                  Text('موضوع', style: Theme.of(context).textTheme.labelMedium),
+                  Text(Format.tr('complaints.subject'),
+                      style: Theme.of(context).textTheme.labelMedium),
                   const SizedBox(height: AppSpacing.sm),
                   TextFormField(
                     controller: _subjectController,
                     maxLength: 150,
-                    decoration: const InputDecoration(
-                      hintText: 'مثلاً: تأخیر طولانی خط ۱۰۲',
+                    decoration: InputDecoration(
+                      hintText: Format.tr('complaints.subject_hint'),
                       counterText: '',
                     ),
-                    validator: (value) =>
-                        (value == null || value.trim().length < 3) ? 'موضوع را وارد کنید.' : null,
+                    validator: (value) => (value == null || value.trim().length < 3)
+                        ? Format.tr('complaints.subject_required')
+                        : null,
                   ),
                   const SizedBox(height: AppSpacing.lg),
-                  Text('شرح ماجرا', style: Theme.of(context).textTheme.labelMedium),
+                  Text(Format.tr('complaints.body'),
+                      style: Theme.of(context).textTheme.labelMedium),
                   const SizedBox(height: AppSpacing.sm),
                   TextFormField(
                     controller: _bodyController,
                     maxLines: 5,
                     maxLength: 4000,
-                    decoration: const InputDecoration(
-                      hintText: 'هرچه دقیق‌تر بنویسید، رسیدگی سریع‌تر انجام می‌شود.',
+                    decoration: InputDecoration(
+                      hintText: Format.tr('complaints.body_hint'),
                       counterText: '',
                     ),
                     validator: (value) => (value == null || value.trim().length < 10)
-                        ? 'شرح باید حداقل ۱۰ نویسه باشد.'
+                        ? Format.tr('complaints.body_too_short')
                         : null,
                   ),
                 ],
@@ -275,10 +280,12 @@ class _ComplaintFormScreenState extends ConsumerState<_ComplaintFormScreen> {
                 children: [
                   Row(
                     children: [
-                      Text('تصاویر', style: Theme.of(context).textTheme.labelMedium),
+                      Text(Format.tr('complaints.photos'),
+                          style: Theme.of(context).textTheme.labelMedium),
                       const Spacer(),
                       Text(
-                        '${Format.number(_photos.length)} از ۵',
+                        Format.tr(
+                            'complaints.photo_count', {'count': Format.number(_photos.length)}),
                         style: Theme.of(context).textTheme.labelSmall,
                       ),
                     ],
@@ -344,10 +351,10 @@ class _ComplaintFormScreenState extends ConsumerState<_ComplaintFormScreen> {
                     value: _attachLocation,
                     onChanged: (value) => setState(() => _attachLocation = value),
                     contentPadding: EdgeInsets.zero,
-                    title:
-                        Text('ارسال موقعیت مکانی', style: Theme.of(context).textTheme.titleSmall),
+                    title: Text(Format.tr('complaints.share_location'),
+                        style: Theme.of(context).textTheme.titleSmall),
                     subtitle: Text(
-                      'به کارشناس کمک می‌کند محل دقیق رویداد را تشخیص دهد.',
+                      Format.tr('complaints.share_location_body'),
                       style: Theme.of(context).textTheme.labelSmall,
                     ),
                   ),
@@ -363,7 +370,7 @@ class _ComplaintFormScreenState extends ConsumerState<_ComplaintFormScreen> {
                       height: 20,
                       child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                     )
-                  : const Text('ارسال شکایت'),
+                  : Text(Format.tr('complaints.submit')),
             ),
           ],
         ),

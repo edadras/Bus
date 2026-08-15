@@ -41,7 +41,7 @@ class DriverLocationService {
   /// or null when everything required has been granted.
   static Future<String?> ensurePermissions() async {
     if (!await Geolocator.isLocationServiceEnabled()) {
-      return 'سرویس موقعیت مکانی دستگاه خاموش است.';
+      return Format.tr('location.service_off');
     }
 
     var permission = await Geolocator.checkPermission();
@@ -51,9 +51,8 @@ class DriverLocationService {
     }
 
     return switch (permission) {
-      LocationPermission.denied => 'برای شروع شیفت باید دسترسی موقعیت مکانی را بدهید.',
-      LocationPermission.deniedForever =>
-        'دسترسی موقعیت مکانی مسدود شده است. آن را از تنظیمات دستگاه فعال کنید.',
+      LocationPermission.denied => Format.tr('location.permission_needed'),
+      LocationPermission.deniedForever => Format.tr('location.permission_blocked'),
       _ => null,
     };
   }
@@ -152,9 +151,7 @@ class DriverLocationService {
 
       // A handful of misses is a tunnel, not a fault.
       _statusController.add(
-        _consecutiveFailures >= 4
-            ? LocationReportStatus.offline
-            : LocationReportStatus.reporting,
+        _consecutiveFailures >= 4 ? LocationReportStatus.offline : LocationReportStatus.reporting,
       );
 
       // Back off while offline so a long dead zone does not drain the battery.

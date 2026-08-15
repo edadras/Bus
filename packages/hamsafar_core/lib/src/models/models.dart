@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../util/formatters.dart';
 
 /// Parsing helpers. The API is the contract, but a client that hard-crashes on
 /// one unexpected null is worse than one that degrades, so every model reads
@@ -131,8 +132,9 @@ class LedgerEntry extends Equatable {
       amount: _int(json['amount']) ?? 0,
       formattedAmount: _as<String>(json['formatted_amount']) ?? '—',
       balanceAfter: _int(json['balance_after']) ?? 0,
-      title:
-          _as<String>(transaction?['type_label']) ?? _as<String>(json['description']) ?? 'تراکنش',
+      title: _as<String>(transaction?['type_label']) ??
+          _as<String>(json['description']) ??
+          Format.tr('common.transaction'),
       createdAt: _date(json['created_at']),
     );
   }

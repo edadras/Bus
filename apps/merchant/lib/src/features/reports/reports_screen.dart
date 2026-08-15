@@ -19,17 +19,17 @@ class ReportsScreen extends ConsumerWidget {
     final theme = Theme.of(context);
 
     if (merchant != null && !merchant.canViewReports) {
-      return const AppScaffold(
-        title: 'گزارش فروش',
+      return AppScaffold(
+        title: Format.tr('reports.title'),
         body: EmptyState(
           icon: Icons.lock_outline_rounded,
-          message: 'شما به گزارش‌های فروش دسترسی ندارید.\nبرای دریافت دسترسی با مدیر پذیرنده صحبت کنید.',
+          message: Format.tr('reports.no_access'),
         ),
       );
     }
 
     return AppScaffold(
-      title: 'گزارش فروش',
+      title: Format.tr('reports.title'),
       onRefresh: () async {
         ref.invalidate(salesReportProvider);
         await ref.read(salesReportProvider.future);
@@ -37,14 +37,14 @@ class ReportsScreen extends ConsumerWidget {
       body: report.when(
         loading: () => const Center(child: CircularProgressIndicator(color: AppColors.warning)),
         error: (error, _) => ErrorState(
-          message: error is ApiException ? error.message : 'دریافت گزارش ممکن نشد.',
+          message: error is ApiException ? error.message : Format.tr('reports.load_failed'),
           isOffline: error is NetworkException,
           onRetry: () => ref.invalidate(salesReportProvider),
         ),
         data: (data) {
           final totals = (data['totals'] as Map<String, dynamic>?) ?? const {};
-          final daily = ((data['daily'] as List<dynamic>?) ?? const [])
-              .cast<Map<String, dynamic>>();
+          final daily =
+              ((data['daily'] as List<dynamic>?) ?? const []).cast<Map<String, dynamic>>();
 
           return ListView(
             padding: const EdgeInsets.only(bottom: 110),
@@ -53,7 +53,7 @@ class ReportsScreen extends ConsumerWidget {
                 children: [
                   Expanded(
                     child: StatTile(
-                      label: 'فروش ناخالص',
+                      label: Format.tr('reports.gross'),
                       value: Format.money((totals['gross'] as num?)?.toInt()),
                       accent: AppColors.brand300,
                     ),
@@ -61,7 +61,7 @@ class ReportsScreen extends ConsumerWidget {
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: StatTile(
-                      label: 'کارمزد سامانه',
+                      label: Format.tr('reports.commission'),
                       value: Format.money((totals['commission'] as num?)?.toInt()),
                     ),
                   ),
@@ -72,29 +72,28 @@ class ReportsScreen extends ConsumerWidget {
                 children: [
                   Expanded(
                     child: StatTile(
-                      label: 'خالص قابل تسویه',
+                      label: Format.tr('reports.net'),
                       value: Format.money((totals['net'] as num?)?.toInt()),
                     ),
                   ),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: StatTile(
-                      label: 'تعداد تراکنش',
+                      label: Format.tr('reports.transaction_count'),
                       value: Format.number((totals['transactions'] as num?)?.toInt() ?? 0),
                     ),
                   ),
                 ],
               ),
-
               const SizedBox(height: AppSpacing.lg),
               GlassCard(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text('فروش روزانه', style: theme.textTheme.titleSmall),
+                    Text(Format.tr('reports.daily_sales'), style: theme.textTheme.titleSmall),
                     const SizedBox(height: AppSpacing.lg),
                     if (daily.isEmpty)
-                      const EmptyState(message: 'داده‌ای برای نمایش وجود ندارد.')
+                      EmptyState(message: Format.tr('reports.no_data'))
                     else
                       SizedBox(
                         height: 160,
@@ -110,14 +109,12 @@ class ReportsScreen extends ConsumerWidget {
                   ],
                 ),
               ),
-
               const SizedBox(height: AppSpacing.lg),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: Text('جزئیات روزانه', style: theme.textTheme.titleSmall),
+                child: Text(Format.tr('reports.daily_detail'), style: theme.textTheme.titleSmall),
               ),
               const SizedBox(height: AppSpacing.sm),
-
               for (final row in daily.reversed) ...[
                 GlassCard(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -131,7 +128,9 @@ class ReportsScreen extends ConsumerWidget {
                         ),
                       ),
                       Text(
-                        '${Format.number((row['transactions'] as num?)?.toInt() ?? 0)} تراکنش',
+                        Format.tr('reports.transactions_count', {
+                          'count': Format.number((row['transactions'] as num?)?.toInt() ?? 0),
+                        }),
                         style: theme.textTheme.labelSmall,
                       ),
                       const SizedBox(width: 12),

@@ -18,12 +18,21 @@ dirt, so depth comes from the border highlight, not elevation.
 **Typography.** Vazirmatn (SIL OFL), bundled — not fetched from a CDN. Persian
 needs more line height than Latin to stay readable, so body text runs at 1.8.
 
-**Numbers.** Persian digits and the Persian thousands separator (U+066C)
-throughout. Money is stored in rial and displayed in Toman, converted in exactly
-one place per platform — `Money::format` and `Format.money`.
+**Numbers.** Persian digits and the Persian thousands separator (U+066C) in
+Persian; Latin digits in English, because Persian numerals inside an English
+sentence are unreadable to whoever asked for English. Money is stored in rial
+and displayed in Toman, converted in exactly one place per platform —
+`Money::format` and `Format.money`, both of which follow the active locale.
 
 **RTL** is structural, not a stylesheet flip: logical properties throughout, and
-`Directionality.rtl` at the Flutter root.
+`Directionality` chosen from the locale at the Flutter root.
+
+**Localisation.** Nothing user-facing is written inline. The server has
+`lang/fa` and `lang/en`; the browser reads the same keys from a dictionary
+rendered into the page; the apps read them from `AppStrings`. Three tests —
+one per surface — fail the build if a Persian string is typed into a view, a
+script or a widget, or if the two locales drift apart. The passenger app
+carries the language switch; the choice is stored and survives a restart.
 
 **Motion** respects `prefers-reduced-motion` / `MediaQuery.disableAnimations`. A
 live map is already enough motion.
@@ -41,7 +50,7 @@ live map is already enough motion.
 | Wallet | Balance, quick top-up amounts, gateway hand-off with status polling, statement |
 | Complaints | List, intake with up to five photos and optional position, threaded replies |
 | Notifications | In-app inbox with unread badge; tapping a card marks it read |
-| Account | Profile, ride history, notification entry point, plain-language privacy disclosure |
+| Account | Profile, ride history, notification entry point, language switch, plain-language privacy disclosure |
 
 The inbox is the durable record of everything the platform has said. Push is
 best-effort — a phone can be off, out of coverage, or have notifications
@@ -129,7 +138,7 @@ each return a status string rather than throwing.
 ## Client architecture
 
 **Flutter.** Riverpod for state; `hamsafar_core` holds the API client, models,
-theme, secure token storage and the realtime client. Every live screen has two
+theme, secure token storage, the string tables and the realtime client. Every live screen has two
 sources — a socket subscription and a timer — because a live map that silently
 freezes is worse than one that updates slowly.
 

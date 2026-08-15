@@ -175,13 +175,12 @@ class TerminalToken {
       );
 }
 
-final terminalTokenProvider = StateNotifierProvider.autoDispose
-    .family<TerminalTokenNotifier, AsyncValue<TerminalToken>, int>(
+final terminalTokenProvider =
+    StateNotifierProvider.autoDispose.family<TerminalTokenNotifier, AsyncValue<TerminalToken>, int>(
   TerminalTokenNotifier.new,
 );
 
-final merchantTransactionsProvider =
-    FutureProvider.autoDispose<List<Map<String, dynamic>>>(
+final merchantTransactionsProvider = FutureProvider.autoDispose<List<Map<String, dynamic>>>(
   (ref) => ref.watch(transitApiProvider).merchantTransactions(),
 );
 

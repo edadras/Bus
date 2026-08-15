@@ -1,3 +1,5 @@
+import '../util/formatters.dart';
+
 /// A failure returned by the platform API, carrying the server's stable
 /// machine-readable code so screens can branch on the reason rather than on a
 /// translated string.
@@ -44,9 +46,11 @@ class ApiException implements Exception {
 /// The device could not reach the server at all — distinct from the server
 /// rejecting the request, because the remedy the user needs is different.
 class NetworkException extends ApiException {
-  const NetworkException([String? message])
+  // Not const: the default message is translated, and a translation is a
+  // lookup rather than a literal.
+  NetworkException([String? message])
       : super(
           code: 'network_unavailable',
-          message: message ?? 'اتصال به سرور برقرار نشد. اینترنت خود را بررسی کنید.',
+          message: message ?? Format.tr('error.no_connection'),
         );
 }

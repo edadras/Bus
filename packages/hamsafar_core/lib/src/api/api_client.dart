@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../storage/token_store.dart';
 import 'api_exception.dart';
+import '../util/formatters.dart';
 
 /// Typed wrapper over the platform's `/api/v1` surface.
 ///
@@ -85,8 +86,8 @@ class ApiClient {
         DioExceptionType.connectionTimeout ||
         DioExceptionType.sendTimeout ||
         DioExceptionType.receiveTimeout =>
-          const NetworkException('پاسخی از سرور دریافت نشد. دوباره تلاش کنید.'),
-        DioExceptionType.connectionError => const NetworkException(),
+          NetworkException(Format.tr('error.no_response')),
+        DioExceptionType.connectionError => NetworkException(),
         _ => NetworkException(error.message),
       };
     }
@@ -101,7 +102,7 @@ class ApiClient {
 
       throw ApiException(
         code: 'server_error',
-        message: 'پاسخ سرور قابل پردازش نبود.',
+        message: Format.tr('error.unreadable_response'),
         status: response.statusCode,
       );
     }
@@ -117,7 +118,7 @@ class ApiClient {
 
     final exception = ApiException(
       code: (error['code'] as String?) ?? 'server_error',
-      message: (error['message'] as String?) ?? 'خطای نامشخصی رخ داد.',
+      message: (error['message'] as String?) ?? Format.tr('error.unknown'),
       status: response.statusCode,
       details: error['details'] as Map<String, dynamic>?,
     );

@@ -53,12 +53,12 @@ class _ComplaintThreadScreenState extends ConsumerState<ComplaintThreadScreen> {
     final complaint = ref.watch(_complaintProvider(widget.uuid));
 
     return AppScaffold(
-      title: 'پیگیری شکایت',
+      title: Format.tr('complaints.thread_title'),
       leading: const BackButton(),
       body: complaint.when(
         loading: () => const Center(child: CircularProgressIndicator(color: AppColors.brand400)),
         error: (error, _) => ErrorState(
-          message: error is ApiException ? error.message : 'دریافت اطلاعات ممکن نشد.',
+          message: error is ApiException ? error.message : Format.tr('complaints.thread_failed'),
           onRetry: () => ref.invalidate(_complaintProvider(widget.uuid)),
         ),
         data: (data) => Column(
@@ -99,9 +99,9 @@ class _ComplaintThreadScreenState extends ConsumerState<ComplaintThreadScreen> {
                     const SizedBox(height: AppSpacing.sm),
                   ],
                   if (data.messages.isEmpty)
-                    const EmptyState(
+                    EmptyState(
                       icon: Icons.mark_chat_read_outlined,
-                      message: 'هنوز پاسخی ثبت نشده است. کارشناسان در حال بررسی هستند.',
+                      message: Format.tr('complaints.no_replies'),
                     ),
                 ],
               ),
@@ -115,7 +115,7 @@ class _ComplaintThreadScreenState extends ConsumerState<ComplaintThreadScreen> {
                       Expanded(
                         child: TextField(
                           controller: _replyController,
-                          decoration: const InputDecoration(hintText: 'پاسخ خود را بنویسید…'),
+                          decoration: InputDecoration(hintText: Format.tr('complaints.reply_hint')),
                           maxLines: 3,
                           minLines: 1,
                         ),
@@ -176,7 +176,10 @@ class _MessageBubble extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                message.authorName ?? (fromSupport ? 'تیم پشتیبانی' : 'شما'),
+                message.authorName ??
+                    (fromSupport
+                        ? Format.tr('complaints.support_team')
+                        : Format.tr('complaints.you')),
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       color: fromSupport ? AppColors.brand300 : AppColors.ink400,
                     ),

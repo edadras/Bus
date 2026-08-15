@@ -33,10 +33,10 @@ class _DriverShellState extends ConsumerState<DriverShell> {
     }
 
     if (!auth.isSignedIn) {
-      return const OtpLoginView(
+      return OtpLoginView(
         client: 'driver',
-        title: 'ورود رانندگان',
-        subtitle: 'فقط رانندگان تأییدشده می‌توانند وارد شوند',
+        title: Format.tr('driver.sign_in_title'),
+        subtitle: Format.tr('driver.sign_in_subtitle'),
         icon: Icons.badge_outlined,
         accent: AppColors.info,
       );
@@ -53,21 +53,21 @@ class _DriverShellState extends ConsumerState<DriverShell> {
       bottomNavigationBar: GlassNavBar(
         currentIndex: _index,
         onTap: (index) => setState(() => _index = index),
-        items: const [
+        items: [
           GlassNavItem(
             icon: Icons.dashboard_outlined,
             activeIcon: Icons.dashboard_rounded,
-            label: 'شیفت',
+            label: Format.tr('driver.nav_shift'),
           ),
           GlassNavItem(
             icon: Icons.route_outlined,
             activeIcon: Icons.route_rounded,
-            label: 'مسیر',
+            label: Format.tr('driver.nav_route'),
           ),
           GlassNavItem(
             icon: Icons.people_outline_rounded,
             activeIcon: Icons.people_rounded,
-            label: 'مسافران',
+            label: Format.tr('driver.nav_passengers'),
           ),
         ],
       ),

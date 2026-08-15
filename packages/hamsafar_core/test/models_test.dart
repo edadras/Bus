@@ -68,8 +68,12 @@ void main() {
   group('BusStop', () {
     test('reports unverified provenance so the UI can label it', () {
       final sample = BusStop.fromJson({
-        'id': 1, 'code': 'A', 'name': 'ایستگاه',
-        'lat': 27.1, 'lng': 56.2, 'is_verified_data': false,
+        'id': 1,
+        'code': 'A',
+        'name': 'ایستگاه',
+        'lat': 27.1,
+        'lng': 56.2,
+        'is_verified_data': false,
       });
 
       expect(sample.isVerifiedData, isFalse);
@@ -91,7 +95,9 @@ void main() {
 
     test('a frozen wallet cannot spend', () {
       final wallet = Wallet.fromJson({
-        'balance': 500000, 'status_label': 'مسدود', 'can_spend': false,
+        'balance': 500000,
+        'status_label': 'مسدود',
+        'can_spend': false,
       });
 
       expect(wallet.canSpend, isFalse);

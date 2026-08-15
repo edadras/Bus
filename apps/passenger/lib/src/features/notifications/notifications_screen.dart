@@ -20,11 +20,11 @@ class NotificationsScreen extends ConsumerWidget {
     final theme = Theme.of(context);
 
     return AppScaffold(
-      title: 'اعلان‌ها',
+      title: Format.tr('notifications.title'),
       actions: [
         TextButton(
           onPressed: () => controller.markAllRead(),
-          child: const Text('همه خوانده شد'),
+          child: Text(Format.tr('notifications.mark_all_read')),
         ),
       ],
       onRefresh: controller.refresh,
@@ -40,18 +40,18 @@ class NotificationsScreen extends ConsumerWidget {
           ],
         ),
         error: (_, __) => ListView(
-          children: const [
+          children: [
             SizedBox(height: 80),
-            EmptyState(message: 'دریافت اعلان‌ها ممکن نشد.'),
+            EmptyState(message: Format.tr('notifications.failed')),
           ],
         ),
         data: (items) => items.isEmpty
             ? ListView(
-                children: const [
+                children: [
                   SizedBox(height: 80),
                   EmptyState(
                     icon: Icons.notifications_none_rounded,
-                    message: 'هنوز اعلانی دریافت نکرده‌اید.',
+                    message: Format.tr('notifications.empty'),
                   ),
                 ],
               )
@@ -86,7 +86,7 @@ class NotificationsScreen extends ConsumerWidget {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                item.title ?? 'اعلان',
+                                item.title ?? Format.tr('notifications.fallback_title'),
                                 style: theme.textTheme.titleSmall?.copyWith(
                                   fontWeight: item.read ? FontWeight.w500 : FontWeight.w700,
                                 ),

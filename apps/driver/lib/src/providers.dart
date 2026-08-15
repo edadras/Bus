@@ -41,14 +41,13 @@ class DriverState {
   /// A licence expiring inside a month is worth warning about before it stops
   /// the driver mid-week.
   bool get licenseExpiringSoon =>
-      licenseExpiresAt != null &&
-      licenseExpiresAt!.difference(DateTime.now()).inDays <= 30;
+      licenseExpiresAt != null && licenseExpiresAt!.difference(DateTime.now()).inDays <= 30;
 
   factory DriverState.fromJson(Map<String, dynamic> json) {
     final driver = (json['driver'] as Map<String, dynamic>?) ?? const {};
 
     return DriverState(
-      name: driver['name'] as String? ?? 'راننده',
+      name: driver['name'] as String? ?? Format.tr('driver.fallback_name'),
       status: driver['status'] as String? ?? 'unknown',
       totalTrips: (driver['total_trips'] as num?)?.toInt() ?? 0,
       employeeCode: driver['employee_code'] as String?,
@@ -62,9 +61,8 @@ class DriverState {
       shift: json['shift'] == null
           ? null
           : ShiftSummary.fromJson(json['shift'] as Map<String, dynamic>),
-      trip: json['trip'] == null
-          ? null
-          : TripSummary.fromJson(json['trip'] as Map<String, dynamic>),
+      trip:
+          json['trip'] == null ? null : TripSummary.fromJson(json['trip'] as Map<String, dynamic>),
     );
   }
 }
@@ -123,9 +121,8 @@ class ShiftSummary {
         durationMinutes: (json['duration_minutes'] as num?)?.toInt() ?? 0,
         distanceMeters: (json['distance_meters'] as num?)?.toInt() ?? 0,
         busNumber: (json['bus'] as Map<String, dynamic>?)?['number']?.toString(),
-        startedAt: json['started_at'] == null
-            ? null
-            : DateTime.tryParse(json['started_at'] as String),
+        startedAt:
+            json['started_at'] == null ? null : DateTime.tryParse(json['started_at'] as String),
       );
 }
 

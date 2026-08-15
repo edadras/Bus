@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
+import '../util/formatters.dart';
 
 /// The core surface of the design system: a translucent fill, a lit top edge
 /// and a backdrop blur. All three together — the blur alone reads as fog and
@@ -313,7 +314,7 @@ class ErrorState extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh_rounded, size: 18),
-              label: const Text('تلاش دوباره'),
+              label: Text(Format.tr('common.retry')),
             ),
           ],
         ],
@@ -380,8 +381,8 @@ class SampleDataNotice extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (compact) {
-      return const StatusBadge(
-        label: 'داده نمونه',
+      return StatusBadge(
+        label: Format.tr('common.sample_data'),
         colorToken: 'warning',
         icon: Icons.info_outline_rounded,
         compact: true,
@@ -401,7 +402,7 @@ class SampleDataNotice extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'خطوط و ایستگاه‌های این نسخه داده نمونه هستند و مرجع رسمی اتوبوس‌رانی نیستند.',
+              Format.tr('common.sample_data_note'),
               style: Theme.of(context)
                   .textTheme
                   .bodySmall

@@ -37,7 +37,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
 
       if (!launched && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('باز کردن درگاه پرداخت ممکن نشد.')),
+          SnackBar(content: Text(Format.tr('wallet.gateway_failed'))),
         );
 
         return;
@@ -72,16 +72,17 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
     final amount = await showDialog<int>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('مبلغ شارژ'),
+        title: Text(Format.tr('wallet.topup_amount')),
         content: TextField(
           controller: controller,
           keyboardType: TextInputType.number,
           autofocus: true,
           textAlign: TextAlign.center,
-          decoration: const InputDecoration(suffixText: 'تومان'),
+          decoration: InputDecoration(suffixText: Format.tr('unit.toman')),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('انصراف')),
+          TextButton(
+              onPressed: () => Navigator.pop(context), child: Text(Format.tr('common.cancel'))),
           FilledButton(
             onPressed: () {
               final toman = int.tryParse(Format.toLatinDigits(controller.text));
@@ -89,7 +90,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
               // The API speaks in rial minor units; the user types Toman.
               Navigator.pop(context, toman == null ? null : toman * 10);
             },
-            child: const Text('ادامه'),
+            child: Text(Format.tr('wallet.continue')),
           ),
         ],
       ),
@@ -105,7 +106,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
     final theme = Theme.of(context);
 
     return AppScaffold(
-      title: 'کیف پول',
+      title: Format.tr('wallet.title'),
       onRefresh: () async {
         ref
           ..invalidate(walletProvider)
@@ -118,7 +119,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
           wallet.when(
             loading: () => const ShimmerBox(height: 190),
             error: (error, _) => ErrorState(
-              message: error is ApiException ? error.message : 'دریافت موجودی ممکن نشد.',
+              message: error is ApiException ? error.message : Format.tr('wallet.load_failed'),
               isOffline: error is NetworkException,
               onRetry: () => ref.invalidate(walletProvider),
             ),
@@ -129,7 +130,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
                 children: [
                   Row(
                     children: [
-                      Text('موجودی کیف پول', style: theme.textTheme.labelMedium),
+                      Text(Format.tr('wallet.balance'), style: theme.textTheme.labelMedium),
                       const Spacer(),
                       StatusBadge(
                         label: data.statusLabel,
@@ -140,7 +141,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
                   const SizedBox(height: AppSpacing.md),
                   Text(data.formattedBalance, style: theme.textTheme.displayMedium),
                   const SizedBox(height: AppSpacing.xl),
-                  Text('شارژ سریع', style: theme.textTheme.labelMedium),
+                  Text(Format.tr('wallet.quick_topup'), style: theme.textTheme.labelMedium),
                   const SizedBox(height: AppSpacing.sm),
                   Wrap(
                     spacing: AppSpacing.sm,
@@ -167,7 +168,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
                             child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                           )
                         : const Icon(Icons.add_rounded, size: 20),
-                    label: const Text('شارژ کیف پول'),
+                    label: Text(Format.tr('wallet.topup')),
                   ),
                 ],
               ),
@@ -176,7 +177,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
           const SizedBox(height: AppSpacing.lg),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Text('تراکنش‌های اخیر', style: theme.textTheme.titleSmall),
+            child: Text(Format.tr('wallet.recent_transactions'), style: theme.textTheme.titleSmall),
           ),
           const SizedBox(height: AppSpacing.sm),
           transactions.when(
@@ -187,11 +188,11 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
                 ShimmerBox(height: 62),
               ],
             ),
-            error: (_, __) => const EmptyState(message: 'دریافت تراکنش‌ها ممکن نشد.'),
+            error: (_, __) => EmptyState(message: Format.tr('wallet.transactions_failed')),
             data: (entries) => entries.isEmpty
-                ? const EmptyState(
+                ? EmptyState(
                     icon: Icons.receipt_long_outlined,
-                    message: 'هنوز تراکنشی ثبت نشده است.',
+                    message: Format.tr('wallet.no_transactions'),
                   )
                 : Column(
                     children: [
@@ -258,7 +259,7 @@ class _TransactionTile extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                'مانده: ${Format.money(entry.balanceAfter)}',
+                Format.tr('wallet.balance_after', {'amount': Format.money(entry.balanceAfter)}),
                 style: theme.textTheme.labelSmall?.copyWith(fontSize: 10),
               ),
             ],
@@ -335,10 +336,10 @@ class _PaymentWaitDialogState extends ConsumerState<_PaymentWaitDialog> {
       ),
       title: Text(
         succeeded
-            ? 'کیف پول شارژ شد'
+            ? Format.tr('wallet.topup_succeeded')
             : failed
-                ? 'پرداخت ناموفق بود'
-                : 'در انتظار تأیید پرداخت',
+                ? Format.tr('wallet.topup_failed')
+                : Format.tr('wallet.topup_pending'),
       ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
@@ -349,10 +350,10 @@ class _PaymentWaitDialogState extends ConsumerState<_PaymentWaitDialog> {
           ],
           Text(
             succeeded
-                ? 'موجودی شما به‌روزرسانی شد.'
+                ? Format.tr('wallet.topup_succeeded_body')
                 : failed
-                    ? (_message ?? 'پرداخت انجام نشد.')
-                    : 'پس از تکمیل پرداخت در درگاه، به این صفحه بازگردید.',
+                    ? (_message ?? Format.tr('wallet.topup_failed_body'))
+                    : Format.tr('wallet.topup_pending_body'),
             textAlign: TextAlign.center,
           ),
         ],
@@ -360,7 +361,9 @@ class _PaymentWaitDialogState extends ConsumerState<_PaymentWaitDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: Text(succeeded || failed ? 'بستن' : 'بعداً بررسی می‌کنم'),
+          child: Text(
+            succeeded || failed ? Format.tr('common.close') : Format.tr('wallet.check_later'),
+          ),
         ),
       ],
     );

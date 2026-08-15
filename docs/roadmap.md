@@ -17,14 +17,16 @@ Everything in this repository:
 - Admin panel with live operations map, aggregated occupancy, four report
   families and RBAC scoped per city
 - In-app notification inbox plus Web Push delivery with VAPID
+- Journey planning with transfers, walking interchanges and headway-aware cost
+- Persian and English throughout — server, web and apps — guarded by parity tests
 - Persian-first, RTL, installable PWA, Docker environment
 
 ## Version 1.1 — near term
 
 | Item | Why |
 |---|---|
-| Native APNs / FCM push | Web Push ships; native delivery needs per-store credentials that cannot live in this repository. The channel and subscription table are provider-shaped already |
-| SMS provider integration | `SmsSender` is a one-method seam |
+| Firebase project for native push | The FCM sender, the channel and the client seam all ship; a deployment supplies its own service-account key and `google-services.json` |
+| SMS provider contract | Kavenegar and SMS.ir drivers ship; a deployment supplies an API key and a pattern id |
 | Real payment gateway | `PaymentGateway` interface is implemented and tested against the sandbox |
 | Bandar Abbas official data | Replace the sample import with `--provenance=official` |
 | Scheduled timetables | `bus_lines` already carries headway and service hours |
@@ -52,9 +54,6 @@ than assumed.
 
 Also in v2:
 
-- **Multi-leg journey planning.** The API already declares
-  `supports_transfers: false`; v2 makes it true, using the offset model the
-  network layer is built on.
 - **Crowding prediction** — telling a passenger the next bus is full and the one
   after is not.
 - **Zone-based fares** — the schema supports them; the UI does not yet.

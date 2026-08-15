@@ -59,27 +59,28 @@ class _PassengerShellState extends ConsumerState<PassengerShell> {
       bottomNavigationBar: GlassNavBar(
         currentIndex: _index,
         onTap: (index) => setState(() => _index = index),
-        items: const [
-          GlassNavItem(icon: Icons.map_outlined, activeIcon: Icons.map_rounded, label: 'نقشه'),
+        items: [
+          GlassNavItem(
+              icon: Icons.map_outlined, activeIcon: Icons.map_rounded, label: Format.tr('nav.map')),
           GlassNavItem(
             icon: Icons.qr_code_scanner_outlined,
             activeIcon: Icons.qr_code_scanner_rounded,
-            label: 'سفر',
+            label: Format.tr('nav.ride'),
           ),
           GlassNavItem(
             icon: Icons.account_balance_wallet_outlined,
             activeIcon: Icons.account_balance_wallet_rounded,
-            label: 'کیف پول',
+            label: Format.tr('nav.wallet'),
           ),
           GlassNavItem(
             icon: Icons.support_agent_outlined,
             activeIcon: Icons.support_agent_rounded,
-            label: 'پشتیبانی',
+            label: Format.tr('nav.support'),
           ),
           GlassNavItem(
             icon: Icons.person_outline_rounded,
             activeIcon: Icons.person_rounded,
-            label: 'حساب',
+            label: Format.tr('nav.account'),
           ),
         ],
       ),
@@ -93,7 +94,7 @@ class _SignInPrompt extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return AppScaffold(
-      title: 'ورود لازم است',
+      title: Format.tr('gate.title'),
       body: Center(
         child: SingleChildScrollView(
           child: GlassCard(
@@ -104,13 +105,13 @@ class _SignInPrompt extends ConsumerWidget {
                 const Icon(Icons.lock_outline_rounded, size: 36, color: AppColors.ink400),
                 const SizedBox(height: AppSpacing.lg),
                 Text(
-                  'برای پرداخت کرایه، مشاهده کیف پول و ثبت شکایت باید وارد حساب خود شوید.',
+                  Format.tr('gate.body'),
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
-                  'مشاهده نقشه، ایستگاه‌ها و زمان رسیدن اتوبوس نیازی به ثبت‌نام ندارد.',
+                  Format.tr('gate.public_note'),
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
@@ -118,14 +119,14 @@ class _SignInPrompt extends ConsumerWidget {
                 FilledButton(
                   onPressed: () => Navigator.of(context).push(
                     MaterialPageRoute<void>(
-                      builder: (_) => const OtpLoginView(
+                      builder: (_) => OtpLoginView(
                         client: 'passenger',
-                        title: 'ورود به همسفر',
-                        subtitle: 'با شماره موبایل خود وارد شوید',
+                        title: Format.tr('app.sign_in_title'),
+                        subtitle: Format.tr('app.sign_in_subtitle'),
                       ),
                     ),
                   ),
-                  child: const Text('ورود با شماره موبایل'),
+                  child: Text(Format.tr('app.sign_in_with_mobile')),
                 ),
               ],
             ),

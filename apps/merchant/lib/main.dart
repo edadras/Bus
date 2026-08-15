@@ -20,7 +20,8 @@ void main() {
 
   unawaited(SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]));
 
-  final config = AppConfig.fromEnvironment(appName: 'همسفر پذیرنده', client: 'merchant');
+  final config =
+      AppConfig.fromEnvironment(appName: Format.tr('merchant.app_name'), client: 'merchant');
 
   runApp(
     ProviderScope(
@@ -35,6 +36,6 @@ class MerchantApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const HamsafarApp(title: 'همسفر پذیرنده', home: MerchantShell());
+    return HamsafarApp(title: Format.tr('merchant.app_name'), home: const MerchantShell());
   }
 }
