@@ -30,6 +30,8 @@ yarn-error.log
 apps/*/build/
 apps/*/.dart_tool/
 apps/*/android/.gradle/
+# Kotlin compiler session files: build state, written on every assemble.
+apps/*/android/.kotlin/
 apps/*/android/local.properties
 apps/*/ios/Pods/
 apps/*/ios/.symlinks/
