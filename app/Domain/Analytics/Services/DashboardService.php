@@ -53,8 +53,12 @@ class DashboardService
                 ->first();
 
             return [
+                // Telemetry freshness question: answered by the live cache.
                 'buses_moving' => count($live),
-                'passengers_on_board' => array_sum(array_column($live, 'passenger_count')),
+                // Headcount question: answered by the database. The cached map
+                // snapshot only refreshes on the next GPS ping, so reading the
+                // occupancy from it under-reports a passenger who just boarded.
+                'passengers_on_board' => (int) Trip::forCity($city)->live()->sum('passenger_count'),
                 'active_buses' => Bus::forCity($city)->deployable()->count(),
                 'total_buses' => Bus::forCity($city)->count(),
                 'active_drivers' => Driver::forCity($city)->where('status', DriverStatus::Active->value)->count(),

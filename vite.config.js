@@ -7,14 +7,17 @@ export default defineConfig({
         laravel({
             // One shared bundle plus a per-surface entry, so the passenger PWA
             // does not ship the admin panel's charting library and vice versa.
+            // Four entries: the shared runtime, the landing page, the admin
+            // panel, and the lightweight public web viewer. The passenger,
+            // driver and merchant apps are native Flutter builds (see apps/),
+            // so they ship no JavaScript here.
             input: [
                 'resources/css/app.css',
                 'resources/js/app.js',
                 'resources/js/landing.js',
                 'resources/js/admin.js',
-                'resources/js/passenger.js',
-                'resources/js/driver.js',
-                'resources/js/merchant.js',
+                'resources/js/admin-login.js',
+                'resources/js/viewer.js',
             ],
             refresh: true,
         }),

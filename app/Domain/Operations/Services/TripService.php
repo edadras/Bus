@@ -169,7 +169,10 @@ class TripService
                 'destination_stop_id' => $route->destination_stop_id ?? $stops->last()?->bus_stop_id,
                 'next_stop_id' => $stops->first()?->bus_stop_id,
                 'next_stop_sequence' => $stops->first()?->sequence,
-                'last_ping_at' => now(),
+                // Deliberately no last_ping_at: no position has been received
+                // yet. Stamping it here would make the ingest throttle discard
+                // the driver's very first report, leaving the bus off the live
+                // map until the next one.
             ]);
 
             $shift->bus->forceFill([

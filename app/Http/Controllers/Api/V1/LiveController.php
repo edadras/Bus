@@ -107,7 +107,10 @@ class LiveController extends Controller
             'active_buses' => count($live),
             'lines' => \App\Domain\Network\Models\BusLine::forCity($cityId)->active()->count(),
             'stops' => BusStop::forCity($cityId)->active()->count(),
-            'passengers_on_board' => array_sum(array_column($live, 'passenger_count')),
+            // From the database, not the map snapshot: the cached entry only
+            // refreshes on the next GPS ping.
+            'passengers_on_board' => (int) \App\Domain\Operations\Models\Trip::forCity($this->city())
+                ->live()->sum('passenger_count'),
             'generated_at' => now()->toIso8601String(),
         ]);
     }

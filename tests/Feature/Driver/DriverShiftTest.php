@@ -242,6 +242,29 @@ class DriverShiftTest extends TestCase
             ->assertJsonPath('data.bus.bus_number', $this->bus->bus_number);
     }
 
+    /**
+     * A trip must start with no recorded ping. Stamping one at creation makes
+     * the ingest throttle discard the driver's very first report, which leaves
+     * the bus invisible on the live map for the first few seconds of service.
+     */
+    public function test_a_new_trip_accepts_the_drivers_very_first_location_report(): void
+    {
+        $shift = $this->trips->startShift($this->driver, $this->bus);
+        $trip = $this->trips->start($shift, $this->route);
+
+        $this->assertNull($trip->last_ping_at, 'A trip begins with no telemetry.');
+
+        $result = app(\App\Domain\Operations\Services\LocationIngestService::class)->ingest(
+            $trip->fresh(['route', 'bus', 'line', 'nextStop']),
+            \App\Domain\Operations\DTO\LocationPing::fromArray([
+                'lat' => 27.1832, 'lng' => 56.2666, 'speed' => 25, 'accuracy' => 8,
+            ]),
+        );
+
+        $this->assertTrue($result['accepted'], 'The first ping must never be throttled.');
+        $this->assertNotNull($trip->fresh()->last_ping_at);
+    }
+
     public function test_a_passenger_token_cannot_reach_driver_endpoints(): void
     {
         // The ability gate, not a role check: this is the boundary that keeps

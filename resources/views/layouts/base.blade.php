@@ -20,14 +20,20 @@
     <link rel="preload" href="/fonts/Vazirmatn-Regular.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="/fonts/Vazirmatn-SemiBold.woff2" as="font" type="font/woff2" crossorigin>
 
-    {{-- Broadcast connection details, read by resources/js/lib/realtime.js --}}
-    <script>
-        window.__REVERB__ = @json([
+    {{-- Broadcast connection details, read by resources/js/lib/realtime.js.
+         Assembled in a raw PHP block rather than passed inline, because
+         Blade's directive argument parser mis-reads a multi-line array
+         literal that contains a type cast. --}}
+    @php
+        $reverb = [
             'key' => config('broadcasting.connections.reverb.key'),
             'host' => config('broadcasting.connections.reverb.options.host'),
             'port' => (int) config('broadcasting.connections.reverb.options.port'),
             'scheme' => config('broadcasting.connections.reverb.options.scheme'),
-        ]);
+        ];
+    @endphp
+    <script>
+        window.__REVERB__ = @json($reverb);
     </script>
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
