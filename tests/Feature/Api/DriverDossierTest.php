@@ -132,6 +132,26 @@ class DriverDossierTest extends TestCase
         ])->assertStatus(422);
     }
 
+    public function test_registering_a_driver_vouches_for_their_number_without_widening_mass_assignment(): void
+    {
+        // `mobile_verified_at` is guarded on purpose, and passing it through
+        // firstOrCreate threw everywhere but production — which meant nobody
+        // could register a driver at all outside a live deployment.
+        $uuid = $this->postJson('/api/v1/admin/drivers', [
+            'first_name' => 'سعید',
+            'last_name' => 'نوری',
+            'mobile' => '09123334455',
+            'national_code' => '0012345678',
+            'license_number' => 'B-77120',
+        ])->assertCreated()->json('data.uuid');
+
+        $driver = Driver::where('uuid', $uuid)->firstOrFail();
+
+        $this->assertNotNull($driver->user->mobile_verified_at);
+        // Not active on creation: approval is a separate, audited decision.
+        $this->assertSame('pending_approval', $driver->status->value);
+    }
+
     public function test_the_dossier_is_closed_to_a_finance_manager(): void
     {
         $this->actingAsAdmin(

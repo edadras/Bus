@@ -75,9 +75,14 @@ class MerchantAdminController extends Controller
                     'first_name' => $validated['owner_first_name'],
                     'last_name' => $validated['owner_last_name'],
                     'city_id' => $this->city()->id,
-                    'mobile_verified_at' => now(),
                 ],
             );
+
+            // Vouched for by the administrator registering the business.
+            // forceFill because `mobile_verified_at` is guarded on purpose.
+            if ($owner->mobile_verified_at === null) {
+                $owner->forceFill(['mobile_verified_at' => now()])->save();
+            }
 
             $owner->assignRole(Role::MERCHANT_MANAGER, $this->city()->id);
 
@@ -128,9 +133,57 @@ class MerchantAdminController extends Controller
 
         $merchant->load(['owner:id,first_name,last_name,display_name,mobile', 'terminals', 'staff.user']);
 
+        $wallet = $this->wallets->forMerchant($merchant);
+
         return ApiResponse::success([
-            'merchant' => $merchant,
-            'wallet' => $this->wallets->forMerchant($merchant),
+            // Assembled field by field rather than serialising the model with
+            // its relations: `staff.user` is a whole user row each, and dumping
+            // it would publish full mobiles and national codes beside the very
+            // list below that takes care to mask them.
+            'merchant' => [
+                'uuid' => $merchant->uuid,
+                'name' => $merchant->name,
+                'legal_name' => $merchant->legal_name,
+                'code' => $merchant->code,
+                'type' => $merchant->type->value,
+                'status' => $merchant->status->value,
+                'phone' => $merchant->phone,
+                'email' => $merchant->email,
+                'address' => $merchant->address,
+                'commission_bps' => $merchant->commission_bps,
+                'settlement_cycle' => $merchant->settlement_cycle,
+                'max_transaction_amount' => $merchant->max_transaction_amount,
+                'allows_refund' => $merchant->allows_refund,
+                'created_at' => $merchant->created_at?->toIso8601String(),
+                'owner' => [
+                    'name' => $merchant->owner?->name,
+                    'mobile' => $merchant->owner?->maskedMobile(),
+                ],
+                'terminals' => $merchant->terminals->map(fn ($terminal) => [
+                    'id' => $terminal->id,
+                    'name' => $terminal->name,
+                    // The public id identifies a till; the signing secret that
+                    // sits next to it never leaves the server.
+                    'public_id' => $terminal->public_id,
+                    'location_label' => $terminal->location_label,
+                    'is_active' => $terminal->is_active,
+                    'last_used_at' => $terminal->last_used_at?->toIso8601String(),
+                ])->values(),
+            ],
+            'wallet' => [
+                'uuid' => $wallet->uuid,
+                'balance' => $wallet->balance,
+                'status' => $wallet->status->value,
+            ],
+            // The IBAN is hidden on the model and stays hidden: the panel needs
+            // to know an account is on file and to recognise which one, not to
+            // read the number back. A settlement cannot be paid without one, so
+            // its absence is the thing worth surfacing.
+            'bank' => [
+                'has_iban' => filled($merchant->iban),
+                'iban_last4' => filled($merchant->iban) ? substr($merchant->iban, -4) : null,
+                'account_holder' => $merchant->bank_account_holder,
+            ],
             'staff' => $merchant->staff->map(fn ($s) => [
                 'id' => $s->id,
                 'name' => $s->user?->name,
@@ -205,9 +258,12 @@ class MerchantAdminController extends Controller
                 'first_name' => $validated['first_name'],
                 'last_name' => $validated['last_name'],
                 'city_id' => $this->city()->id,
-                'mobile_verified_at' => now(),
             ],
         );
+
+        if ($user->mobile_verified_at === null) {
+            $user->forceFill(['mobile_verified_at' => now()])->save();
+        }
 
         $user->assignRole(Role::MERCHANT_STAFF, $this->city()->id);
 

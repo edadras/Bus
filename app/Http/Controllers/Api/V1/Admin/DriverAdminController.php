@@ -83,9 +83,16 @@ class DriverAdminController extends Controller
                     'first_name' => $validated['first_name'],
                     'last_name' => $validated['last_name'],
                     'city_id' => $this->city()->id,
-                    'mobile_verified_at' => now(),
                 ],
             );
+
+            // An administrator entering the number vouches for it, so the
+            // driver never has to prove it by SMS before their first sign-in.
+            // Written with forceFill because `mobile_verified_at` is guarded on
+            // purpose: nothing should be able to mass-assign a verification.
+            if ($user->mobile_verified_at === null) {
+                $user->forceFill(['mobile_verified_at' => now()])->save();
+            }
 
             $user->assignRole(Role::DRIVER, $this->city()->id);
 

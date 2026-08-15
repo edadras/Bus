@@ -97,6 +97,9 @@ Alpine.data('adminShell', () => ({
 
     qrModal: null,
 
+    // The merchant dossier: wallet, tills and who may use them.
+    merchantModal: null,
+
     // The driver dossier: licence, documents, assignments and recent shifts.
     // Approving someone to carry passengers means reading all four.
     driverModal: null,
@@ -928,9 +931,72 @@ Alpine.data('adminShell', () => ({
             await api.post(`/admin/merchants/${merchant.uuid}/status`, { status });
             window.toast?.(t('admin.merchants.status_updated'), 'success');
             await this.loadMerchants();
+
+            if (this.merchantModal?.uuid === merchant.uuid) await this.openMerchant(merchant);
         } catch (error) {
             window.toast?.(error.message, 'error');
         }
+    },
+
+    async openMerchant(merchant) {
+        try {
+            const { data } = await api.get(`/admin/merchants/${merchant.uuid}`);
+            this.merchantModal = { ...data, uuid: merchant.uuid };
+        } catch (error) {
+            window.toast?.(error.message, 'error');
+        }
+    },
+
+    closeMerchant() {
+        this.merchantModal = null;
+    },
+
+    openTerminalForm() {
+        if (!this.merchantModal) return;
+
+        this.openForm({
+            title: t('admin.merchants.terminal_add'),
+            hint: t('admin.merchants.terminal_hint'),
+            fields: [
+                { name: 'name', label: t('admin.common.name'), required: true },
+                { name: 'location_label', label: t('admin.merchants.terminal_location') },
+            ],
+            submit: (data) => api.post(`/admin/merchants/${this.merchantModal.uuid}/terminals`, data),
+            onDone: async () => {
+                window.toast?.(t('admin.merchants.terminal_added'), 'success');
+                await Promise.all([
+                    this.openMerchant({ uuid: this.merchantModal.uuid }),
+                    this.loadMerchants(),
+                ]);
+            },
+        });
+    },
+
+    openStaffForm() {
+        if (!this.merchantModal) return;
+
+        this.openForm({
+            title: t('admin.merchants.staff_add'),
+            hint: t('admin.merchants.staff_hint'),
+            fields: [
+                { name: 'first_name', label: t('admin.forms.driver.first_name'), required: true },
+                { name: 'last_name', label: t('admin.forms.driver.last_name'), required: true },
+                { name: 'mobile', label: t('admin.forms.driver.mobile'), required: true,
+                  placeholder: t('admin.forms.driver.mobile_placeholder') },
+                { name: 'role', label: t('admin.merchants.staff_role'), type: 'select', required: true, options: [
+                    { value: 'cashier', label: t('admin.merchants.roles.cashier') },
+                    { value: 'manager', label: t('admin.merchants.roles.manager') },
+                ] },
+                { name: 'can_refund', label: t('admin.merchants.can_refund'), type: 'checkbox' },
+                { name: 'can_view_reports', label: t('admin.merchants.can_view_reports'), type: 'checkbox' },
+            ],
+            data: { role: 'cashier', can_view_reports: true },
+            submit: (data) => api.post(`/admin/merchants/${this.merchantModal.uuid}/staff`, data),
+            onDone: async () => {
+                window.toast?.(t('admin.merchants.staff_added'), 'success');
+                await this.openMerchant({ uuid: this.merchantModal.uuid });
+            },
+        });
     },
 
     // ── complaints ──────────────────────────────────────────────────────
