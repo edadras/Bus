@@ -6,7 +6,16 @@
  * in a single ApiError type, never in transport details.
  */
 
-import { t } from './i18n.js';
+import { t, locale } from './i18n.js';
+
+/**
+ * The locale `Intl` should format with.
+ *
+ * Persian gets Persian numerals and the Jalali calendar; everything else gets
+ * Latin digits and a Gregorian date. Formatting is part of the translation: an
+ * English panel printing Persian numerals is not translated, only half-translated.
+ */
+const intlLocale = locale.startsWith('fa') ? 'fa-IR' : 'en-GB';
 
 const TOKEN_KEY = 'hamsafar.token';
 const CITY_KEY = 'hamsafar.city';
@@ -118,13 +127,13 @@ export function formatMoney(minorUnits, { withSuffix = true } = {}) {
 
     const unit = document.documentElement.dataset.displayUnit || 'toman';
     const value = unit === 'toman' ? Math.trunc(minorUnits / 10) : minorUnits;
-    const formatted = new Intl.NumberFormat('fa-IR').format(value);
+    const formatted = new Intl.NumberFormat(intlLocale).format(value);
 
     return withSuffix ? `${formatted} ${t(`common.currency_${unit}`)}` : formatted;
 }
 
 export function formatNumber(value) {
-    return new Intl.NumberFormat('fa-IR').format(value ?? 0);
+    return new Intl.NumberFormat(intlLocale).format(value ?? 0);
 }
 
 export function formatMinutes(seconds) {
@@ -137,13 +146,20 @@ export function formatMinutes(seconds) {
 export function formatTime(iso) {
     if (!iso) return '—';
 
-    return new Intl.DateTimeFormat('fa-IR', { hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
+    return new Intl.DateTimeFormat(intlLocale, { hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
+}
+
+/** Short day label for a chart axis, where space is the constraint. */
+export function formatChartDate(iso) {
+    if (!iso) return '';
+
+    return new Intl.DateTimeFormat(intlLocale, { month: 'short', day: 'numeric' }).format(new Date(iso));
 }
 
 export function formatDateTime(iso) {
     if (!iso) return '—';
 
-    return new Intl.DateTimeFormat('fa-IR', {
+    return new Intl.DateTimeFormat(intlLocale, {
         year: 'numeric', month: 'long', day: 'numeric',
         hour: '2-digit', minute: '2-digit',
     }).format(new Date(iso));

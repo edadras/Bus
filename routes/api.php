@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\Admin\NetworkAdminController;
 use App\Http\Controllers\Api\V1\Admin\OccupancyController;
 use App\Http\Controllers\Api\V1\Admin\ReportController;
 use App\Http\Controllers\Api\V1\Admin\SupportAdminController;
+use App\Http\Controllers\Api\V1\Admin\UserLookupController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\ComplaintController;
 use App\Http\Controllers\Api\V1\DriverController;
@@ -244,6 +245,12 @@ Route::prefix('v1')->group(function (): void {
             Route::post('settlements/{settlement}/pay', [FinanceController::class, 'paySettlement']);
             Route::post('settlements/{settlement}/reject', [FinanceController::class, 'rejectSettlement']);
         });
+
+        // Wallet adjustments and audits are addressed by user UUID; this is
+        // how an operator gets one. Open to finance and to user management,
+        // since both need to identify a person before acting on their account.
+        Route::get('users/lookup', UserLookupController::class)
+            ->middleware('permission:finance.manage,users.manage');
 
         Route::prefix('merchants')->middleware('permission:merchants.manage')->group(function (): void {
             Route::get('/', [MerchantAdminController::class, 'index']);

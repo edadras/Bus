@@ -14,7 +14,7 @@
 import Alpine from 'alpinejs';
 import { Chart, registerables } from 'chart.js';
 import QRCode from 'qrcode';
-import { api, auth, formatNumber } from './lib/api.js';
+import { api, auth, formatNumber, formatChartDate } from './lib/api.js';
 import { createMap, busIcon, MarkerLayer } from './lib/map.js';
 import { subscribe } from './lib/realtime.js';
 import { t } from './lib/i18n.js';
@@ -77,6 +77,12 @@ Alpine.data('adminShell', () => ({
     financeSummary: [],
     fareRules: [],
     settlements: [],
+    transactions: [],
+    transactionPages: {},
+
+    // Wallet tools. A balance is only ever changed through the ledger, so this
+    // panel is a search plus two audited actions — never a direct edit.
+    wallet: { query: '', results: [], selected: null, audit: null, searching: false, searched: false },
 
     filters: {
         fleet: { q: '', status: '' },
@@ -84,6 +90,7 @@ Alpine.data('adminShell', () => ({
         stops: { q: '' },
         merchants: { q: '', status: '' },
         complaints: { status: '', mine: false },
+        transactions: { type: '', status: '', from: '', to: '', page: 1 },
     },
 
     reply: { body: '', internal: false },
@@ -267,7 +274,7 @@ Alpine.data('adminShell', () => ({
                 case 'fleet': await Promise.all([this.loadFleet(), this.loadLines()]); break;
                 case 'drivers': await this.loadDrivers(); break;
                 case 'network': await Promise.all([this.loadLines(), this.loadStops()]); break;
-                case 'finance': await Promise.all([this.loadFinance(), this.loadFareRules(), this.loadSettlements()]); break;
+                case 'finance': await Promise.all([this.loadFinance(), this.loadFareRules(), this.loadSettlements(), this.loadTransactions()]); break;
                 case 'merchants': await this.loadMerchants(); break;
                 case 'complaints': await this.loadComplaints(); break;
             }
@@ -294,9 +301,7 @@ Alpine.data('adminShell', () => ({
     },
 
     renderCharts(series) {
-        const labels = series.map((row) => new Intl.DateTimeFormat('fa-IR', {
-            month: 'short', day: 'numeric',
-        }).format(new Date(row.date)));
+        const labels = series.map((row) => formatChartDate(row.date));
 
         this.drawChart('chart-trips', {
             type: 'line',
@@ -632,6 +637,163 @@ Alpine.data('adminShell', () => ({
         }
     },
 
+    async loadTransactions() {
+        const { data, meta } = await api.get('/admin/finance/transactions', {
+            query: this.filters.transactions,
+        });
+
+        this.transactions = data;
+        this.transactionPages = meta?.pagination ?? {};
+    },
+
+    async goToTransactionPage(page) {
+        if (page < 1 || page > (this.transactionPages.last_page ?? 1)) return;
+
+        this.filters.transactions.page = page;
+
+        try {
+            await this.loadTransactions();
+        } catch (error) {
+            window.toast?.(error.message, 'error');
+        }
+    },
+
+    async applyTransactionFilters() {
+        // A filter change with the old page number can land on an empty page.
+        this.filters.transactions.page = 1;
+
+        try {
+            await this.loadTransactions();
+        } catch (error) {
+            window.toast?.(error.message, 'error');
+        }
+    },
+
+    /**
+     * Reversal, not correction. The reason is mandatory server-side and ends
+     * up in the audit trail, so it is asked for in a form rather than assumed.
+     */
+    openReversalForm(transaction) {
+        this.openForm({
+            title: t('admin.finance.reverse_title', { uuid: transaction.uuid.slice(0, 8) }),
+            hint: t('admin.finance.reverse_hint'),
+            submitLabel: t('admin.finance.reverse'),
+            fields: [
+                { name: 'reason', label: t('admin.finance.reverse_reason'), type: 'textarea', required: true,
+                  wide: true, help: t('admin.finance.reverse_reason_help') },
+            ],
+            submit: (data) => api.post(`/admin/finance/transactions/${transaction.uuid}/reverse`, data),
+            onDone: async () => {
+                window.toast?.(t('admin.finance.reversed'), 'success');
+                await Promise.all([this.loadTransactions(), this.loadFinance()]);
+            },
+        });
+    },
+
+    // ── wallet tools ────────────────────────────────────────────────────
+    async searchWalletUsers() {
+        const query = this.wallet.query.trim();
+
+        if (query.length < 3) return;
+
+        this.wallet.searching = true;
+
+        try {
+            const { data } = await api.get('/admin/users/lookup', { query: { q: query } });
+            this.wallet.results = data;
+            this.wallet.searched = true;
+        } catch (error) {
+            window.toast?.(error.message, 'error');
+        } finally {
+            this.wallet.searching = false;
+        }
+    },
+
+    selectWalletUser(user) {
+        this.wallet.selected = user;
+        // The previous integrity check described a different wallet.
+        this.wallet.audit = null;
+    },
+
+    openAdjustmentForm() {
+        const user = this.wallet.selected;
+
+        if (!user) return;
+
+        this.openForm({
+            title: t('admin.finance.adjust_title', { name: user.name }),
+            hint: t('admin.finance.adjust_hint'),
+            fields: [
+                { name: 'amount', label: t('admin.finance.adjust_amount'), type: 'number', required: true },
+                { name: 'reason', label: t('admin.finance.adjust_reason'), type: 'textarea', required: true, wide: true },
+            ],
+            data: { user_uuid: user.uuid },
+            submit: (data) => api.post('/admin/finance/wallets/adjust', data),
+            onDone: async (response) => {
+                window.toast?.(t('admin.finance.adjusted'), 'success');
+
+                // Show the new balance without making the operator search again.
+                this.wallet.selected = { ...user, balance: response?.data?.balance ?? user.balance };
+                this.wallet.audit = null;
+                await this.loadTransactions().catch(() => {});
+            },
+        });
+    },
+
+    async auditWallet() {
+        if (!this.wallet.selected) return;
+
+        try {
+            const { data } = await api.get('/admin/finance/wallets/audit', {
+                query: { user_uuid: this.wallet.selected.uuid },
+            });
+
+            this.wallet.audit = data;
+        } catch (error) {
+            window.toast?.(error.message, 'error');
+        }
+    },
+
+    async openSettlementForm() {
+        // The operator may have come straight to Finance, in which case the
+        // merchant list has never been fetched and the select would be empty.
+        if (!this.merchants.length) await this.loadMerchants().catch(() => {});
+
+        const today = new Date();
+        const start = new Date(today.getTime() - 7 * 86_400_000);
+
+        this.openForm({
+            title: t('admin.finance.settlement_form_title'),
+            hint: t('admin.finance.settlement_form_hint'),
+            fields: [
+                { name: 'merchant_uuid', label: t('admin.finance.settlement_merchant'), type: 'select', required: true,
+                  options: this.merchants.map((merchant) => ({ value: merchant.uuid, label: merchant.name })) },
+                { name: 'from', label: t('admin.finance.settlement_from'), type: 'date', required: true },
+                { name: 'to', label: t('admin.finance.settlement_to'), type: 'date', required: true },
+            ],
+            data: { from: start.toISOString().slice(0, 10), to: today.toISOString().slice(0, 10) },
+            submit: (data) => api.post('/admin/finance/settlements', data),
+            onDone: async () => {
+                window.toast?.(t('admin.finance.settlement_created'), 'success');
+                await this.loadSettlements();
+            },
+        });
+    },
+
+    async rejectSettlement(settlement) {
+        const reason = prompt(t('admin.finance.settlement_reject_prompt'));
+
+        if (!reason) return;
+
+        try {
+            await api.post(`/admin/finance/settlements/${settlement.uuid}/reject`, { reason });
+            window.toast?.(t('admin.finance.settlement_rejected'), 'success');
+            await this.loadSettlements();
+        } catch (error) {
+            window.toast?.(error.message, 'error');
+        }
+    },
+
     async paySettlement(settlement) {
         const reference = prompt(t('admin.finance.transfer_reference_prompt'));
 
@@ -849,12 +1011,20 @@ Alpine.data('adminShell', () => ({
         this.form.error = null;
 
         try {
-            await this.form.submit(this.form.data);
+            const response = await this.form.submit(this.form.data);
+            const done = this.form.onDone;
 
             this.form.open = false;
-            window.toast?.(t('admin.common.saved'), 'success');
 
-            await this.load(this.view, { force: true });
+            // A form may own what happens next — a specific message, a figure
+            // to show, one list to refresh. Only when it does not do we fall
+            // back to the blunt instrument of reloading the whole screen.
+            if (done) {
+                await done(response);
+            } else {
+                window.toast?.(t('admin.common.saved'), 'success');
+                await this.load(this.view, { force: true });
+            }
         } catch (error) {
             // Field-level messages come back from the server's validator; a
             // non-validation failure is shown once at the foot of the form.

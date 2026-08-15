@@ -1,5 +1,5 @@
 import Alpine from 'alpinejs';
-import { api, auth, city, formatMoney, formatNumber, formatMinutes, formatTime, formatDateTime, ApiError } from './lib/api.js';
+import { api, auth, city, formatMoney, formatNumber, formatMinutes, formatTime, formatDateTime, formatChartDate, ApiError } from './lib/api.js';
 import { enablePush, disablePush, syncPush, pushSupported, pushPermission } from './lib/push.js';
 import { t, tGroup, locale, isRtl } from './lib/i18n.js';
 
@@ -7,7 +7,7 @@ window.Alpine = Alpine;
 
 // Shared helpers, available to every Alpine component without re-importing.
 window.hamsafar = {
-    api, auth, city, formatMoney, formatNumber, formatMinutes, formatTime, formatDateTime, ApiError,
+    api, auth, city, formatMoney, formatNumber, formatMinutes, formatTime, formatDateTime, formatChartDate, ApiError,
     push: { enable: enablePush, disable: disablePush, supported: pushSupported, permission: pushPermission },
     t, tGroup, locale, isRtl,
 };
@@ -15,6 +15,7 @@ window.hamsafar = {
 Alpine.magic('money', () => formatMoney);
 Alpine.magic('num', () => formatNumber);
 Alpine.magic('time', () => formatTime);
+Alpine.magic('datetime', () => formatDateTime);
 Alpine.magic('t', () => t);
 
 /** Toast notifications, driven by `window.dispatchEvent(new CustomEvent('toast', ...))`. */
