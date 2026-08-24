@@ -685,4 +685,5 @@ const faStrings = <String, String>{
   'school_service.pay_title': 'پرداخت شهریه',
   'school_service.pay_confirm': ':amount از کیف پول شما کسر می‌شود.',
   'school_service.paid': 'پرداخت انجام شد.',
+  'taxi.fare_arrived': 'کرایه دریافت شد',
 };

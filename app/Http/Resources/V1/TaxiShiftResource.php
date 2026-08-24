@@ -13,6 +13,9 @@ class TaxiShiftResource extends JsonResource
     {
         return [
             'uuid' => $this->uuid,
+            // The numeric id, because the driver's private channel is named
+            // after it. Nothing else on the client uses it.
+            'id' => $this->id,
             'status' => $this->status->value,
             'service_type' => $this->service_type->value,
             'service_type_label' => $this->service_type->label(),

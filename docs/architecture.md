@@ -103,7 +103,16 @@ packages/hamsafar_core/   apps/{passenger, driver, merchant, taxi_driver, school
 
 State is Riverpod. Every live screen has two sources — a socket subscription
 and a timer — because a live map that silently freezes is worse than one that
-updates slowly.
+updates slowly. The socket is the primary path and the timer the safety net.
+
+A private channel is not something the client can grant itself: the app posts
+the pair (socket id, channel name) to `/broadcasting/auth` with its bearer
+token, and the server — in `routes/channels.php` — decides. That is what lets
+the driver working a taxi shift and the city's operations staff share one
+channel name without sharing an audience. The token is read from the platform
+keychain at the moment of authorisation rather than copied into app state, and
+the client is rebuilt on sign-in and sign-out so a socket never outlives the
+session that authorised it.
 
 The two driver apps are separate products rather than modes of one app,
 because their jobs share almost nothing: a taxi driver watches a fare code and

@@ -488,7 +488,7 @@ class TransitApi {
       'lng': lng,
       'radius': radius,
       if (serviceType != null) 'service_type': serviceType,
-    });
+    },);
 
     return result.asList.map(NearbyTaxi.fromJson).toList();
   }
@@ -509,7 +509,7 @@ class TransitApi {
       'token': token,
       if (lat != null) 'lat': lat,
       if (lng != null) 'lng': lng,
-    });
+    },);
 
     return TaxiScanResult.fromJson(result.asMap);
   }
@@ -532,7 +532,7 @@ class TransitApi {
       if (lat != null) 'lat': lat,
       if (lng != null) 'lng': lng,
       if (deviceId != null) 'device_id': deviceId,
-    });
+    },);
 
     return TaxiRide.fromJson(result.asMap);
   }
@@ -547,7 +547,7 @@ class TransitApi {
     final result = await _client.post('/taxi/rides/$uuid/end', body: {
       if (lat != null) 'lat': lat,
       if (lng != null) 'lng': lng,
-    });
+    },);
 
     return TaxiRide.fromJson(result.asMap);
   }
@@ -595,7 +595,7 @@ class TransitApi {
       if (taxiLineId != null) 'taxi_line_id': taxiLineId,
       if (lat != null) 'lat': lat,
       if (lng != null) 'lng': lng,
-    });
+    },);
 
     return result.asMap;
   }
@@ -604,7 +604,7 @@ class TransitApi {
     final result = await _client.post('/taxi/driver/shifts/end', body: {
       if (lat != null) 'lat': lat,
       if (lng != null) 'lng': lng,
-    });
+    },);
 
     return result.asMap;
   }
@@ -617,7 +617,7 @@ class TransitApi {
     final result = await _client.post('/taxi/driver/shifts/mode', body: {
       'service_type': serviceType,
       if (taxiLineId != null) 'taxi_line_id': taxiLineId,
-    });
+    },);
 
     return result.asMap;
   }
@@ -653,7 +653,7 @@ class TransitApi {
       if (speedKmh != null) 'speed': speedKmh,
       if (accuracy != null) 'accuracy': accuracy,
       if (recordedAt != null) 'recorded_at': recordedAt.toUtc().toIso8601String(),
-    });
+    },);
 
     return result.asMap;
   }
@@ -668,7 +668,7 @@ class TransitApi {
     final result = await _client.post('/taxi/driver/rides/$uuid/end', body: {
       if (lat != null) 'lat': lat,
       if (lng != null) 'lng': lng,
-    });
+    },);
 
     return TaxiRide.fromJson(result.asMap);
   }
@@ -692,7 +692,7 @@ class TransitApi {
     final result = await _client.post('/taxi/driver/settlements', body: {
       if (from != null) 'from': from,
       if (to != null) 'to': to,
-    });
+    },);
 
     return TaxiSettlement.fromJson(result.asMap);
   }
@@ -752,7 +752,7 @@ class TransitApi {
       if (pickupLat != null) 'pickup_lat': pickupLat,
       if (pickupLng != null) 'pickup_lng': pickupLng,
       if (note != null) 'guardian_note': note,
-    });
+    },);
 
     return SchoolContract.fromJson(result.asMap);
   }
@@ -760,7 +760,7 @@ class TransitApi {
   Future<SchoolContract> endSchoolContract(String uuid, {String? reason}) async {
     final result = await _client.post('/school/contracts/$uuid/end', body: {
       if (reason != null) 'reason': reason,
-    });
+    },);
 
     return SchoolContract.fromJson(result.asMap);
   }
@@ -801,7 +801,7 @@ class TransitApi {
     final result = await _client.post('/school/students/$uuid/absence', body: {
       if (note != null) 'note': note,
       if (direction != null) 'direction': direction,
-    });
+    },);
 
     return (result.asMap['marked'] as num?)?.toInt() ?? 0;
   }
@@ -824,7 +824,7 @@ class TransitApi {
     final result = await _client.post('/school/driver/trips/$uuid/start', body: {
       if (lat != null) 'lat': lat,
       if (lng != null) 'lng': lng,
-    });
+    },);
 
     return SchoolTrip.fromJson(result.asMap);
   }
@@ -833,7 +833,7 @@ class TransitApi {
     final result = await _client.post('/school/driver/trips/$uuid/complete', body: {
       if (lat != null) 'lat': lat,
       if (lng != null) 'lng': lng,
-    });
+    },);
 
     return SchoolTrip.fromJson(result.asMap);
   }
@@ -852,7 +852,7 @@ class TransitApi {
       if (lat != null) 'lat': lat,
       if (lng != null) 'lng': lng,
       if (note != null) 'note': note,
-    });
+    },);
 
     return SchoolTripStudent.fromJson(result.asMap);
   }
@@ -866,7 +866,7 @@ class TransitApi {
       'lat': lat,
       'lng': lng,
       if (speedKmh != null) 'speed': speedKmh,
-    });
+    },);
 
     return result.asMap;
   }

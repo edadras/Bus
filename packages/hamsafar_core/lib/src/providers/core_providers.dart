@@ -36,14 +36,25 @@ final apiClientProvider = Provider<ApiClient>((ref) {
 
 final transitApiProvider = Provider<TransitApi>((ref) => TransitApi(ref.watch(apiClientProvider)));
 
+/// The socket, rebuilt whenever the session changes.
+///
+/// It watches the auth state rather than reading it once: a private channel is
+/// signed against the token that asked for it, so a client that survived a
+/// sign-out would keep listening on somebody else's behalf.
 final realtimeProvider = Provider<RealtimeClient>((ref) {
   final config = ref.watch(appConfigProvider);
+
+  // Rebuilt on sign-in and sign-out. A socket that outlived a session would
+  // keep listening on a private channel the new signed-in user may not hold.
+  ref.watch(authControllerProvider.select((state) => state.isSignedIn));
 
   final client = RealtimeClient(
     appKey: config.reverbKey,
     host: config.reverbHost,
     port: config.reverbPort,
     useTls: config.reverbUseTls,
+    authEndpoint: '${config.apiBaseUrl}/broadcasting/auth',
+    tokenProvider: () => ref.read(tokenStoreProvider).read(),
   );
 
   client.connect();

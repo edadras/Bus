@@ -86,7 +86,13 @@ class _TaxiRidesScreenState extends ConsumerState<TaxiRidesScreen> {
   @override
   Widget build(BuildContext context) {
     final rides = ref.watch(taxiRidesProvider);
+    final shiftUuid = ref.watch(taxiStateProvider).valueOrNull?.shift?.uuid;
+    final arrival = ref.watch(taxiFareArrivalProvider);
     final theme = Theme.of(context);
+
+    // Subscribing here rather than in the shell: the feed is only worth
+    // holding open while somebody is looking at the figures it updates.
+    if (shiftUuid != null) ref.watch(taxiShiftFeedProvider(shiftUuid));
 
     return AppScaffold(
       title: Format.tr('taxi.rides_title'),
@@ -108,6 +114,10 @@ class _TaxiRidesScreenState extends ConsumerState<TaxiRidesScreen> {
         data: (view) => ListView(
           padding: const EdgeInsets.only(bottom: 110),
           children: [
+            if (arrival != null) ...[
+              _FareArrival(arrival: arrival),
+              const SizedBox(height: AppSpacing.md),
+            ],
             if (view.shift != null) _Counters(shift: view.shift!),
             const SizedBox(height: AppSpacing.lg),
             Text(Format.tr('taxi.onboard_now'), style: theme.textTheme.titleSmall),
@@ -142,6 +152,55 @@ class _TaxiRidesScreenState extends ConsumerState<TaxiRidesScreen> {
                 ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// The last fare to land.
+///
+/// Announced by the server the moment the passenger's wallet is debited, which
+/// is the whole point of the fixed-fare mode from the driver's side: money
+/// arrives in a wallet they cannot see being credited, so the app has to say
+/// so rather than leave them to notice a counter move.
+class _FareArrival extends StatelessWidget {
+  const _FareArrival({required this.arrival});
+
+  final TaxiFareArrival arrival;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return GlassCard(
+      strong: true,
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: AppColors.brand500.withValues(alpha: 0.16),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: const Icon(Icons.payments_rounded, color: AppColors.brand300),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(Format.tr('taxi.fare_arrived'), style: theme.textTheme.labelMedium),
+                Text(
+                  arrival.formattedAmount,
+                  style: theme.textTheme.titleLarge?.copyWith(color: AppColors.brand300),
+                ),
+              ],
+            ),
+          ),
+          const LiveDot(),
+        ],
       ),
     );
   }

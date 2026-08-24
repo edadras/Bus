@@ -162,6 +162,17 @@ class PublicNetworkTest extends TestCase
             ->assertJsonStructure(['data' => ['provider' => ['tile_url', 'attribution', 'max_zoom'], 'center', 'zoom']]);
     }
 
+    public function test_map_configuration_names_its_city_so_a_guest_can_find_the_live_feed(): void
+    {
+        // The live bus channel is named after the city, and the map is
+        // reachable without an account — so a signed-out client has to learn
+        // the city from somewhere it can already reach.
+        $this->getJson('/api/v1/map/config')
+            ->assertOk()
+            ->assertJsonPath('data.city.id', $this->city->id)
+            ->assertJsonPath('data.city.slug', $this->city->slug);
+    }
+
     public function test_another_citys_stop_is_not_reachable(): void
     {
         $otherCity = City::factory()->create(['slug' => 'shiraz']);

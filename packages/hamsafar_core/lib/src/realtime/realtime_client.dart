@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:dio/dio.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 /// Minimal Pusher-protocol client for Laravel Reverb.
@@ -20,7 +21,7 @@ class RealtimeClient {
     required this.port,
     required this.useTls,
     this.authEndpoint,
-    this.authToken,
+    this.tokenProvider,
   });
 
   final String appKey;
@@ -28,7 +29,11 @@ class RealtimeClient {
   final int port;
   final bool useTls;
   final String? authEndpoint;
-  final String? authToken;
+
+  /// Read at the moment a private channel is authorised, rather than captured
+  /// once: the token lives in the platform keychain and has no business being
+  /// copied into app state on the way here.
+  final Future<String?> Function()? tokenProvider;
 
   WebSocketChannel? _channel;
   StreamSubscription<dynamic>? _subscription;
@@ -38,6 +43,11 @@ class RealtimeClient {
   final _handlers = <String, Map<String, List<void Function(Map<String, dynamic>)>>>{};
   final _pendingChannels = <String>{};
   final _connectionState = StreamController<RealtimeStatus>.broadcast();
+
+  final _http = Dio(BaseOptions(
+    connectTimeout: const Duration(seconds: 8),
+    receiveTimeout: const Duration(seconds: 8),
+  ),);
 
   int _attempt = 0;
   bool _disposed = false;
@@ -164,16 +174,61 @@ class RealtimeClient {
   }
 
   void _subscribe(String channel) {
-    // Private channels need a server-signed auth string; without an auth
-    // endpoint we simply skip them rather than failing the whole socket.
-    if (channel.startsWith('private-') && (authEndpoint == null || authToken == null)) {
+    if (!channel.startsWith('private-')) {
+      _send({
+        'event': 'pusher:subscribe',
+        'data': {'channel': channel},
+      });
+
       return;
     }
 
-    _send({
-      'event': 'pusher:subscribe',
-      'data': {'channel': channel},
-    });
+    // A private channel is not something the client can grant itself. The
+    // server signs the pair (socket id, channel name) with the app secret and
+    // decides, in routes/channels.php, whether this token may listen at all —
+    // which is why the driver's own shift and the operations map can share one
+    // channel name without sharing an audience.
+    unawaited(_authorise(channel));
+  }
+
+  Future<void> _authorise(String channel) async {
+    final endpoint = authEndpoint;
+    final socketId = _socketId;
+
+    if (endpoint == null || socketId == null) return;
+
+    final token = await tokenProvider?.call();
+
+    // Without credentials there is nothing to ask with. Skipped rather than
+    // treated as an error: a signed-out passenger still gets the public map.
+    if (token == null || _disposed || _socketId != socketId) return;
+
+    try {
+      final response = await _http.post<dynamic>(
+        endpoint,
+        data: {'socket_id': socketId, 'channel_name': channel},
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Accept': 'application/json',
+          },
+        ),
+      );
+
+      final auth = (response.data as Map<String, dynamic>?)?['auth'];
+
+      // A refusal is a legitimate answer — this token may not listen here —
+      // and the socket carries on serving the channels it may.
+      if (auth is! String || _disposed || _socketId != socketId) return;
+
+      _send({
+        'event': 'pusher:subscribe',
+        'data': {'channel': channel, 'auth': auth},
+      });
+    } catch (_) {
+      // The reconnect path re-attempts every channel, so one failed
+      // authorisation is not worth surfacing or retrying here.
+    }
   }
 
   void _send(Map<String, dynamic> payload) {
@@ -231,4 +286,7 @@ abstract final class Channels {
   static String tripCrew(int tripId) => 'private-$prefix.trip.$tripId.crew';
 
   static String userWallet(int userId) => 'private-wallet.user.$userId';
+
+  /// A taxi driver's own shift, where a fare landing is announced.
+  static String taxiShift(int shiftId) => 'private-$prefix.taxi.shift.$shiftId';
 }

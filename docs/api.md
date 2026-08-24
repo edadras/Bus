@@ -61,7 +61,7 @@ suite work without an SMS gateway.
 A passenger must be able to plan a journey before signing up.
 
 ```
-GET /map/config                     tile provider, city viewport, bounds
+GET /map/config                     city, tile provider, viewport, bounds
 GET /stops                          ?lat&lng&radius&q&limit
 GET /stops/{stop}                   stop plus the lines that call there
 GET /stops/{stop}/arrivals          the arrival board  ?line_id&limit
@@ -393,6 +393,27 @@ Approving a company is a city administrator's act (`school.admin`); running one
 is the company's (`school.manage`). They share these endpoints, and the
 controller narrows every query to the companies a `school.manage` holder
 belongs to — the markup in the panel is identical, the data is not.
+
+## Real-time channels
+
+`POST /broadcasting/auth` — Sanctum-authenticated, and the only way onto a
+private channel. The client posts `{ socket_id, channel_name }` with its bearer
+token and gets back a signature; `routes/channels.php` decides whether that
+token may listen at all.
+
+| Channel | Who may listen | Carries |
+|---|---|---|
+| `transit.city.{city}.buses` | anyone | position, line, occupancy ratio — no identity |
+| `transit.trip.{trip}` | anyone | one trip's progress |
+| `private-transit.trip.{trip}.crew` | the driver, operations staff | driver and per-person detail |
+| `private-wallet.user.{user}` | that user | their own balance changes |
+| `private-transit.taxi.shift.{shift}` | the driver working it, operations staff | a fare landing, and the shift's running total |
+
+The taxi shift channel is named after the shift rather than the driver, which
+is what lets one channel serve two audiences the server tells apart.
+
+`GET /map/config` carries the city id, so a signed-out client can name the
+public bus channel from a payload it can already reach.
 
 ## Rate limits
 

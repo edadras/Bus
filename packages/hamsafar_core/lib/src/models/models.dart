@@ -537,6 +537,8 @@ class MapConfig extends Equatable {
     required this.maxZoom,
     required this.center,
     required this.zoom,
+    this.cityId,
+    this.cityName,
   });
 
   final String tileUrl;
@@ -544,6 +546,12 @@ class MapConfig extends Equatable {
   final int maxZoom;
   final LatLngPoint center;
   final double zoom;
+
+  /// The city this configuration is for. Carried here because it is the one
+  /// payload every client fetches before anything else, signed in or not, and
+  /// the live bus channel is named after it.
+  final int? cityId;
+  final String? cityName;
 
   static const fallback = MapConfig(
     tileUrl: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -555,8 +563,11 @@ class MapConfig extends Equatable {
 
   factory MapConfig.fromJson(Map<String, dynamic> json) {
     final provider = _as<Map<String, dynamic>>(json['provider']) ?? const {};
+    final city = _as<Map<String, dynamic>>(json['city']);
 
     return MapConfig(
+      cityId: _int(city?['id']),
+      cityName: _as<String>(city?['name']),
       tileUrl: _as<String>(provider['tile_url']) ?? fallback.tileUrl,
       attribution: _as<String>(provider['attribution']) ?? '',
       maxZoom: _int(provider['max_zoom']) ?? 19,

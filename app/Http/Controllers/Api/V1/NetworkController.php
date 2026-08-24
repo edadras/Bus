@@ -151,6 +151,10 @@ class NetworkController extends Controller
         $city = $this->city();
 
         return ApiResponse::success([
+            // The city, so a client can name its live channel without being
+            // signed in — the map is reachable without an account, and the
+            // bus feed with it.
+            'city' => ['id' => $city->id, 'slug' => $city->slug, 'name' => $city->name],
             'provider' => $maps->tileConfig(),
             'center' => ['lat' => $city->center_lat, 'lng' => $city->center_lng],
             'zoom' => $city->default_zoom,

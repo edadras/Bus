@@ -680,4 +680,5 @@ const enStrings = <String, String>{
   'school_service.pay_title': 'Pay the fee',
   'school_service.pay_confirm': ':amount will be taken from your wallet.',
   'school_service.paid': 'Paid.',
+  'taxi.fare_arrived': 'Fare received',
 };

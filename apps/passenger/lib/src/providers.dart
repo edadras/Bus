@@ -44,11 +44,42 @@ final devicePositionProvider = FutureProvider<Position?>((ref) async {
 class LiveBusesNotifier extends StateNotifier<AsyncValue<List<LiveBus>>> {
   LiveBusesNotifier(this._ref) : super(const AsyncValue.loading()) {
     unawaited(refresh());
+    unawaited(_listen());
     _startPolling();
   }
 
   final Ref _ref;
   Timer? _timer;
+  String? _channel;
+
+  /// Subscribe to the city's public bus channel.
+  ///
+  /// Public on purpose: it carries position, line and an occupancy ratio, and
+  /// no identity. A driver's name and a per-person count live on private
+  /// channels behind an authorisation callback — which is also why this works
+  /// signed out, as the map itself does.
+  Future<void> _listen() async {
+    final int cityId;
+
+    try {
+      cityId = (await _ref.read(mapConfigProvider.future)).cityId ?? 0;
+    } catch (_) {
+      // No config, no channel. The poll still runs.
+      return;
+    }
+
+    if (cityId == 0 || !mounted) return;
+
+    _channel = Channels.cityBuses(cityId);
+
+    final realtime = _ref.read(realtimeProvider);
+
+    // Both events change what is on the map: one moves a bus, the other
+    // changes how full it is drawn.
+    for (final event in ['bus.location', 'passenger.boarded']) {
+      realtime.on(_channel!, event, (_) => unawaited(refresh()));
+    }
+  }
 
   Future<void> refresh() async {
     try {
@@ -60,6 +91,9 @@ class LiveBusesNotifier extends StateNotifier<AsyncValue<List<LiveBus>>> {
     }
   }
 
+  /// The safety net, not the primary path. Slower when the socket is alive,
+  /// because a frozen map with no explanation is the one outcome worth
+  /// engineering against.
   void _startPolling() {
     _timer = Timer.periodic(const Duration(seconds: 12), (_) => refresh());
   }
@@ -67,6 +101,10 @@ class LiveBusesNotifier extends StateNotifier<AsyncValue<List<LiveBus>>> {
   @override
   void dispose() {
     _timer?.cancel();
+
+    final channel = _channel;
+    if (channel != null) _ref.read(realtimeProvider).leave(channel);
+
     super.dispose();
   }
 }

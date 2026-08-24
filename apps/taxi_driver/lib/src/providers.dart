@@ -17,17 +17,66 @@ final taxiLinesProvider = FutureProvider<List<TaxiLine>>(
   (ref) => ref.watch(transitApiProvider).taxiDriverLines(),
 );
 
-/// Who is aboard and what has been taken, polled while the screen is open.
+/// Who is aboard and what has been taken.
 ///
 /// A line driver watches this the way a shopkeeper watches a till: the whole
 /// point of the fixed-fare mode is that money arrives without a conversation,
-/// so it has to arrive visibly.
+/// so it has to arrive visibly. Two sources, because either alone fails badly:
+/// the socket delivers a fare the instant it lands, and the timer keeps the
+/// figures honest when the socket is blocked.
 final taxiRidesProvider = FutureProvider.autoDispose<TaxiRidesView>((ref) async {
   final timer = Timer(const Duration(seconds: 8), ref.invalidateSelf);
   ref.onDispose(timer.cancel);
 
   return TaxiRidesView.fromJson(await ref.watch(transitApiProvider).taxiDriverRides());
 });
+
+/// The last fare to land, announced by the server rather than discovered by a
+/// poll. Null until one arrives on this shift.
+final taxiFareArrivalProvider = StateProvider<TaxiFareArrival?>((ref) => null);
+
+/// Listens to the driver's own shift channel.
+///
+/// The channel is private and signed per token: the same channel name serves
+/// the driver working the shift and the city's operations staff, and the
+/// server decides which of those the caller is.
+final taxiShiftFeedProvider = Provider.autoDispose.family<void, String>((ref, shiftUuid) {
+  final shift = ref.watch(taxiStateProvider).valueOrNull?.shift;
+
+  if (shift == null || shift.id == null) return;
+
+  final channel = Channels.taxiShift(shift.id!);
+
+  ref.watch(realtimeProvider).on(channel, 'taxi.fare.paid', (data) {
+    ref.read(taxiFareArrivalProvider.notifier).state = TaxiFareArrival.fromJson(data);
+    ref.invalidate(taxiRidesProvider);
+    ref.invalidate(taxiStateProvider);
+  });
+
+  ref.onDispose(() => ref.read(realtimeProvider).leave(channel));
+});
+
+/// A fare landing, as the driver's screen announces it.
+class TaxiFareArrival {
+  const TaxiFareArrival({
+    required this.rideUuid,
+    required this.formattedAmount,
+    required this.onboardCount,
+    required this.shiftGross,
+  });
+
+  final String rideUuid;
+  final String formattedAmount;
+  final int onboardCount;
+  final int shiftGross;
+
+  factory TaxiFareArrival.fromJson(Map<String, dynamic> json) => TaxiFareArrival(
+        rideUuid: json['ride_uuid'] as String? ?? '',
+        formattedAmount: json['formatted_amount'] as String? ?? '—',
+        onboardCount: (json['onboard_count'] as num?)?.toInt() ?? 0,
+        shiftGross: (json['shift_gross'] as num?)?.toInt() ?? 0,
+      );
+}
 
 final taxiEarningsProvider = FutureProvider.autoDispose<TaxiEarnings>((ref) async {
   return TaxiEarnings.fromJson(await ref.watch(transitApiProvider).taxiEarnings());
@@ -181,6 +230,7 @@ class AssignedTaxi {
 class TaxiShift {
   const TaxiShift({
     required this.uuid,
+    required this.id,
     required this.serviceType,
     required this.rideCount,
     required this.boardingCount,
@@ -203,6 +253,9 @@ class TaxiShift {
   });
 
   final String uuid;
+
+  /// The numeric id, which is what the private channel is named after.
+  final int? id;
   final TaxiServiceType serviceType;
   final int rideCount;
   final int boardingCount;
@@ -232,6 +285,7 @@ class TaxiShift {
 
     return TaxiShift(
       uuid: json['uuid'] as String? ?? '',
+      id: (json['id'] as num?)?.toInt(),
       serviceType: TaxiServiceType.from(json['service_type'] as String?),
       rideCount: (json['ride_count'] as num?)?.toInt() ?? 0,
       boardingCount: (json['boarding_count'] as num?)?.toInt() ?? 0,

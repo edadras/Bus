@@ -1,8 +1,8 @@
 # Testing
 
 ```bash
-php artisan test          # 408 PHP tests, 3550 assertions
-make apps-test            # 77 Dart tests
+php artisan test          # 409 PHP tests, 3553 assertions
+make apps-test            # 84 Dart tests
 make apps-analyze         # static analysis across all six Dart packages
 ```
 
@@ -371,14 +371,22 @@ Mirrors the server's parity checks, plus the one that keeps it that way:
   whoever asked for English
 - **no widget in any of the five apps holds an inline Persian string**
 
-### Flutter (77)
+### Flutter (84)
 
-`packages/hamsafar_core` (44) — formatters (rial→toman, Persian digits and
+`packages/hamsafar_core` (51) — formatters (rial→toman, Persian digits and
 separator, mobile normalisation across six input forms, ETA never showing zero
 minutes), defensive model parsing including a journey plan with a malformed
 option and a walk-only answer and a line's two directions being separate
 routes rather than one reversed, and `ApiException` classification including the
 distinction between a QR that needs re-scanning and one that is revoked.
+
+Seven of those pin the realtime layer, where a mistake fails silently: a
+channel name that drifts from `routes/channels.php` subscribes to something
+nobody publishes, and the screen simply never updates. Every channel carrying
+money or identity is asserted private, a taxi shift channel is named after the
+shift rather than the driver (so the server can grant it to both the driver and
+the city's operations staff), an empty app key never opens a socket, and a
+client with no token still serves public channels.
 
 App smoke tests build the real widget tree against an in-memory token store and
 assert the product rules: the passenger map is reachable signed-out, the wallet
