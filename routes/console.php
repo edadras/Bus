@@ -1,11 +1,15 @@
 <?php
 
 use App\Console\Commands\AuditLedgerCommand;
+use App\Console\Commands\BillSchoolContractsCommand;
 use App\Console\Commands\CloseAbandonedRidesCommand;
+use App\Console\Commands\CloseStaleSchoolRunsCommand;
+use App\Console\Commands\CloseStaleTaxiShiftsCommand;
 use App\Console\Commands\CloseStaleTripsCommand;
 use App\Console\Commands\NotifyArrivalsCommand;
 use App\Console\Commands\PruneLocationDataCommand;
 use App\Console\Commands\RollupMetricsCommand;
+use App\Console\Commands\ScheduleSchoolRunsCommand;
 use App\Domain\Payment\Services\TopupService;
 use Illuminate\Support\Facades\Schedule;
 
@@ -40,6 +44,34 @@ Schedule::command(NotifyArrivalsCommand::class)
 // Yesterday's rollup, plus a two-day backfill so a missed night self-heals.
 Schedule::command(RollupMetricsCommand::class, ['--days=2'])
     ->dailyAt('00:20')
+    ->onOneServer();
+
+// A taxi shift left open keeps a car on the passenger map that is not working
+// and keeps its fare code live; a meter left running keeps billing. Hourly,
+// because both are money.
+Schedule::command(CloseStaleTaxiShiftsCommand::class)
+    ->hourly()
+    ->withoutOverlapping()
+    ->onOneServer();
+
+// The school day is built before it starts, so a driver opening the app at
+// dawn already has the morning's manifest. Idempotent per run, so the operator
+// clicking the same button in the panel changes nothing.
+Schedule::command(ScheduleSchoolRunsCommand::class)
+    ->dailyAt('02:00')
+    ->onOneServer();
+
+// A run still open is a van still sharing its position with families. Checked
+// often for that reason rather than for tidiness.
+Schedule::command(CloseStaleSchoolRunsCommand::class)
+    ->everyThirtyMinutes()
+    ->withoutOverlapping()
+    ->onOneServer();
+
+// Invoices for the period, and ageing the ones nobody paid. Issuing is
+// idempotent on the period, so running twice cannot bill a family twice.
+Schedule::command(BillSchoolContractsCommand::class)
+    ->dailyAt('05:00')
     ->onOneServer();
 
 // Retention. Off-peak because it deletes in large chunks.

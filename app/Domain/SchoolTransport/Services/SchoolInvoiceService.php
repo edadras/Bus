@@ -61,7 +61,12 @@ class SchoolInvoiceService
             'status' => SchoolInvoiceStatus::Pending,
             'period_start' => $from->toDateString(),
             'period_end' => $to->toDateString(),
-            'due_on' => $from->copy()->addDays((int) config('school.invoices.due_days', 7))->toDateString(),
+            // Counted from the day the invoice is issued, not from the start
+            // of the period it covers: a family first billed on the 24th of a
+            // month would otherwise be overdue the moment the invoice existed.
+            // A deliberate backfill passes its own anchor and does land in the
+            // past, which is the point of a backfill.
+            'due_on' => $start->copy()->addDays((int) config('school.invoices.due_days', 7))->toDateString(),
             'amount' => $contract->payableAmount(),
             'commission_amount' => intdiv(
                 $contract->payableAmount() * ($contract->company?->commissionBps() ?? 0),

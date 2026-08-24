@@ -56,21 +56,21 @@ tinker: ## Open a REPL
 
 # ── Flutter apps ────────────────────────────────────────────────────────────
 
-apps-analyze: ## Static-analyse the shared package and all three apps
+apps-analyze: ## Static-analyse the shared package and every app
 	cd packages/hamsafar_core && flutter analyze
-	@for app in passenger driver merchant; do \
+	@for app in passenger driver merchant taxi_driver school_driver; do \
 	  echo "── $$app"; (cd apps/$$app && flutter analyze); \
 	done
 
 apps-test: ## Run the Flutter test suites
 	cd packages/hamsafar_core && flutter test
-	@for app in passenger driver merchant; do \
+	@for app in passenger driver merchant taxi_driver school_driver; do \
 	  echo "── $$app"; (cd apps/$$app && flutter test); \
 	done
 
 apk: ## Build release APKs (set API_URL=https://…)
 	@test -n "$(API_URL)" || (echo "API_URL is required"; exit 1)
-	@for app in passenger driver merchant; do \
+	@for app in passenger driver merchant taxi_driver school_driver; do \
 	  echo "── building $$app"; \
 	  (cd apps/$$app && flutter build apk --release --dart-define=API_BASE_URL=$(API_URL)); \
 	done

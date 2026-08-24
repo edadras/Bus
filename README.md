@@ -3,8 +3,9 @@
 # همسفر — سامانه هوشمند حمل‌ونقل شهری و کیف پول یکپارچه
 
 پلتفرم جامع حمل‌ونقل شهری: ردیابی زنده اتوبوس، تخمین هوشمند زمان رسیدن،
-پرداخت کرایه با QR، و کیف پول شهری قابل استفاده در استخر، باشگاه، پارکینگ و
-سایر پذیرندگان طرف قرارداد. شهر نخست: **بندرعباس**؛ معماری از ابتدا چندشهری است.
+پرداخت کرایه با QR، تاکسی (خطی، دربست و تاکسی‌متر)، سرویس مدارس، و کیف پول
+شهری قابل استفاده در استخر، باشگاه، پارکینگ و سایر پذیرندگان طرف قرارداد.
+شهر نخست: **بندرعباس**؛ معماری از ابتدا چندشهری است.
 
 </div>
 
@@ -14,17 +15,19 @@
 |---|---|---|
 | Backend & API | Laravel 12, PHP 8.3, MySQL 8, Redis 7, Reverb | `app/`, `routes/` |
 | Passenger app | Flutter (Android + iOS) | `apps/passenger` |
-| Driver app | Flutter (Android + iOS) | `apps/driver` |
+| Bus driver app | Flutter (Android + iOS) | `apps/driver` |
 | Merchant app | Flutter (Android + iOS) | `apps/merchant` |
+| Taxi driver app | Flutter (Android + iOS) | `apps/taxi_driver` |
+| School service driver app | Flutter (Android + iOS) | `apps/school_driver` |
 | Shared app package | Dart — API client, models, design system, realtime | `packages/hamsafar_core` |
 | Admin panel | Blade + Alpine + Tailwind v4, RTL | `resources/views/admin` |
 | Landing page & public viewer | Blade, installable PWA | `resources/views` |
 
 Persian-first throughout: RTL layout, Persian digits and thousands separator.
 Nothing user-facing is written inline anywhere — the server, the admin panel,
-the landing page and all three apps read from `lang/fa` / `lang/en` and their
-Dart counterparts. Three tests fail the build if a Persian string is typed into
-a view, a script or a widget, or if the two locales drift apart.
+the landing page and every app read from `lang/fa` / `lang/en` and their Dart
+counterparts. Three tests fail the build if a Persian string is typed into a
+view, a script or a widget, or if the two locales drift apart.
 
 ## Quick start
 
@@ -91,6 +94,23 @@ worse than ending it late, so a single distant GPS fix only marks a ride
 pending; it takes two corroborating observations to close one, and the
 scheduler force-closes anything left open.
 
+**A taxi's mode belongs to the shift, not the car.** The same vehicle runs a
+fixed line in the morning and takes charters in the afternoon, so what it is
+offering lives on the driver's open shift and can change without ending
+anything. A line fare is flat, a charter is a price the driver names and the
+passenger confirms *exactly*, and a metered fare is computed from the car's own
+position reports — never the passenger's phone, which can be off, in a bag, or
+spoofed. Riders see taxis near them, coloured by mode; the control room sees
+every car in the city with the plate and who is aboard. Those are two different
+endpoints on purpose.
+
+**A school van's position belongs to the families it is carrying.** Reporting
+starts when the run starts and stops when it ends, and within a run a family
+sees it only until their own child's journey is over — three conditions,
+enforced in one method. The driver checks each child on and off at the door
+with the van's position attached, which is what turns "the driver said so" into
+a record a parent can check.
+
 **Sample data is labelled everywhere.** The bundled Bandar Abbas network is
 illustrative, not official, and carries `provenance = sample` all the way to
 the passenger's screen. See [`database/data/bandar-abbas/README.md`](database/data/bandar-abbas/README.md).
@@ -101,7 +121,7 @@ the passenger's screen. See [`database/data/bandar-abbas/README.md`](database/da
 |---|---|
 | [Architecture](docs/architecture.md) | System, backend, apps, admin, real-time, Redis, scaling |
 | [Database](docs/database.md) | ERD, every table and column, relationships, indexes |
-| [API reference](docs/api.md) | All 109 endpoints, envelope, error codes, auth |
+| [API reference](docs/api.md) | All 200 endpoints, envelope, error codes, auth |
 | [Security](docs/security.md) | Auth, RBAC, QR, financial integrity, privacy |
 | [Domain design](docs/domain.md) | Wallet, fare, GPS, ETA, ridership, merchant, complaints |
 | [Frontend](docs/frontend.md) | Design system, screens, PWA, admin |
@@ -125,7 +145,7 @@ php artisan webpush:vapid                                         # push key pai
 ## Tests
 
 ```bash
-php artisan test                       # 300 PHP tests
-make apps-test                         # 57 Dart tests
-make apps-analyze                      # static analysis, all four packages
+php artisan test                       # 392 PHP tests, 3508 assertions
+make apps-test                         # 77 Dart tests
+make apps-analyze                      # static analysis, all six packages
 ```

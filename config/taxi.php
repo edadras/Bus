@@ -97,6 +97,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Shifts
+    |--------------------------------------------------------------------------
+    */
+
+    'shifts' => [
+        // A shift still open after this is a driver who went home without
+        // closing it, not a driver still working. Generous, because taxi
+        // shifts genuinely are long.
+        'auto_close_after_hours' => env('TAXI_SHIFT_AUTO_CLOSE', 16),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Settlement
     |--------------------------------------------------------------------------
     */
