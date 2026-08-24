@@ -57,6 +57,15 @@ needed locally. Seeded accounts:
 | Driver (pending approval) | `989130000008` |
 | Passenger (with balance) | `989140000001` |
 | Merchant manager | `989150000001` |
+| Taxi driver | `989131000001` |
+| School service driver | `989132000001` |
+| School company manager | `989160000001` |
+
+The seed also leaves one driver awaiting approval and one school company
+awaiting it, so both gates are visible on a fresh install rather than only in a
+test. The passenger on `989140000001` has two children on a school service, at
+two different schools, because a family with one child hides the fact that
+contracts are per child.
 
 ### Mobile apps
 

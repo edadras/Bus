@@ -26,6 +26,12 @@ class DatabaseSeeder extends Seeder
             return;
         }
 
-        $this->call(DemoSeeder::class);
+        $this->call([
+            DemoSeeder::class,
+            // Both depend on DemoSeeder's city staff and passengers, so they
+            // run after it rather than beside it.
+            TaxiDemoSeeder::class,
+            SchoolTransportDemoSeeder::class,
+        ]);
     }
 }
