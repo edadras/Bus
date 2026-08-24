@@ -11,6 +11,8 @@ enum TransactionType: string
     case Topup = 'topup';
     case FarePayment = 'fare_payment';
     case MerchantPayment = 'merchant_payment';
+    case TaxiFare = 'taxi_fare';
+    case SchoolFee = 'school_fee';
     case Refund = 'refund';
     case Settlement = 'settlement';
     case Commission = 'commission';
@@ -21,7 +23,7 @@ enum TransactionType: string
     {
         return match ($this) {
             self::Topup, self::Refund => 'success',
-            self::FarePayment, self::MerchantPayment => 'info',
+            self::FarePayment, self::MerchantPayment, self::TaxiFare, self::SchoolFee => 'info',
             self::Reversal, self::Adjustment => 'warning',
             default => 'neutral',
         };

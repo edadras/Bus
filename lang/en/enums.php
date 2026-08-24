@@ -67,6 +67,8 @@ return [
         'topup' => 'Wallet top-up',
         'fare_payment' => 'Fare payment',
         'merchant_payment' => 'Merchant payment',
+        'taxi_fare' => 'Taxi fare',
+        'school_fee' => 'School service fee',
         'refund' => 'Refund',
         'settlement' => 'Settlement',
         'commission' => 'Commission',
@@ -173,5 +175,23 @@ return [
         'active' => 'Active',
         'suspended' => 'Suspended',
         'deleted' => 'Deleted',
+    ],
+    'taxiservicetype' => [
+        'line' => 'Shared line',
+        'charter' => 'Charter',
+        'meter' => 'Metered',
+    ],
+    'taxistatus' => [
+        'active' => 'Active',
+        'idle' => 'Idle',
+        'maintenance' => 'In maintenance',
+        'out_of_service' => 'Out of service',
+        'retired' => 'Retired',
+    ],
+    'taxiridestatus' => [
+        'active' => 'In progress',
+        'completed' => 'Completed',
+        'unpaid' => 'Unpaid',
+        'cancelled' => 'Cancelled',
     ],
 ];

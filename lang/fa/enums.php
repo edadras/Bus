@@ -67,6 +67,8 @@ return [
         'topup' => 'شارژ کیف پول',
         'fare_payment' => 'پرداخت کرایه',
         'merchant_payment' => 'پرداخت به پذیرنده',
+        'taxi_fare' => 'کرایه تاکسی',
+        'school_fee' => 'شهریه سرویس مدرسه',
         'refund' => 'بازگشت وجه',
         'settlement' => 'تسویه حساب',
         'commission' => 'کارمزد',
@@ -173,5 +175,23 @@ return [
         'active' => 'فعال',
         'suspended' => 'تعلیق‌شده',
         'deleted' => 'حذف‌شده',
+    ],
+    'taxiservicetype' => [
+        'line' => 'تاکسی خطی',
+        'charter' => 'دربست',
+        'meter' => 'تاکسی‌متر',
+    ],
+    'taxistatus' => [
+        'active' => 'فعال',
+        'idle' => 'آماده',
+        'maintenance' => 'در تعمیر',
+        'out_of_service' => 'خارج از سرویس',
+        'retired' => 'بازنشسته',
+    ],
+    'taxiridestatus' => [
+        'active' => 'در حال انجام',
+        'completed' => 'پایان‌یافته',
+        'unpaid' => 'پرداخت‌نشده',
+        'cancelled' => 'لغوشده',
     ],
 ];
