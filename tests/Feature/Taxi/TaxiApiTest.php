@@ -386,4 +386,31 @@ class TaxiApiTest extends TestCase
         $this->assertSame(150_000, $modes['line']['gross']);
         $this->assertSame(0, $modes['meter']['gross']);
     }
+
+    /**
+     * The report reads through to the line and the driver behind each ride.
+     *
+     * It was fine on an empty day and threw the moment there was anything to
+     * report, because those two groupings lazy-load — which is why this asserts
+     * the named rows rather than only the totals.
+     */
+    public function test_the_report_names_the_busiest_lines_and_the_top_drivers(): void
+    {
+        $this->startShift('line');
+
+        foreach (range(1, 2) as $ignored) {
+            $this->actingAsPassenger($this->passenger())
+                ->postJson('/api/v1/taxi/rides', ['token' => $this->token(), 'accepted_amount' => 150_000])
+                ->assertCreated();
+        }
+
+        $this->actingAsAdmin(User::factory()->create(['city_id' => $this->city->id]));
+
+        $report = $this->getJson('/api/v1/admin/taxi/report')->assertOk();
+
+        $this->assertSame($this->line->code, $report->json('data.busiest_lines.0.line'));
+        $this->assertSame(2, $report->json('data.busiest_lines.0.ride_count'));
+        $this->assertSame($this->driver->user->name, $report->json('data.top_drivers.0.driver'));
+        $this->assertSame(300_000, $report->json('data.gross'));
+    }
 }

@@ -459,7 +459,13 @@ class SchoolAdminController extends Controller
         $created = 0;
 
         foreach ($routes as $route) {
-            $created += count($this->trips->scheduleFor($route, $date));
+            foreach ($this->trips->scheduleFor($route, $date) as $trip) {
+                // Count what was built, not what was found: the toast this
+                // number feeds says "created", and a second click must say 0.
+                if ($trip->wasRecentlyCreated) {
+                    $created++;
+                }
+            }
         }
 
         return ApiResponse::success([

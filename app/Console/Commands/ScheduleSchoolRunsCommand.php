@@ -34,7 +34,10 @@ class ScheduleSchoolRunsCommand extends Command
 
         SchoolServiceRoute::query()
             ->active()
-            ->with(['contracts.student', 'school'])
+            // `readinessBlocker()` reads through to both the van and the
+            // driver, so both are loaded here. Without them this job — the one
+            // that builds tomorrow morning before anybody is awake — throws.
+            ->with(['contracts.student', 'school', 'vehicle', 'driver'])
             ->chunkById(100, function ($routes) use ($trips, $dates, &$created): void {
                 foreach ($routes as $route) {
                     // A route with no van or no driver cannot run; scheduling
@@ -44,7 +47,11 @@ class ScheduleSchoolRunsCommand extends Command
                     }
 
                     foreach ($dates as $date) {
-                        $created += count($trips->scheduleFor($route, $date));
+                        foreach ($trips->scheduleFor($route, $date) as $trip) {
+                            if ($trip->wasRecentlyCreated) {
+                                $created++;
+                            }
+                        }
                     }
                 }
             });

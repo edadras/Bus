@@ -352,7 +352,11 @@ class TaxiAdminController extends Controller
         $from = $request->date('from') ?? now()->subDays(30);
         $to = $request->date('to') ?? now();
 
+        // Eager loaded because the busiest-line and top-driver groupings below
+        // read through to both. Without this the report is fine on an empty
+        // day and throws the moment there is anything to report.
         $rides = TaxiRide::forCity($this->city())
+            ->with(['line', 'driver.user'])
             ->whereBetween('created_at', [$from->copy()->startOfDay(), $to->copy()->endOfDay()])
             ->get();
 

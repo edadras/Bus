@@ -6,6 +6,7 @@ use App\Domain\Fleet\Models\Driver;
 use App\Domain\Identity\Models\OtpCode;
 use App\Domain\Identity\Models\Role;
 use App\Domain\Identity\Models\User;
+use App\Domain\Identity\Services\AuthService;
 use App\Domain\Network\Models\City;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -47,6 +48,86 @@ class AuthenticationTest extends TestCase
             ->assertJsonStructure(['data' => ['token', 'user' => ['uuid', 'mobile']]]);
 
         $this->assertDatabaseHas('users', ['mobile' => '989121234567']);
+    }
+
+    /**
+     * Every client the token service can mint for must be one validation
+     * accepts.
+     *
+     * The taxi and school driver apps were mintable by `AuthService` and
+     * rejected by the form request before they ever reached it — a whole app
+     * that could not sign in, invisible to every test that reached for
+     * `Sanctum::actingAs` instead of the endpoint.
+     */
+    public function test_every_client_the_service_can_mint_for_is_one_validation_accepts(): void
+    {
+        $driver = Driver::factory()->create(['city_id' => $this->city->id]);
+        $driver->user->forceFill(['mobile' => '989121234567'])->save();
+
+        foreach (AuthService::CLIENTS as $client) {
+            // The resend cooldown and the per-IP bucket both exist to stop a
+            // burst of SMS; this loop is one. ThrottleRequests hashes the pair
+            // (limiter, key), which is why the raw key alone does nothing.
+            RateLimiter::clear('otp:cooldown:989121234567');
+            RateLimiter::clear(md5('otp'.'otp-ip:127.0.0.1'));
+            RateLimiter::clear(md5('otp'.'otp-mobile:989121234567'));
+
+            $request = $this->postJson('/api/v1/auth/otp/request', ['mobile' => '989121234567']);
+
+            $response = $this->postJson('/api/v1/auth/otp/verify', [
+                'mobile' => '989121234567',
+                'code' => $request->json('data.debug_code'),
+                'client' => $client,
+            ]);
+
+            // A 403 is a legitimate answer — this driver is not a merchant.
+            // A 422 means validation has never heard of the client at all,
+            // which is a surface nobody can reach.
+            $this->assertNotSame(
+                422,
+                $response->status(),
+                "[$client] is mintable by the service but rejected by validation.",
+            );
+        }
+    }
+
+    public function test_a_taxi_driver_signs_in_and_receives_a_taxi_token(): void
+    {
+        $driver = Driver::factory()->create(['city_id' => $this->city->id]);
+        $driver->user->forceFill(['mobile' => '989121234567'])->save();
+
+        $request = $this->postJson('/api/v1/auth/otp/request', ['mobile' => '989121234567']);
+
+        $this->postJson('/api/v1/auth/otp/verify', [
+            'mobile' => '989121234567',
+            'code' => $request->json('data.debug_code'),
+            'client' => 'taxi_driver',
+        ])->assertOk()->assertJsonPath('data.abilities', ['taxi_driver', 'passenger']);
+    }
+
+    public function test_a_school_driver_signs_in_and_receives_a_school_token(): void
+    {
+        $driver = Driver::factory()->create(['city_id' => $this->city->id]);
+        $driver->user->forceFill(['mobile' => '989121234567'])->save();
+
+        $request = $this->postJson('/api/v1/auth/otp/request', ['mobile' => '989121234567']);
+
+        $this->postJson('/api/v1/auth/otp/verify', [
+            'mobile' => '989121234567',
+            'code' => $request->json('data.debug_code'),
+            'client' => 'school_driver',
+        ])->assertOk()->assertJsonPath('data.abilities', ['school_driver', 'passenger']);
+    }
+
+    public function test_an_unknown_client_is_still_refused(): void
+    {
+        $request = $this->postJson('/api/v1/auth/otp/request', ['mobile' => '09121234567']);
+
+        $this->postJson('/api/v1/auth/otp/verify', [
+            'mobile' => '09121234567',
+            'code' => $request->json('data.debug_code'),
+            'client' => 'operations_console',
+        ])->assertStatus(422);
     }
 
     public function test_signing_in_creates_a_wallet_for_the_new_passenger(): void

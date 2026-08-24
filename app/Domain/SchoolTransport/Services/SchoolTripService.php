@@ -41,6 +41,12 @@ class SchoolTripService
     {
         $date ??= today();
 
+        // The collection order is distance from the school, so the school is
+        // read for every run built. Loaded here rather than trusted to each
+        // caller — the panel's manual button and the 02:00 job must not differ
+        // in what they can safely pass in.
+        $route->loadMissing('school');
+
         if (! $route->runsOn($date)) {
             return [];
         }
@@ -257,7 +263,12 @@ class SchoolTripService
 
             $trip->forceFill(['expected_count' => count($ordered)])->save();
 
-            return $trip->fresh();
+            // The fresh copy would forget it was just created, and the callers
+            // report "N runs created" — a number an operator reads. Touched and
+            // built are different claims.
+            return tap($trip->fresh(), function (SchoolTrip $fresh) use ($trip): void {
+                $fresh->wasRecentlyCreated = $trip->wasRecentlyCreated;
+            });
         });
     }
 

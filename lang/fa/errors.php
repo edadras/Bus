@@ -144,6 +144,7 @@ return [
     'settlement_exceeds_balance' => 'مبلغ درخواستی از موجودی کیف پول بیشتر است.',
 
     // School transport
+    'student_has_no_school' => 'ابتدا مدرسهٔ دانش‌آموز را مشخص کنید.',
     'company_not_approved' => 'این شرکت هنوز تأیید نشده است.',
     'not_your_student' => 'این دانش‌آموز در فهرست شما نیست.',
     'student_already_contracted' => 'برای این دانش‌آموز قرارداد فعال دیگری وجود دارد.',

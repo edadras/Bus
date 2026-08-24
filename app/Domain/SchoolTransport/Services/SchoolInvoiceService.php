@@ -55,7 +55,7 @@ class SchoolInvoiceService
             return $existing;
         }
 
-        return $contract->invoices()->create([
+        return tap($contract->invoices()->create([
             'city_id' => $contract->city_id,
             'reference' => $this->generateReference(),
             'status' => SchoolInvoiceStatus::Pending,
@@ -72,7 +72,7 @@ class SchoolInvoiceService
                 $contract->payableAmount() * ($contract->company?->commissionBps() ?? 0),
                 10_000,
             ),
-        ]);
+        ]), fn (SchoolContractInvoice $invoice) => $invoice->refresh());
     }
 
     /** The guardian pays. */

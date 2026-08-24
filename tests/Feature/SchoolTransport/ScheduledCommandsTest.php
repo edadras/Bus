@@ -103,8 +103,16 @@ class ScheduledCommandsTest extends TestCase
 
     public function test_running_it_twice_does_not_duplicate_the_day(): void
     {
-        $this->artisan('school:runs:schedule', ['--days' => 0])->assertSuccessful();
-        $this->artisan('school:runs:schedule', ['--days' => 0])->assertSuccessful();
+        $this->artisan('school:runs:schedule', ['--days' => 0])
+            ->expectsOutputToContain('Scheduled 2 school run(s).')
+            ->assertSuccessful();
+
+        // Idempotent in effect *and* in what it reports: "created" is a number
+        // an operator reads, and a second run that says 2 again is a lie the
+        // unique constraint happens to make harmless.
+        $this->artisan('school:runs:schedule', ['--days' => 0])
+            ->expectsOutputToContain('Scheduled 0 school run(s).')
+            ->assertSuccessful();
 
         $this->assertSame(2, SchoolTrip::count());
     }
@@ -201,5 +209,29 @@ class ScheduledCommandsTest extends TestCase
         $this->artisan('school:contracts:bill')->assertSuccessful();
 
         $this->assertSame(SchoolInvoiceStatus::Overdue, $invoice->fresh()->status);
+    }
+
+    /**
+     * The readiness check must be answerable from what the scheduler loads.
+     *
+     * It reads through to the van and the driver, and the command loads the
+     * route in bulk — so an unloaded relation there is a crash in the one job
+     * nobody is awake to see fail, and the symptom is a driver opening the app
+     * to an empty day.
+     */
+    public function test_the_scheduler_loads_everything_the_readiness_check_reads(): void
+    {
+        $loaded = SchoolServiceRoute::query()
+            ->active()
+            ->with(['contracts.student', 'school', 'vehicle', 'driver'])
+            ->findOrFail($this->route->id);
+
+        // Recently-created models are exempt from the lazy-loading guard, so a
+        // freshly seeded instance would prove nothing.
+        $this->assertFalse($loaded->wasRecentlyCreated);
+
+        $this->assertNull($loaded->readinessBlocker());
+        $this->assertTrue($loaded->relationLoaded('vehicle'));
+        $this->assertTrue($loaded->relationLoaded('driver'));
     }
 }

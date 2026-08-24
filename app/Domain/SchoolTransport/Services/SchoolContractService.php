@@ -47,6 +47,16 @@ class SchoolContractService
             throw DomainException::make('city_mismatch', 422);
         }
 
+        // A child registered without a school. The contract is an arrangement
+        // to carry them *somewhere*, and every route serves one school, so
+        // there is nothing to agree to yet. Refused with a message the parent
+        // can act on rather than a constraint violation from the database.
+        if ($student->school_id === null) {
+            throw DomainException::make('student_has_no_school', 422, [
+                'student' => $student->name,
+            ]);
+        }
+
         $existing = SchoolServiceContract::query()
             ->where('school_student_id', $student->id)
             ->whereIn('status', [
@@ -65,7 +75,11 @@ class SchoolContractService
             ]);
         }
 
-        return SchoolServiceContract::create([
+        // Refreshed before it is returned: `create()` hands back a model that
+        // knows only what was written, so every column the database defaults —
+        // the fee, the discount — would reach the parent's first response as a
+        // null it then has to guess about.
+        return tap(SchoolServiceContract::create([
             'reference' => $this->generateReference(),
             'school_student_id' => $student->id,
             'guardian_user_id' => $guardian->id,
@@ -81,7 +95,7 @@ class SchoolContractService
             'pickup_lat' => $attributes['pickup_lat'] ?? $student->pickup_lat,
             'pickup_lng' => $attributes['pickup_lng'] ?? $student->pickup_lng,
             'guardian_note' => $attributes['guardian_note'] ?? null,
-        ]);
+        ]), fn (SchoolServiceContract $contract) => $contract->refresh());
     }
 
     /** The company says yes, and names the fee. */

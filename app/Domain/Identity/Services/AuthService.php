@@ -32,6 +32,19 @@ class AuthService
 
     public const ABILITY_ADMIN = 'admin';
 
+    /**
+     * The client surfaces a token may be minted for.
+     *
+     * Held here rather than repeated in each form request, because that is
+     * exactly how the two taxi and school driver apps came to be mintable by
+     * the service and rejected by validation before they reached it.
+     *
+     * @var array<int, string>
+     */
+    public const CLIENTS = [
+        'passenger', 'driver', 'taxi_driver', 'school_driver', 'merchant', 'admin',
+    ];
+
     public function __construct(private readonly WalletService $wallets) {}
 
     /** Find or create the passenger account behind a verified mobile number. */

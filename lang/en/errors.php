@@ -144,6 +144,7 @@ return [
     'settlement_exceeds_balance' => 'The requested payout is more than the wallet holds.',
 
     // School transport
+    'student_has_no_school' => 'Choose the child\'s school first.',
     'company_not_approved' => 'This company has not been approved yet.',
     'not_your_student' => 'That child is not on your list.',
     'student_already_contracted' => 'This child already has an active contract.',

@@ -285,4 +285,47 @@ class SchoolContractTest extends TestCase
             $this->assertSame($code, $e->errorCode());
         }
     }
+
+    /**
+     * A child registered without a school cannot be contracted for.
+     *
+     * The API lets a parent add a child before they have picked a school, and
+     * every route serves exactly one — so this was a database constraint
+     * violation surfacing as a 500 on the one screen a parent uses most.
+     */
+    public function test_a_child_with_no_school_is_refused_with_a_message_not_a_crash(): void
+    {
+        $student = SchoolStudent::factory()->create([
+            'guardian_user_id' => $this->guardian->id,
+            'city_id' => $this->city->id,
+            'school_id' => null,
+        ]);
+
+        try {
+            $this->contracts->request($student, $this->company, $this->guardian, []);
+            $this->fail('Expected the request to be refused.');
+        } catch (DomainException $e) {
+            $this->assertSame('student_has_no_school', $e->errorCode());
+        }
+
+        $this->assertSame(0, SchoolServiceContract::where('school_student_id', $student->id)->count());
+    }
+
+    /**
+     * A fresh request answers with real numbers, not nulls.
+     *
+     * `create()` hands back a model that knows only what was written, so every
+     * column the database defaults reached the parent's first response as a
+     * null — and a screen that shows a fee has to be able to tell "nothing
+     * agreed yet" from "we do not know".
+     */
+    public function test_a_new_request_answers_with_its_defaults_filled_in(): void
+    {
+        $contract = $this->contracts->request($this->student, $this->company, $this->guardian, []);
+
+        $this->assertSame(0, $contract->fee_amount);
+        $this->assertSame(0, $contract->discount_bps);
+        $this->assertSame(0, $contract->payableAmount());
+        $this->assertNotNull($contract->payment_cycle);
+    }
 }
