@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\V1\Admin\MerchantAdminController;
 use App\Http\Controllers\Api\V1\Admin\NetworkAdminController;
 use App\Http\Controllers\Api\V1\Admin\OccupancyController;
 use App\Http\Controllers\Api\V1\Admin\ReportController;
+use App\Http\Controllers\Api\V1\Admin\SchoolAdminController;
 use App\Http\Controllers\Api\V1\Admin\SupportAdminController;
 use App\Http\Controllers\Api\V1\Admin\TaxiAdminController;
 use App\Http\Controllers\Api\V1\Admin\UserLookupController;
@@ -20,6 +21,8 @@ use App\Http\Controllers\Api\V1\NetworkController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\PassengerController;
 use App\Http\Controllers\Api\V1\PushSubscriptionController;
+use App\Http\Controllers\Api\V1\SchoolController;
+use App\Http\Controllers\Api\V1\SchoolDriverController;
 use App\Http\Controllers\Api\V1\TaxiController;
 use App\Http\Controllers\Api\V1\TaxiDriverController;
 use App\Http\Controllers\Api\V1\WalletController;
@@ -147,6 +150,31 @@ Route::prefix('v1')->group(function (): void {
                 ->middleware('throttle:financial');
         });
 
+        /*
+        | School transport, from the parent's side. Everything is scoped to
+        | their own children, and the live view harder still: to a run that is
+        | actually happening, and only until their child's journey on it ends.
+        */
+        Route::prefix('school')->group(function (): void {
+            Route::get('companies', [SchoolController::class, 'companies']);
+            Route::get('schools', [SchoolController::class, 'schools']);
+
+            Route::get('students', [SchoolController::class, 'students']);
+            Route::post('students', [SchoolController::class, 'storeStudent']);
+            Route::patch('students/{schoolStudent}', [SchoolController::class, 'updateStudent']);
+            Route::get('students/{schoolStudent}/live', [SchoolController::class, 'live']);
+            Route::get('students/{schoolStudent}/attendance', [SchoolController::class, 'attendance']);
+            Route::post('students/{schoolStudent}/absence', [SchoolController::class, 'reportAbsence']);
+
+            Route::get('contracts', [SchoolController::class, 'contracts']);
+            Route::post('contracts', [SchoolController::class, 'storeContract']);
+            Route::post('contracts/{schoolServiceContract}/end', [SchoolController::class, 'endContract']);
+
+            Route::get('invoices', [SchoolController::class, 'invoices']);
+            Route::post('invoices/{schoolContractInvoice}/pay', [SchoolController::class, 'payInvoice'])
+                ->middleware('throttle:financial');
+        });
+
         Route::prefix('complaints')->group(function (): void {
             Route::get('categories', [ComplaintController::class, 'categories']);
             Route::get('/', [ComplaintController::class, 'index']);
@@ -201,6 +229,23 @@ Route::prefix('v1')->group(function (): void {
         Route::get('earnings', [TaxiDriverController::class, 'earnings']);
         Route::get('settlements', [TaxiDriverController::class, 'settlements']);
         Route::post('settlements', [TaxiDriverController::class, 'requestSettlement']);
+    });
+
+    /*
+    | School service driver — the manifest is the app.
+    */
+    Route::prefix('school/driver')->middleware(['auth:sanctum', 'abilities:school_driver'])->group(function (): void {
+        Route::get('state', [SchoolDriverController::class, 'state']);
+        Route::get('trips/{schoolTrip}', [SchoolDriverController::class, 'show']);
+        Route::post('trips/{schoolTrip}/start', [SchoolDriverController::class, 'start']);
+        Route::post('trips/{schoolTrip}/complete', [SchoolDriverController::class, 'complete']);
+
+        Route::post('students/{schoolTripStudent}/pickup', [SchoolDriverController::class, 'pickUp']);
+        Route::post('students/{schoolTripStudent}/dropoff', [SchoolDriverController::class, 'dropOff']);
+        Route::post('students/{schoolTripStudent}/absent', [SchoolDriverController::class, 'markAbsent']);
+        Route::post('students/{schoolTripStudent}/reset', [SchoolDriverController::class, 'reset']);
+
+        Route::post('location', [SchoolDriverController::class, 'location'])->middleware('throttle:telemetry');
     });
 
     /*
@@ -328,6 +373,42 @@ Route::prefix('v1')->group(function (): void {
                 Route::post('settlements/{taxiSettlement}/pay', [TaxiAdminController::class, 'paySettlement']);
                 Route::post('settlements/{taxiSettlement}/reject', [TaxiAdminController::class, 'rejectSettlement']);
             });
+        });
+
+        /*
+        | School transport. Two audiences share these endpoints: a city
+        | administrator holds `school.admin` and sees everything, a company
+        | manager holds only `school.manage` and the controller narrows every
+        | query to the companies they belong to.
+        */
+        Route::prefix('school')->middleware('permission:school.admin,school.manage')->group(function (): void {
+            Route::get('companies', [SchoolAdminController::class, 'companyIndex']);
+            Route::post('companies/{schoolCompany}/approve', [SchoolAdminController::class, 'approveCompany']);
+            Route::post('companies/{schoolCompany}/reject', [SchoolAdminController::class, 'rejectCompany']);
+            Route::post('companies/{schoolCompany}/suspend', [SchoolAdminController::class, 'suspendCompany']);
+
+            Route::get('schools', [SchoolAdminController::class, 'schools']);
+            Route::post('schools', [SchoolAdminController::class, 'storeSchool']);
+
+            Route::get('vehicles', [SchoolAdminController::class, 'vehicles']);
+            Route::post('vehicles', [SchoolAdminController::class, 'storeVehicle']);
+            Route::patch('vehicles/{schoolVehicle}', [SchoolAdminController::class, 'updateVehicle']);
+
+            Route::get('routes', [SchoolAdminController::class, 'routes']);
+            Route::post('routes', [SchoolAdminController::class, 'storeRoute']);
+            Route::patch('routes/{schoolServiceRoute}', [SchoolAdminController::class, 'updateRoute']);
+            Route::post('routes/{schoolServiceRoute}/crew', [SchoolAdminController::class, 'assignRouteCrew']);
+            Route::get('routes/{schoolServiceRoute}/contracts', [SchoolAdminController::class, 'routeContracts']);
+
+            Route::get('contracts', [SchoolAdminController::class, 'contracts']);
+            Route::post('contracts/{schoolServiceContract}/accept', [SchoolAdminController::class, 'acceptContract']);
+            Route::post('contracts/{schoolServiceContract}/reject', [SchoolAdminController::class, 'rejectContract']);
+            Route::post('contracts/{schoolServiceContract}/route', [SchoolAdminController::class, 'assignContractRoute']);
+            Route::post('contracts/{schoolServiceContract}/bill', [SchoolAdminController::class, 'billContract']);
+
+            Route::get('trips', [SchoolAdminController::class, 'trips']);
+            Route::post('trips/schedule', [SchoolAdminController::class, 'scheduleTrips']);
+            Route::get('live', [SchoolAdminController::class, 'liveMap']);
         });
 
         // Wallet adjustments and audits are addressed by user UUID; this is

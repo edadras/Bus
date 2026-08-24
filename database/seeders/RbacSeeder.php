@@ -47,6 +47,10 @@ class RbacSeeder extends Seeder
         'support' => [
             'support.manage' => 'رسیدگی به شکایات و پاسخ به مسافران',
         ],
+        'school' => [
+            'school.admin' => 'تأیید شرکت‌های سرویس مدارس و نظارت شهری',
+            'school.manage' => 'مدیریت ناوگان، مسیرها و قراردادهای شرکت سرویس',
+        ],
         'users' => [
             'users.manage' => 'مدیریت کاربران و نقش‌ها',
             'users.pii.view' => 'مشاهده اطلاعات هویتی کامل کاربران',
@@ -73,6 +77,7 @@ class RbacSeeder extends Seeder
                 'dashboard.view', 'operations.live_map', 'operations.trips.manage',
                 'fleet.manage', 'taxi.manage', 'drivers.manage', 'network.manage', 'network.import',
                 'finance.manage', 'merchants.manage', 'support.manage',
+                'school.admin', 'school.manage',
                 'users.manage', 'system.audit_log',
             ],
         ],
@@ -108,6 +113,19 @@ class RbacSeeder extends Seeder
             'label' => 'مدیر پذیرنده',
             'level' => 3,
             'permissions' => ['merchants.manage'],
+        ],
+        Role::SCHOOL_COMPANY_MANAGER => [
+            'label' => 'مدیر شرکت سرویس مدارس',
+            'level' => 3,
+            // Scoped to their own company by the controllers, not by the role:
+            // the permission says what they may do, and the company filter says
+            // to whom.
+            'permissions' => ['school.manage'],
+        ],
+        Role::SCHOOL_COMPANY_STAFF => [
+            'label' => 'کارمند شرکت سرویس مدارس',
+            'level' => 2,
+            'permissions' => ['school.manage'],
         ],
         Role::MERCHANT_STAFF => [
             'label' => 'کارمند پذیرنده',

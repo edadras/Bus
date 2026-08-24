@@ -28,6 +28,10 @@ class Role extends Model
 
     public const MERCHANT_STAFF = 'merchant_staff';
 
+    public const SCHOOL_COMPANY_MANAGER = 'school_company_manager';
+
+    public const SCHOOL_COMPANY_STAFF = 'school_company_staff';
+
     public const DRIVER = 'driver';
 
     public const PASSENGER = 'passenger';
@@ -36,6 +40,7 @@ class Role extends Model
     public const STAFF_ROLES = [
         self::SUPER_ADMIN, self::ADMIN, self::TRANSPORT_MANAGER, self::FLEET_MANAGER,
         self::DRIVER_MANAGER, self::FINANCE_MANAGER, self::SUPPORT_AGENT, self::MERCHANT_MANAGER,
+        self::SCHOOL_COMPANY_MANAGER,
     ];
 
     protected $fillable = ['name', 'label', 'description', 'is_system', 'level'];

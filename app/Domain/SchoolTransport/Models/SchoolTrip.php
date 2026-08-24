@@ -37,7 +37,11 @@ class SchoolTrip extends Model
     protected function casts(): array
     {
         return [
-            'service_date' => 'date',
+            // Formatted on purpose. A bare `date` cast writes a full
+            // datetime, so the row stores 00:00:00 while every lookup asks for
+            // the plain date — and `firstOrCreate` then misses the run it just
+            // made and collides with its own unique key.
+            'service_date' => 'date:Y-m-d',
             'started_at' => 'datetime',
             'ended_at' => 'datetime',
             'expected_count' => 'integer',

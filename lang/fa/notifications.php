@@ -8,4 +8,10 @@ return [
     'trip_charged_title' => 'کرایه پرداخت شد',
     'trip_charged_body' => 'مبلغ :amount بابت خط :line از کیف پول شما کسر شد.',
     'complaint_replied_title' => 'شکایت شما پاسخ داده شد',
+    'school_picked_up_title' => 'سوار سرویس شد',
+    'school_picked_up_body' => ':name ساعت :time سوار سرویس شد.',
+    'school_dropped_off_title' => 'از سرویس پیاده شد',
+    'school_dropped_off_body' => ':name ساعت :time از سرویس پیاده شد.',
+    'school_absent_title' => 'غیبت در سرویس',
+    'school_absent_body' => ':name امروز در سرویس حاضر نبود.',
 ];
