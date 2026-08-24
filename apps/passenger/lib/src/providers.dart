@@ -303,3 +303,96 @@ final notificationsProvider =
     StateNotifierProvider<NotificationsNotifier, AsyncValue<List<AppNotification>>>(
   NotificationsNotifier.new,
 );
+
+// ── Taxis ──────────────────────────────────────────────────────────────────
+
+/// Whether the taxi layer is drawn on the map. Off by default: a rider looking
+/// for a bus should not have to pick their line out of a screen of cars.
+final showTaxisProvider = StateProvider<bool>((ref) => false);
+
+/// Which of the three products the rider is looking for, or null for all.
+final taxiModeFilterProvider = StateProvider<TaxiServiceType?>((ref) => null);
+
+/// Taxis near the device.
+///
+/// A position is required rather than optional: this is a "near me" feed, and
+/// a city-wide list of every taxi would be a tracking service for the people
+/// driving them. With no fix there is nothing to show, which the map says.
+final nearbyTaxisProvider = FutureProvider.autoDispose<List<NearbyTaxi>>((ref) async {
+  final position = await ref.watch(devicePositionProvider.future);
+
+  if (position == null) return const [];
+
+  final timer = Timer(const Duration(seconds: 12), ref.invalidateSelf);
+  ref.onDispose(timer.cancel);
+
+  return ref.watch(transitApiProvider).nearbyTaxis(
+        lat: position.latitude,
+        lng: position.longitude,
+        serviceType: ref.watch(taxiModeFilterProvider)?.value,
+      );
+});
+
+/// The ride the passenger is on.
+///
+/// Polled quickly while a meter runs: the fare is something the passenger
+/// watches, and a number that only appears at the destination is a surprise
+/// rather than a price.
+final activeTaxiRideProvider = FutureProvider<TaxiRide?>((ref) async {
+  final ride = await ref.watch(transitApiProvider).activeTaxiRide();
+
+  if (ride != null && ride.serviceType.isOpenEnded) {
+    final timer = Timer(const Duration(seconds: 10), ref.invalidateSelf);
+    ref.onDispose(timer.cancel);
+  }
+
+  return ride;
+});
+
+final taxiHistoryProvider =
+    FutureProvider<({List<TaxiRide> items, int outstanding})>(
+  (ref) => ref.watch(transitApiProvider).taxiRideHistory(),
+);
+
+// ── School service ─────────────────────────────────────────────────────────
+
+/// The companies a parent may choose between: approved ones, and no others.
+final schoolCompaniesProvider = FutureProvider<List<SchoolCompany>>(
+  (ref) => ref.watch(transitApiProvider).schoolCompanies(),
+);
+
+final schoolsListProvider = FutureProvider<List<SchoolSummary>>(
+  (ref) => ref.watch(transitApiProvider).schoolsList(),
+);
+
+final schoolStudentsProvider = FutureProvider<List<SchoolStudent>>(
+  (ref) => ref.watch(transitApiProvider).schoolStudents(),
+);
+
+final schoolContractsProvider = FutureProvider<List<SchoolContract>>(
+  (ref) => ref.watch(transitApiProvider).schoolContracts(),
+);
+
+final schoolInvoicesProvider = FutureProvider<List<SchoolInvoice>>(
+  (ref) => ref.watch(transitApiProvider).schoolInvoices(),
+);
+
+/// Where one child's van is, if a run is under way.
+///
+/// A null view with a reason is the ordinary answer for most of the day, not
+/// an error: there is usually no van to watch, and the screen says so rather
+/// than showing a failure.
+final schoolLiveProvider =
+    FutureProvider.autoDispose.family<({SchoolLiveView? view, String? reason}), String>(
+  (ref, studentUuid) async {
+    final timer = Timer(const Duration(seconds: 15), ref.invalidateSelf);
+    ref.onDispose(timer.cancel);
+
+    return ref.watch(transitApiProvider).schoolStudentLive(studentUuid);
+  },
+);
+
+final schoolAttendanceProvider =
+    FutureProvider.autoDispose.family<List<SchoolAttendanceRow>, String>(
+  (ref, studentUuid) => ref.watch(transitApiProvider).schoolStudentAttendance(studentUuid),
+);

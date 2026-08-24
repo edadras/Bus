@@ -9,6 +9,7 @@ import '../lines/lines_screen.dart';
 import '../plan/plan_screen.dart';
 import 'widgets/arrival_tile.dart';
 import 'widgets/bus_marker.dart';
+import 'widgets/taxi_marker.dart';
 import 'widgets/trip_sheet.dart';
 
 /// The passenger's home screen: a live map on top, the arrival board for the
@@ -55,6 +56,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final buses = ref.watch(liveBusesProvider);
     final stops = ref.watch(nearbyStopsProvider);
     final position = ref.watch(devicePositionProvider).valueOrNull;
+    final showTaxis = ref.watch(showTaxisProvider);
+    final taxis = showTaxis ? ref.watch(nearbyTaxisProvider).valueOrNull : null;
 
     return AppBackground(
       child: Scaffold(
@@ -136,6 +139,21 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                                       ),
                                   ],
                                 ),
+                              if (taxis != null)
+                                MarkerLayer(
+                                  markers: [
+                                    for (final taxi in taxis)
+                                      Marker(
+                                        point: LatLng(taxi.point.lat, taxi.point.lng),
+                                        width: 28,
+                                        height: 28,
+                                        child: TaxiMarker(
+                                          taxi: taxi,
+                                          onTap: () => showTaxiSheet(context, taxi),
+                                        ),
+                                      ),
+                                  ],
+                                ),
                               if (position != null)
                                 MarkerLayer(
                                   markers: [
@@ -153,6 +171,17 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                                 ],
                               ),
                             ],
+                          ),
+                        ),
+                        // The taxi layer is off by default: a rider looking
+                        // for a bus should not have to pick their line out of
+                        // a screen full of cars.
+                        Positioned(
+                          left: 12,
+                          top: 12,
+                          child: _TaxiLayerControl(
+                            enabled: showTaxis,
+                            count: taxis?.length ?? 0,
                           ),
                         ),
                         Positioned(
@@ -181,6 +210,111 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Turn the taxi layer on, and narrow it to one of the three products.
+///
+/// The legend and the filter are the same control on purpose: a colour the
+/// rider cannot act on is decoration.
+class _TaxiLayerControl extends ConsumerWidget {
+  const _TaxiLayerControl({required this.enabled, required this.count});
+
+  final bool enabled;
+  final int count;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final mode = ref.watch(taxiModeFilterProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        GestureDetector(
+          onTap: () =>
+              ref.read(showTaxisProvider.notifier).state = !enabled,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+            decoration: BoxDecoration(
+              color: AppColors.ink850.withValues(alpha: 0.92),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                color: enabled ? AppColors.warning : AppColors.glassBorder,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.local_taxi_rounded,
+                  size: 15,
+                  color: enabled ? AppColors.warning : AppColors.ink400,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  enabled
+                      ? Format.tr('taxi_map.count', {'count': Format.number(count)})
+                      : Format.tr('taxi_map.show'),
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: enabled ? AppColors.warning : AppColors.ink300,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (enabled) ...[
+          const SizedBox(height: 6),
+          for (final option in TaxiServiceType.values)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: GestureDetector(
+                onTap: () => ref.read(taxiModeFilterProvider.notifier).state =
+                    mode == option ? null : option,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: mode == option
+                        ? TaxiMarker.colorFor(option)
+                        : AppColors.ink850.withValues(alpha: 0.92),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: TaxiMarker.colorFor(option)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 7,
+                        height: 7,
+                        decoration: BoxDecoration(
+                          color: mode == option
+                              ? AppColors.ink950
+                              : TaxiMarker.colorFor(option),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        option.label,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: mode == option
+                              ? AppColors.ink950
+                              : TaxiMarker.colorFor(option),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ],
     );
   }
 }

@@ -4,6 +4,7 @@ import 'package:hamsafar_core/hamsafar_core.dart';
 
 import '../../providers.dart';
 import '../notifications/notifications_screen.dart';
+import '../school/school_screen.dart';
 
 /// Profile, ride history and the app's privacy disclosure.
 class AccountScreen extends ConsumerWidget {
@@ -95,6 +96,8 @@ class AccountScreen extends ConsumerWidget {
             ),
             const SizedBox(height: AppSpacing.lg),
             const _NotificationsTile(),
+            const SizedBox(height: AppSpacing.sm),
+            const _SchoolServiceTile(),
             const SizedBox(height: AppSpacing.sm),
             const _LanguageTile(),
             const SizedBox(height: AppSpacing.lg),
@@ -280,6 +283,67 @@ class _NotificationsTile extends ConsumerWidget {
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
+                ),
+              ),
+            ),
+          const SizedBox(width: 6),
+          const Icon(Icons.chevron_left_rounded, size: 20, color: AppColors.ink400),
+        ],
+      ),
+    );
+  }
+}
+
+/// The way into the school service.
+///
+/// It lives here rather than in a tab of its own because most passengers are
+/// not parents; the badge is what makes it findable for the ones who are, and
+/// it counts the things that need doing — a company's answer to read, or an
+/// invoice to pay.
+class _SchoolServiceTile extends ConsumerWidget {
+  const _SchoolServiceTile();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final contracts = ref.watch(schoolContractsProvider).valueOrNull;
+    final invoices = ref.watch(schoolInvoicesProvider).valueOrNull;
+
+    var pending = 0;
+
+    for (final contract in contracts ?? const <SchoolContract>[]) {
+      if (contract.status == 'approved') pending++;
+    }
+
+    for (final invoice in invoices ?? const <SchoolInvoice>[]) {
+      if (invoice.isPayable) pending++;
+    }
+
+    return GlassCard(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(builder: (_) => const SchoolScreen()),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.airport_shuttle_outlined, size: 20, color: AppColors.ink400),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(Format.tr('school_service.title'), style: theme.textTheme.titleSmall),
+          ),
+          if (pending > 0)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+              decoration: BoxDecoration(
+                color: AppColors.warning,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                Format.number(pending),
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.ink950,
                 ),
               ),
             ),

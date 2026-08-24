@@ -6,10 +6,11 @@ import 'package:hamsafar_core/hamsafar_core.dart';
 
 import '../../providers.dart';
 import 'scan_screen.dart';
+import 'taxi_ride_card.dart';
 
-/// The ride tab: either the in-progress journey, or the entry point to scan
-/// and pay. It refreshes on a timer while a ride is open so the passenger sees
-/// the same passenger count and next stop the driver does.
+/// The ride tab: either the in-progress journey — bus or taxi — or the entry
+/// point to scan and pay. It refreshes on a timer while a ride is open so the
+/// passenger sees the same passenger count and next stop the driver does.
 class RideScreen extends ConsumerStatefulWidget {
   const RideScreen({super.key});
 
@@ -127,11 +128,14 @@ class _RideScreenState extends ConsumerState<RideScreen> {
   @override
   Widget build(BuildContext context) {
     final ride = ref.watch(activeRideProvider);
+    final taxi = ref.watch(activeTaxiRideProvider).valueOrNull;
 
     return AppScaffold(
       title: Format.tr('ride.title'),
       onRefresh: () async {
-        ref.invalidate(activeRideProvider);
+        ref
+          ..invalidate(activeRideProvider)
+          ..invalidate(activeTaxiRideProvider);
         await ref.read(activeRideProvider.future);
       },
       body: ride.when(
@@ -144,17 +148,110 @@ class _RideScreenState extends ConsumerState<RideScreen> {
         data: (active) => ListView(
           padding: const EdgeInsets.only(bottom: 100),
           children: [
+            // A taxi ride takes the screen while it is running: it is the one
+            // that may still be costing money.
+            if (taxi != null) TaxiRideCard(ride: taxi),
+            if (taxi != null && active != null) const SizedBox(height: AppSpacing.lg),
             if (active != null)
               _ActiveRideCard(
                 ride: active,
                 sharingLocation: _sharingLocation,
                 onToggleLocation: () => _toggleLocationSharing(active),
                 onEnd: () => _endRide(active),
-              )
-            else
-              const _ScanPrompt(),
+              ),
+            if (taxi == null && active == null) const _ScanPrompt(),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// A metered ride the wallet could not cover when it ended.
+///
+/// Surfaced rather than left in a history screen: it blocks the next taxi, and
+/// a passenger refused at a car door with no explanation would have no idea
+/// why.
+class _OutstandingFareCard extends ConsumerStatefulWidget {
+  const _OutstandingFareCard({required this.amount});
+
+  final int amount;
+
+  @override
+  ConsumerState<_OutstandingFareCard> createState() => _OutstandingFareCardState();
+}
+
+class _OutstandingFareCardState extends ConsumerState<_OutstandingFareCard> {
+  bool _busy = false;
+
+  Future<void> _settle() async {
+    final history = await ref.read(taxiHistoryProvider.future);
+
+    TaxiRide? unpaid;
+
+    for (final ride in history.items) {
+      if (ride.isUnpaid) {
+        unpaid = ride;
+        break;
+      }
+    }
+
+    if (unpaid == null) return;
+
+    setState(() => _busy = true);
+
+    try {
+      await ref.read(transitApiProvider).settleTaxiRide(unpaid.uuid);
+
+      ref
+        ..invalidate(taxiHistoryProvider)
+        ..invalidate(walletProvider)
+        ..invalidate(walletTransactionsProvider);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(Format.tr('taxi_ride.settled'))),
+        );
+      }
+    } on ApiException catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.error_outline_rounded, size: 18, color: AppColors.warning),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  Format.tr('taxi_ride.outstanding_title'),
+                  style: theme.textTheme.titleSmall?.copyWith(color: AppColors.warning),
+                ),
+              ),
+              Text(Format.money(widget.amount), style: theme.textTheme.titleSmall),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(Format.tr('taxi_ride.outstanding_body'), style: theme.textTheme.bodySmall),
+          const SizedBox(height: AppSpacing.md),
+          FilledButton(
+            onPressed: _busy ? null : _settle,
+            style: FilledButton.styleFrom(backgroundColor: AppColors.warning),
+            child: Text(Format.tr('taxi_ride.settle_now')),
+          ),
+        ],
       ),
     );
   }
@@ -295,10 +392,15 @@ class _ScanPrompt extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final wallet = ref.watch(walletProvider);
+    final outstanding = ref.watch(taxiHistoryProvider).valueOrNull?.outstanding ?? 0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (outstanding > 0) ...[
+          _OutstandingFareCard(amount: outstanding),
+          const SizedBox(height: AppSpacing.lg),
+        ],
         GlassCard(
           strong: true,
           padding: const EdgeInsets.all(AppSpacing.xl),
@@ -357,12 +459,13 @@ class _ScanPrompt extends ConsumerWidget {
                   if (boarded == true) {
                     ref
                       ..invalidate(activeRideProvider)
+                      ..invalidate(activeTaxiRideProvider)
                       ..invalidate(walletProvider)
                       ..invalidate(walletTransactionsProvider);
                   }
                 },
                 icon: const Icon(Icons.qr_code_scanner_rounded, size: 20),
-                label: Text(Format.tr('ride.scan_bus_code')),
+                label: Text(Format.tr('ride.scan_fare_code')),
               ),
             ],
           ),
