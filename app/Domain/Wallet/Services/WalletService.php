@@ -158,6 +158,55 @@ class WalletService
         ));
     }
 
+    /**
+     * Passenger wallet -> taxi driver's own wallet, commission split out.
+     *
+     * Structurally the merchant payment, and deliberately so: the driver is
+     * being paid for a service and the platform keeps a cut, which is the same
+     * shape. It is a separate method only because the transaction type differs,
+     * and the type is what the driver's earnings report and their payout are
+     * both built from — collapsing the two would make a taxi fare indistinguishable
+     * from a pool payment in the ledger.
+     */
+    public function chargeTaxiFare(
+        Wallet $payer,
+        Wallet $driverWallet,
+        int $amount,
+        int $commission,
+        string $idempotencyKey,
+        Model $subject,
+        ?User $initiatedBy = null,
+        array $metadata = [],
+    ): WalletTransaction {
+        if ($commission < 0 || $commission > $amount) {
+            throw DomainException::make('invalid_commission', 500, compact('amount', 'commission'));
+        }
+
+        $net = $amount - $commission;
+
+        $lines = [PostingLine::debit($payer, $amount)];
+
+        if ($net > 0) {
+            $lines[] = PostingLine::credit($driverWallet, $net);
+        }
+
+        if ($commission > 0) {
+            $lines[] = PostingLine::credit($this->system->commissionRevenue(), $commission);
+        }
+
+        return $this->ledger->post(new PostingRequest(
+            type: TransactionType::TaxiFare,
+            lines: $lines,
+            amount: $amount,
+            idempotencyKey: $idempotencyKey,
+            initiatedBy: $initiatedBy,
+            subject: $subject,
+            cityId: $payer->city_id,
+            description: __('wallet.taxi_fare_description'),
+            metadata: $metadata,
+        ));
+    }
+
     /** Merchant wallet -> settlement payable, when a payout is approved. */
     public function postSettlement(
         Wallet $merchantWallet,

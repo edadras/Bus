@@ -73,9 +73,6 @@ return [
     */
 
     'scan' => [
-        // How long a quote returned by a scan stays confirmable.
-        'quote_ttl_seconds' => env('TAXI_QUOTE_TTL', 120),
-
         // Maximum distance between passenger and taxi at the moment of the
         // scan, when the passenger's phone supplies a position at all.
         'max_distance_meters' => env('TAXI_SCAN_MAX_DISTANCE', 150),
