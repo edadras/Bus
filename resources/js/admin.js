@@ -15,7 +15,7 @@ import Alpine from 'alpinejs';
 import { Chart, registerables } from 'chart.js';
 import QRCode from 'qrcode';
 import { api, auth, formatNumber, formatChartDate } from './lib/api.js';
-import { createMap, busIcon, MarkerLayer } from './lib/map.js';
+import { createMap, busIcon, taxiIcon, vanIcon, MarkerLayer } from './lib/map.js';
 import { subscribe } from './lib/realtime.js';
 import { t } from './lib/i18n.js';
 
@@ -35,6 +35,8 @@ const NAV = [
     { id: 'reports', label: t('admin.nav.reports'), permission: 'dashboard.view', icon: 'M3 13h2v8H3v-8Zm4-5h2v13H7V8Zm4-6h2v19h-2V2Zm4 9h2v10h-2V11Zm4-4h2v14h-2V7Z' },
     { id: 'fleet', label: t('admin.nav.fleet'), permission: 'fleet.manage', icon: 'M4 16V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10h-1.2a2.5 2.5 0 0 1-4.6 0H9.8a2.5 2.5 0 0 1-4.6 0H4Zm2-9v4h12V7H6Z' },
     { id: 'drivers', label: t('admin.nav.drivers'), permission: 'drivers.manage', icon: 'M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Zm0 2c-4.42 0-8 2.24-8 5v3h16v-3c0-2.76-3.58-5-8-5Z' },
+    { id: 'taxis', label: t('admin.nav.taxis'), permission: 'taxi.manage', icon: 'M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11h1v7h-2v2h-2v-2H8v2H6v-2H4v-7h1Zm2.2 0h9.6l-1-3H8.2l-1 3ZM7 13.5A1.5 1.5 0 1 0 7 16.5a1.5 1.5 0 0 0 0-3Zm10 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Z' },
+    { id: 'school', label: t('admin.nav.school'), permission: 'school.admin', altPermission: 'school.manage', icon: 'M12 3 1 9l11 6 9-4.91V17h2V9L12 3ZM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82Z' },
     { id: 'network', label: t('admin.nav.network'), permission: 'network.manage', icon: 'M4 6h16v2H4V6Zm0 5h16v2H4v-2Zm0 5h10v2H4v-2Z' },
     { id: 'finance', label: t('admin.nav.finance'), permission: 'finance.manage', icon: 'M3 7a3 3 0 0 1 3-3h11a2 2 0 0 1 2 2v1h1a1 1 0 0 1 1 1v10a2 2 0 0 1-2 2H6a3 3 0 0 1-3-3V7Zm14 6.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z' },
     { id: 'merchants', label: t('admin.nav.merchants'), permission: 'merchants.manage', icon: 'M4 4h16l-1 5H5L4 4Zm1 7h14v9H5v-9Zm3 2v5h8v-5H8Z' },
@@ -92,11 +94,57 @@ Alpine.data('adminShell', () => ({
         merchants: { q: '', status: '' },
         complaints: { status: '', mine: false },
         transactions: { type: '', status: '', from: '', to: '', page: 1 },
+        taxis: { q: '', status: '' },
+        taxiLive: { mode: '' },
+        school: { status: '', company_uuid: '' },
     },
 
     reply: { body: '', internal: false },
 
     qrModal: null,
+
+    // ── taxis ───────────────────────────────────────────────────────────
+    taxiTab: 'fleet',
+    taxiTabs: [
+        { id: 'fleet', label: t('admin.taxi.tabs.fleet') },
+        { id: 'lines', label: t('admin.taxi.tabs.lines') },
+        { id: 'tariffs', label: t('admin.taxi.tabs.tariffs') },
+        { id: 'live', label: t('admin.taxi.tabs.live') },
+        { id: 'settlements', label: t('admin.taxi.tabs.settlements') },
+        { id: 'report', label: t('admin.taxi.tabs.report') },
+    ],
+    taxis: [],
+    taxiLines: [],
+    taxiTariffs: [],
+    taxiLive: [],
+    taxiLiveMeta: {},
+    taxiSettlements: [],
+    taxiReport: null,
+    taxiQrModal: null,
+    taxiAssignmentModal: null,
+    taxiAssignments: [],
+    taxiAssignmentForm: { driver_uuid: '', starts_on: '', ends_on: '', busy: false, error: null },
+
+    // ── school transport ────────────────────────────────────────────────
+    schoolTab: 'companies',
+    schoolTabs: [
+        { id: 'companies', label: t('admin.school.tabs.companies') },
+        { id: 'contracts', label: t('admin.school.tabs.contracts') },
+        { id: 'routes', label: t('admin.school.tabs.routes') },
+        { id: 'vehicles', label: t('admin.school.tabs.vehicles') },
+        { id: 'trips', label: t('admin.school.tabs.trips') },
+        { id: 'live', label: t('admin.school.tabs.live') },
+    ],
+    schoolCompanies: [],
+    schoolContracts: [],
+    schoolRoutes: [],
+    schoolVehicles: [],
+    schoolSchools: [],
+    schoolTrips: [],
+    schoolLive: [],
+    schoolRouteModal: null,
+    schoolRouteSeats: [],
+    schoolContractModal: null,
 
     // The merchant dossier: wallet, tills and who may use them.
     merchantModal: null,
@@ -148,6 +196,12 @@ Alpine.data('adminShell', () => ({
     },
 
     _occupancyTimer: null,
+    _taxiLiveTimer: null,
+    _schoolLiveTimer: null,
+    _taxiMap: null,
+    _taxiLayer: null,
+    _schoolMap: null,
+    _schoolLayer: null,
 
     _charts: {},
     _map: null,
@@ -157,7 +211,10 @@ Alpine.data('adminShell', () => ({
 
     // ── lifecycle ───────────────────────────────────────────────────────
     get visibleNav() {
-        return NAV.filter((item) => this.can(item.permission));
+        // Some entries are reachable by either of two permissions — the school
+        // screens are shared by a city administrator and a company manager —
+        // so an entry is shown when the user holds any of them.
+        return NAV.filter((item) => this.can(item.permission) || this.can(item.altPermission));
     },
 
     get currentTitle() {
@@ -189,6 +246,8 @@ Alpine.data('adminShell', () => ({
     },
 
     can(permission) {
+        if (!permission) return false;
+
         return this.permissions.includes('*') || this.permissions.includes(permission);
     },
 
@@ -245,13 +304,17 @@ Alpine.data('adminShell', () => ({
             try {
                 await api.get(this.probeEndpoint(item.id), { query: { per_page: 1 } });
 
-                return item.permission;
+                // An entry reachable by either permission is granted the one
+                // the endpoint actually answered for, plus its alternative:
+                // the probe cannot tell which of the two let it through, and
+                // guessing wrong would hide a screen the user can use.
+                return item.altPermission ? [item.permission, item.altPermission] : item.permission;
             } catch (error) {
                 return error.status === 403 ? null : item.permission;
             }
         });
 
-        return (await Promise.all(checks)).filter(Boolean);
+        return (await Promise.all(checks)).filter(Boolean).flat();
     },
 
     probeEndpoint(view) {
@@ -263,6 +326,8 @@ Alpine.data('adminShell', () => ({
             fleet: '/admin/fleet/buses',
             drivers: '/admin/drivers',
             network: '/admin/finance/fare-rules',
+            taxis: '/admin/taxi/taxis',
+            school: '/admin/school/companies',
             finance: '/admin/finance/summary',
             merchants: '/admin/merchants',
             complaints: '/admin/complaints',
@@ -292,6 +357,8 @@ Alpine.data('adminShell', () => ({
                 case 'finance': await Promise.all([this.loadFinance(), this.loadFareRules(), this.loadSettlements(), this.loadTransactions()]); break;
                 case 'merchants': await this.loadMerchants(); break;
                 case 'complaints': await this.loadComplaints(); break;
+                case 'taxis': await this.loadTaxiTab(); break;
+                case 'school': await this.loadSchoolTab(); break;
             }
         } catch (error) {
             window.toast?.(error.message, 'error');
@@ -1596,6 +1663,771 @@ Alpine.data('adminShell', () => ({
                 ? api.patch(`/admin/finance/fare-rules/${rule.id}`, data)
                 : api.post('/admin/finance/fare-rules', data),
         });
+    },
+
+
+    // ── taxis ───────────────────────────────────────────────────────────
+
+    /**
+     * One tab loads at a time.
+     *
+     * Six datasets behind one screen; fetching all of them because somebody
+     * opened the fleet list would make the screen slow for no reason.
+     */
+    async loadTaxiTab(tab = null) {
+        if (tab) this.taxiTab = tab;
+
+        switch (this.taxiTab) {
+            case 'fleet': await Promise.all([this.loadTaxis(), this.loadTaxiLines()]); break;
+            case 'lines': await this.loadTaxiLines(); break;
+            case 'tariffs': await this.loadTaxiTariffs(); break;
+            case 'live': await this.loadTaxiLive(); break;
+            case 'settlements': await this.loadTaxiSettlements(); break;
+            case 'report': await this.loadTaxiReport(); break;
+        }
+    },
+
+    async loadTaxis() {
+        const { data } = await api.get('/admin/taxi/taxis', { query: this.filters.taxis });
+        this.taxis = data;
+    },
+
+    async loadTaxiLines() {
+        const { data } = await api.get('/admin/taxi/lines');
+        this.taxiLines = data;
+    },
+
+    async loadTaxiTariffs() {
+        const { data } = await api.get('/admin/taxi/tariffs');
+        this.taxiTariffs = data;
+    },
+
+    /**
+     * The dispatcher's board: every car in the city, coloured by what it is
+     * offering. The colour is the point — a line taxi, a charter and a metered
+     * car are three different products and a control room has to tell them
+     * apart at a glance, not by reading a table.
+     */
+    async loadTaxiLive() {
+        const { data, meta } = await api.get('/admin/taxi/live');
+        this.taxiLive = data;
+        this.taxiLiveMeta = meta ?? {};
+
+        await this.initTaxiMap();
+
+        clearInterval(this._taxiLiveTimer);
+        this._taxiLiveTimer = setInterval(async () => {
+            if (this.view !== 'taxis' || this.taxiTab !== 'live') {
+                clearInterval(this._taxiLiveTimer);
+
+                return;
+            }
+
+            try {
+                const refreshed = await api.get('/admin/taxi/live');
+                this.taxiLive = refreshed.data;
+                this.taxiLiveMeta = refreshed.meta ?? {};
+                this._taxiLayer?.sync(this.taxiLive, (taxi) => taxi.uuid);
+            } catch {
+                // Keep the last known positions rather than blanking the board.
+            }
+        }, 10_000);
+    },
+
+    async initTaxiMap() {
+        if (this._taxiMap) {
+            this._taxiLayer.sync(this.taxiLive, (taxi) => taxi.uuid);
+
+            return;
+        }
+
+        await this.$nextTick();
+
+        const element = document.getElementById('admin-taxi-map');
+
+        if (!element) return;
+
+        const { data: config } = await api.get('/map/config');
+        this._taxiMap = await createMap(element, config);
+
+        this._taxiLayer = new MarkerLayer(this._taxiMap, {
+            iconFor: (taxi) => taxiIcon({
+                color: this.taxiModeColor(taxi.service_type),
+                label: taxi.taxi_number,
+                available: taxi.is_available !== false,
+            }),
+            popupFor: (taxi) => `
+                <strong>${t('admin.taxi.popup_number', { number: taxi.taxi_number ?? '—' })}</strong><br>
+                <span style="color:#9db2b9;font-size:12px">${t('admin.taxi.popup_plate', { plate: taxi.plate ?? '—' })}</span><br>
+                <span style="color:${this.taxiModeColor(taxi.service_type)};font-size:12px">${t(`enums.taxiservicetype.${taxi.service_type}`)}${taxi.line_code ? ` — ${taxi.line_code}` : ''}</span><br>
+                <span style="color:#9db2b9;font-size:12px">${t('admin.taxi.popup_load', { aboard: taxi.onboard_count ?? 0, free: taxi.seats_free ?? 0 })}</span>`,
+        });
+
+        this._taxiLayer.sync(this.taxiLive, (taxi) => taxi.uuid);
+    },
+
+    focusTaxi(taxi) {
+        this._taxiMap?.setView([taxi.lat, taxi.lng], 16);
+    },
+
+    /** Rows the board shows, after the mode filter the operator picked. */
+    get filteredTaxiLive() {
+        return this.filters.taxiLive.mode
+            ? this.taxiLive.filter((taxi) => taxi.service_type === this.filters.taxiLive.mode)
+            : this.taxiLive;
+    },
+
+    async loadTaxiSettlements() {
+        const { data } = await api.get('/admin/taxi/settlements');
+        this.taxiSettlements = data;
+    },
+
+    async loadTaxiReport() {
+        const { data } = await api.get('/admin/taxi/report', { query: this.reportRange });
+        this.taxiReport = data;
+    },
+
+    /** How a taxi is drawn on the map: by what it is offering, not by status. */
+    taxiModeColor(mode) {
+        return {
+            line: '#12b76a',
+            charter: '#f79009',
+            meter: '#2e90fa',
+        }[mode] ?? '#6b8892';
+    },
+
+    async openTaxiQr(taxi) {
+        this.taxiQrModal = { uuid: taxi.uuid, taxi_number: taxi.taxi_number, token: null };
+
+        try {
+            const { data } = await api.get(`/admin/taxi/taxis/${taxi.uuid}/qr`);
+            this.taxiQrModal = { ...this.taxiQrModal, ...data };
+            this.$nextTick(() => this.renderTaxiQr(data.token));
+        } catch (error) {
+            window.toast?.(error.message, 'error');
+            this.taxiQrModal = null;
+        }
+    },
+
+    async renderTaxiQr(token) {
+        const canvas = document.getElementById('taxi-qr-canvas');
+
+        if (!canvas || !token) return;
+
+        await QRCode.toCanvas(canvas, token, {
+            width: 240,
+            margin: 1,
+            // A quiet zone on white: a code drawn on the panel's dark ground
+            // is unreadable to half the phones that will try.
+            color: { dark: '#05090b', light: '#ffffff' },
+        });
+    },
+
+    async regenerateTaxiQr() {
+        const reason = prompt(t('admin.taxi.qr_reason_prompt'));
+
+        if (!reason) return;
+
+        try {
+            const { data } = await api.post(`/admin/taxi/taxis/${this.taxiQrModal.uuid}/qr/regenerate`, { reason });
+            this.taxiQrModal = { ...this.taxiQrModal, ...data };
+            this.$nextTick(() => this.renderTaxiQr(data.token));
+            window.toast?.(t('admin.taxi.qr_regenerated'), 'success');
+        } catch (error) {
+            window.toast?.(error.message, 'error');
+        }
+    },
+
+    async openTaxiAssignments(taxi) {
+        this.taxiAssignmentModal = taxi;
+        this.taxiAssignments = [];
+        this.taxiAssignmentForm = {
+            driver_uuid: '',
+            starts_on: new Date().toISOString().slice(0, 10),
+            ends_on: '',
+            busy: false,
+            error: null,
+        };
+
+        if (!this.drivers.length) await this.loadDrivers().catch(() => {});
+
+        try {
+            const { data } = await api.get(`/admin/taxi/taxis/${taxi.uuid}/assignments`);
+            this.taxiAssignments = data;
+        } catch (error) {
+            window.toast?.(error.message, 'error');
+        }
+    },
+
+    async submitTaxiAssignment() {
+        this.taxiAssignmentForm.busy = true;
+        this.taxiAssignmentForm.error = null;
+
+        try {
+            await api.post(`/admin/taxi/taxis/${this.taxiAssignmentModal.uuid}/assignments`, {
+                driver_uuid: this.taxiAssignmentForm.driver_uuid,
+                starts_on: this.taxiAssignmentForm.starts_on,
+                ends_on: this.taxiAssignmentForm.ends_on || null,
+            });
+
+            window.toast?.(t('admin.fleet.assignment_added'), 'success');
+            await this.openTaxiAssignments(this.taxiAssignmentModal);
+            await this.loadTaxis();
+        } catch (error) {
+            this.taxiAssignmentForm.error = error.message;
+        } finally {
+            this.taxiAssignmentForm.busy = false;
+        }
+    },
+
+    async revokeTaxiAssignment(assignment) {
+        if (!confirm(t('admin.fleet.assignment_revoke_confirm'))) return;
+
+        try {
+            await api.delete(`/admin/taxi/assignments/${assignment.id}`);
+            await this.openTaxiAssignments(this.taxiAssignmentModal);
+        } catch (error) {
+            window.toast?.(error.message, 'error');
+        }
+    },
+
+    openTaxiForm(taxi = null) {
+        this.openForm({
+            title: taxi ? t('admin.taxi.edit_title', { number: taxi.taxi_number }) : t('admin.taxi.new_taxi'),
+            hint: taxi ? null : t('admin.taxi.new_hint'),
+            fields: [
+                ...(taxi ? [] : [{ name: 'taxi_number', label: t('admin.taxi.number'), required: true }]),
+                { name: 'plate', label: t('admin.fleet.plate') },
+                { name: 'model', label: t('admin.forms.bus.model') },
+                { name: 'color', label: t('admin.taxi.color') },
+                { name: 'capacity', label: t('admin.fleet.capacity'), type: 'number' },
+                { name: 'status', label: t('admin.common.status'), type: 'select', options: [
+                    { value: 'idle', label: t('enums.taxistatus.idle') },
+                    { value: 'active', label: t('enums.taxistatus.active') },
+                    { value: 'maintenance', label: t('enums.taxistatus.maintenance') },
+                    { value: 'out_of_service', label: t('enums.taxistatus.out_of_service') },
+                ] },
+                { name: 'default_taxi_line_id', label: t('admin.taxi.default_line'), type: 'select',
+                  options: this.taxiLines.map((line) => ({ value: line.id, label: `${line.code} — ${line.name}` })) },
+                { name: 'commission_bps', label: t('admin.taxi.commission_bps'), type: 'number',
+                  help: t('admin.taxi.commission_help') },
+                { name: 'is_accessible', label: t('admin.forms.bus.accessible'), type: 'checkbox' },
+                { name: 'has_air_conditioning', label: t('admin.forms.bus.air_conditioning'), type: 'checkbox' },
+                { name: 'notes', label: t('admin.forms.bus.notes'), type: 'textarea', wide: true },
+            ],
+            data: taxi
+                ? {
+                    plate: taxi.plate, model: taxi.model, color: taxi.color,
+                    capacity: taxi.capacity, status: taxi.status,
+                    commission_bps: taxi.commission_bps,
+                    is_accessible: taxi.is_accessible,
+                    has_air_conditioning: taxi.has_air_conditioning,
+                    notes: taxi.notes,
+                }
+                : { capacity: 4, status: 'idle', color: 'yellow', has_air_conditioning: true },
+            submit: (data) => taxi
+                ? api.patch(`/admin/taxi/taxis/${taxi.uuid}`, data)
+                : api.post('/admin/taxi/taxis', data),
+        });
+    },
+
+    openTaxiLineForm(line = null) {
+        this.openForm({
+            title: line ? t('admin.taxi.line_edit', { code: line.code }) : t('admin.taxi.new_line'),
+            hint: t('admin.taxi.line_hint'),
+            fields: [
+                ...(line ? [] : [{ name: 'code', label: t('admin.forms.line.code'), required: true }]),
+                { name: 'name', label: t('admin.forms.line.name'), required: true },
+                { name: 'origin_label', label: t('admin.forms.line.origin') },
+                { name: 'destination_label', label: t('admin.forms.line.destination') },
+                { name: 'flat_fare', label: t('admin.taxi.flat_fare'), type: 'number', required: true },
+                { name: 'typical_duration_minutes', label: t('admin.forms.line.typical_duration'), type: 'number' },
+                { name: 'color', label: t('admin.forms.line.color'), type: 'color' },
+                ...(line ? [{ name: 'is_active', label: t('admin.forms.fare_rule.is_active'), type: 'checkbox' }] : []),
+            ],
+            data: line
+                ? {
+                    name: line.name, origin_label: line.origin, destination_label: line.destination,
+                    flat_fare: line.flat_fare, typical_duration_minutes: line.typical_duration_minutes,
+                    color: line.color, is_active: line.is_active,
+                }
+                : { color: '#12b76a' },
+            submit: (data) => line
+                ? api.patch(`/admin/taxi/lines/${line.id}`, data)
+                : api.post('/admin/taxi/lines', data),
+            onDone: async () => {
+                window.toast?.(t('admin.common.saved'), 'success');
+                await this.loadTaxiLines();
+            },
+        });
+    },
+
+    openTaxiTariffForm(tariff = null) {
+        this.openForm({
+            title: tariff ? t('admin.taxi.tariff_edit', { name: tariff.name }) : t('admin.taxi.new_tariff'),
+            hint: t('admin.taxi.tariff_hint'),
+            fields: [
+                { name: 'name', label: t('admin.common.name'), required: true },
+                { name: 'service_type', label: t('admin.taxi.service_type'), type: 'select', required: !tariff, options: [
+                    { value: 'meter', label: t('enums.taxiservicetype.meter') },
+                    { value: 'charter', label: t('enums.taxiservicetype.charter') },
+                    { value: 'line', label: t('enums.taxiservicetype.line') },
+                ] },
+                { name: 'base_fare', label: t('admin.taxi.base_fare'), type: 'number', required: !tariff },
+                { name: 'per_km_fare', label: t('admin.taxi.per_km_fare'), type: 'number' },
+                { name: 'per_minute_waiting_fare', label: t('admin.taxi.per_minute_waiting_fare'), type: 'number',
+                  help: t('admin.taxi.waiting_help') },
+                { name: 'minimum_fare', label: t('admin.forms.fare_rule.min_fare'), type: 'number' },
+                { name: 'maximum_fare', label: t('admin.forms.fare_rule.max_fare'), type: 'number' },
+                { name: 'waiting_speed_kmh', label: t('admin.taxi.waiting_speed'), type: 'number',
+                  help: t('admin.taxi.waiting_speed_help') },
+                { name: 'multiplier', label: t('admin.forms.fare_rule.multiplier'), type: 'number', step: '0.01' },
+                { name: 'valid_from_time', label: t('admin.forms.line.service_start'), type: 'time' },
+                { name: 'valid_to_time', label: t('admin.forms.line.service_end'), type: 'time' },
+                { name: 'priority', label: t('admin.forms.fare_rule.priority'), type: 'number' },
+                ...(tariff ? [{ name: 'is_active', label: t('admin.forms.fare_rule.is_active'), type: 'checkbox' }] : []),
+            ],
+            data: tariff ?? {
+                service_type: 'meter', multiplier: 1, priority: 10, waiting_speed_kmh: 5,
+            },
+            submit: (data) => tariff
+                ? api.patch(`/admin/taxi/tariffs/${tariff.id}`, data)
+                : api.post('/admin/taxi/tariffs', data),
+            onDone: async () => {
+                window.toast?.(t('admin.common.saved'), 'success');
+                await this.loadTaxiTariffs();
+            },
+        });
+    },
+
+    async approveTaxiSettlement(settlement) {
+        if (!confirm(t('admin.taxi.settlement_confirm', { reference: settlement.reference }))) return;
+
+        try {
+            await api.post(`/admin/taxi/settlements/${settlement.uuid}/approve`);
+            window.toast?.(t('admin.finance.settlement_approved'), 'success');
+            await this.loadTaxiSettlements();
+        } catch (error) {
+            window.toast?.(error.message, 'error');
+        }
+    },
+
+    async payTaxiSettlement(settlement) {
+        const reference = prompt(t('admin.finance.transfer_reference_prompt'));
+
+        if (!reference) return;
+
+        try {
+            await api.post(`/admin/taxi/settlements/${settlement.uuid}/pay`, { payment_reference: reference });
+            window.toast?.(t('admin.finance.payment_recorded'), 'success');
+            await this.loadTaxiSettlements();
+        } catch (error) {
+            window.toast?.(error.message, 'error');
+        }
+    },
+
+    async rejectTaxiSettlement(settlement) {
+        const reason = prompt(t('admin.finance.settlement_reject_prompt'));
+
+        if (!reason) return;
+
+        try {
+            await api.post(`/admin/taxi/settlements/${settlement.uuid}/reject`, { reason });
+            window.toast?.(t('admin.finance.settlement_rejected'), 'success');
+            await this.loadTaxiSettlements();
+        } catch (error) {
+            window.toast?.(error.message, 'error');
+        }
+    },
+
+
+    // ── school transport ────────────────────────────────────────────────
+
+    async loadSchoolTab(tab = null) {
+        if (tab) this.schoolTab = tab;
+
+        switch (this.schoolTab) {
+            case 'companies': await this.loadSchoolCompanies(); break;
+            case 'contracts': await Promise.all([this.loadSchoolContracts(), this.loadSchoolRoutes()]); break;
+            case 'routes': await Promise.all([this.loadSchoolRoutes(), this.loadSchoolVehicles(), this.loadSchools()]); break;
+            case 'vehicles': await Promise.all([this.loadSchoolVehicles(), this.loadSchoolCompanies()]); break;
+            case 'trips': await this.loadSchoolTrips(); break;
+            case 'live': await this.loadSchoolLive(); break;
+        }
+    },
+
+    async loadSchoolCompanies() {
+        const { data } = await api.get('/admin/school/companies', { query: this.filters.school });
+        this.schoolCompanies = data;
+    },
+
+    async loadSchoolContracts() {
+        const { data } = await api.get('/admin/school/contracts', { query: this.filters.school });
+        this.schoolContracts = data;
+    },
+
+    async loadSchoolRoutes() {
+        const { data } = await api.get('/admin/school/routes');
+        this.schoolRoutes = data;
+    },
+
+    async loadSchoolVehicles() {
+        const { data } = await api.get('/admin/school/vehicles');
+        this.schoolVehicles = data;
+    },
+
+    async loadSchools() {
+        const { data } = await api.get('/admin/school/schools');
+        this.schoolSchools = data;
+    },
+
+    async loadSchoolTrips() {
+        const { data } = await api.get('/admin/school/trips');
+        this.schoolTrips = data;
+    },
+
+    async loadSchoolLive() {
+        const { data } = await api.get('/admin/school/live');
+        this.schoolLive = data;
+
+        await this.initSchoolMap();
+
+        clearInterval(this._schoolLiveTimer);
+        this._schoolLiveTimer = setInterval(async () => {
+            if (this.view !== 'school' || this.schoolTab !== 'live') {
+                clearInterval(this._schoolLiveTimer);
+
+                return;
+            }
+
+            try {
+                const refreshed = await api.get('/admin/school/live');
+                this.schoolLive = refreshed.data;
+                this._schoolLayer?.sync(this.schoolLive, (van) => van.trip_uuid);
+            } catch {
+                // Last known positions beat a blank board.
+            }
+        }, 10_000);
+    },
+
+    async initSchoolMap() {
+        if (this._schoolMap) {
+            this._schoolLayer.sync(this.schoolLive, (van) => van.trip_uuid);
+
+            return;
+        }
+
+        await this.$nextTick();
+
+        const element = document.getElementById('admin-school-map');
+
+        if (!element) return;
+
+        const { data: config } = await api.get('/map/config');
+        this._schoolMap = await createMap(element, config);
+
+        this._schoolLayer = new MarkerLayer(this._schoolMap, {
+            iconFor: (van) => vanIcon({
+                color: van.direction === 'to_school' ? '#f79009' : '#12b76a',
+                label: van.vehicle_plate,
+            }),
+            popupFor: (van) => `
+                <strong>${van.route_name ?? '—'}</strong><br>
+                <span style="color:#9db2b9;font-size:12px">${van.school_name ?? '—'}</span><br>
+                <span style="color:#9db2b9;font-size:12px">${t(`enums.schoolservicedirection.${van.direction}`)}</span><br>
+                <span style="color:#32d583;font-size:12px">${t('admin.school.popup_aboard', { aboard: van.aboard_count ?? 0, expected: van.expected_count ?? 0 })}</span>`,
+        });
+
+        this._schoolLayer.sync(this.schoolLive, (van) => van.trip_uuid);
+    },
+
+    focusSchoolVan(van) {
+        this._schoolMap?.setView([van.lat, van.lng], 16);
+    },
+
+    async approveSchoolCompany(company) {
+        if (!confirm(t('admin.school.approve_confirm', { name: company.name }))) return;
+
+        try {
+            await api.post(`/admin/school/companies/${company.uuid}/approve`);
+            window.toast?.(t('admin.school.company_approved'), 'success');
+            await this.loadSchoolCompanies();
+        } catch (error) {
+            window.toast?.(error.message, 'error');
+        }
+    },
+
+    async rejectSchoolCompany(company) {
+        const reason = prompt(t('admin.school.reject_prompt'));
+
+        if (!reason) return;
+
+        try {
+            await api.post(`/admin/school/companies/${company.uuid}/reject`, { reason });
+            await this.loadSchoolCompanies();
+        } catch (error) {
+            window.toast?.(error.message, 'error');
+        }
+    },
+
+    async suspendSchoolCompany(company) {
+        const reason = prompt(t('admin.school.suspend_prompt'));
+
+        if (!reason) return;
+
+        try {
+            await api.post(`/admin/school/companies/${company.uuid}/suspend`, { reason });
+            window.toast?.(t('admin.school.company_suspended'), 'success');
+            await this.loadSchoolCompanies();
+        } catch (error) {
+            window.toast?.(error.message, 'error');
+        }
+    },
+
+    /** Accept a family, and name the fee in the same breath. */
+    openContractAcceptForm(contract) {
+        this.openForm({
+            title: t('admin.school.accept_title', { student: contract.student?.name }),
+            hint: t('admin.school.accept_hint'),
+            fields: [
+                { name: 'fee_amount', label: t('admin.school.fee_amount'), type: 'number', required: true },
+                { name: 'payment_cycle', label: t('admin.school.payment_cycle'), type: 'select', options: [
+                    { value: 'monthly', label: t('admin.forms.merchant.cycles.monthly') },
+                    { value: 'termly', label: t('admin.school.cycles.termly') },
+                    { value: 'yearly', label: t('admin.school.cycles.yearly') },
+                ] },
+                { name: 'note', label: t('admin.school.company_note'), type: 'textarea', wide: true },
+            ],
+            data: { payment_cycle: 'monthly' },
+            submit: (data) => api.post(`/admin/school/contracts/${contract.uuid}/accept`, data),
+            onDone: async () => {
+                window.toast?.(t('admin.school.contract_accepted'), 'success');
+                await this.loadSchoolContracts();
+            },
+        });
+    },
+
+    async rejectSchoolContract(contract) {
+        const reason = prompt(t('admin.school.contract_reject_prompt'));
+
+        if (!reason) return;
+
+        try {
+            await api.post(`/admin/school/contracts/${contract.uuid}/reject`, { reason });
+            await this.loadSchoolContracts();
+        } catch (error) {
+            window.toast?.(error.message, 'error');
+        }
+    },
+
+    /**
+     * Give the child a seat.
+     *
+     * Only routes serving the same school are offered: a van that never goes
+     * there cannot carry this child, and letting an operator pick one would
+     * only produce an error a moment later.
+     */
+    async openContractRouteForm(contract) {
+        if (!this.schoolRoutes.length) await this.loadSchoolRoutes().catch(() => {});
+
+        const eligible = this.schoolRoutes.filter(
+            (route) => route.school?.uuid === contract.school?.uuid && route.seats_free > 0,
+        );
+
+        this.openForm({
+            title: t('admin.school.assign_title', { student: contract.student?.name }),
+            hint: eligible.length ? t('admin.school.assign_hint') : t('admin.school.no_eligible_route'),
+            fields: [
+                { name: 'route_uuid', label: t('admin.school.route'), type: 'select', required: true,
+                  options: eligible.map((route) => ({
+                      value: route.uuid,
+                      label: `${route.name} — ${t('admin.school.seats_free', { count: formatNumber(route.seats_free) })}`,
+                  })) },
+            ],
+            submit: (data) => api.post(`/admin/school/contracts/${contract.uuid}/route`, data),
+            onDone: async () => {
+                window.toast?.(t('admin.school.contract_assigned'), 'success');
+                await Promise.all([this.loadSchoolContracts(), this.loadSchoolRoutes()]);
+            },
+        });
+    },
+
+    async billSchoolContract(contract) {
+        try {
+            await api.post(`/admin/school/contracts/${contract.uuid}/bill`);
+            window.toast?.(t('admin.school.invoice_issued'), 'success');
+        } catch (error) {
+            window.toast?.(error.message, 'error');
+        }
+    },
+
+    openSchoolRouteForm(route = null) {
+        this.openForm({
+            title: route ? t('admin.school.route_edit', { name: route.name }) : t('admin.school.new_route'),
+            hint: t('admin.school.route_hint'),
+            fields: [
+                ...(route ? [] : [
+                    { name: 'company_uuid', label: t('admin.school.company'), type: 'select', required: true,
+                      options: this.schoolCompanies
+                          .filter((company) => company.is_approved)
+                          .map((company) => ({ value: company.uuid, label: company.name })) },
+                    { name: 'school_uuid', label: t('admin.school.school'), type: 'select', required: true,
+                      options: this.schoolSchools.map((school) => ({ value: school.uuid, label: school.name })) },
+                ]),
+                { name: 'name', label: t('admin.common.name'), required: true },
+                { name: 'shift', label: t('admin.school.shift'), type: 'select', options: [
+                    { value: 'both', label: t('enums.schoolservicedirection.both') },
+                    { value: 'morning', label: t('enums.schoolservicedirection.to_school') },
+                    { value: 'afternoon', label: t('enums.schoolservicedirection.from_school') },
+                ] },
+                { name: 'capacity', label: t('admin.fleet.capacity'), type: 'number', required: true },
+                { name: 'pickup_starts_at', label: t('admin.school.pickup_starts_at'), type: 'time' },
+                { name: 'dropoff_starts_at', label: t('admin.school.dropoff_starts_at'), type: 'time' },
+                { name: 'notes', label: t('admin.forms.bus.notes'), type: 'textarea', wide: true },
+                ...(route ? [{ name: 'is_active', label: t('admin.forms.fare_rule.is_active'), type: 'checkbox' }] : []),
+            ],
+            data: route
+                ? {
+                    name: route.name, shift: route.shift, capacity: route.capacity,
+                    pickup_starts_at: route.pickup_starts_at, dropoff_starts_at: route.dropoff_starts_at,
+                    notes: route.notes, is_active: route.is_active,
+                }
+                : { shift: 'both', capacity: 15 },
+            submit: (data) => route
+                ? api.patch(`/admin/school/routes/${route.uuid}`, data)
+                : api.post('/admin/school/routes', data),
+            onDone: async () => {
+                window.toast?.(t('admin.common.saved'), 'success');
+                await this.loadSchoolRoutes();
+            },
+        });
+    },
+
+    /**
+     * A van and a driver, together.
+     *
+     * One action on purpose: assigning a van and forgetting the driver leaves
+     * a route that looks ready and is not.
+     */
+    async openRouteCrewForm(route) {
+        if (!this.schoolVehicles.length) await this.loadSchoolVehicles().catch(() => {});
+        if (!this.drivers.length) await this.loadDrivers().catch(() => {});
+
+        this.openForm({
+            title: t('admin.school.crew_title', { name: route.name }),
+            hint: t('admin.school.crew_hint'),
+            fields: [
+                { name: 'vehicle_uuid', label: t('admin.school.vehicle'), type: 'select',
+                  options: this.schoolVehicles.map((vehicle) => ({
+                      value: vehicle.uuid,
+                      label: `${vehicle.plate}${vehicle.compliance_blocker ? ' ⚠' : ''}`,
+                  })) },
+                { name: 'driver_uuid', label: t('admin.reports.driver'), type: 'select',
+                  options: this.drivers
+                      .filter((driver) => driver.status === 'active')
+                      .map((driver) => ({ value: driver.uuid, label: driver.name })) },
+            ],
+            data: { vehicle_uuid: route.vehicle?.uuid, driver_uuid: route.driver?.uuid },
+            submit: (data) => api.post(`/admin/school/routes/${route.uuid}/crew`, data),
+            onDone: async () => {
+                window.toast?.(t('admin.common.saved'), 'success');
+                await this.loadSchoolRoutes();
+            },
+        });
+    },
+
+    async openRouteSeats(route) {
+        this.schoolRouteModal = route;
+        this.schoolRouteSeats = [];
+
+        try {
+            const { data } = await api.get(`/admin/school/routes/${route.uuid}/contracts`);
+            this.schoolRouteSeats = data;
+        } catch (error) {
+            window.toast?.(error.message, 'error');
+        }
+    },
+
+    openSchoolVehicleForm(vehicle = null) {
+        this.openForm({
+            title: vehicle ? t('admin.school.vehicle_edit', { plate: vehicle.plate }) : t('admin.school.new_vehicle'),
+            fields: [
+                ...(vehicle ? [] : [
+                    { name: 'company_uuid', label: t('admin.school.company'), type: 'select', required: true,
+                      options: this.schoolCompanies
+                          .filter((company) => company.is_approved)
+                          .map((company) => ({ value: company.uuid, label: company.name })) },
+                    { name: 'plate', label: t('admin.fleet.plate'), required: true },
+                ]),
+                { name: 'model', label: t('admin.forms.bus.model') },
+                { name: 'color', label: t('admin.taxi.color') },
+                { name: 'capacity', label: t('admin.fleet.capacity'), type: 'number', required: true },
+                ...(vehicle ? [{ name: 'status', label: t('admin.common.status'), type: 'select', options: [
+                    { value: 'active', label: t('admin.common.active') },
+                    { value: 'maintenance', label: t('enums.taxistatus.maintenance') },
+                    { value: 'out_of_service', label: t('enums.taxistatus.out_of_service') },
+                ] }] : []),
+                { name: 'insurance_expires_at', label: t('admin.school.insurance_expires_at'), type: 'date',
+                  help: t('admin.school.insurance_help') },
+                { name: 'inspection_due_at', label: t('admin.school.inspection_due_at'), type: 'date' },
+                { name: 'has_supervisor', label: t('admin.school.has_supervisor'), type: 'checkbox' },
+                { name: 'has_seatbelts', label: t('admin.school.has_seatbelts'), type: 'checkbox' },
+                { name: 'notes', label: t('admin.forms.bus.notes'), type: 'textarea', wide: true },
+            ],
+            data: vehicle ?? { capacity: 15, has_seatbelts: true },
+            submit: (data) => vehicle
+                ? api.patch(`/admin/school/vehicles/${vehicle.uuid}`, data)
+                : api.post('/admin/school/vehicles', data),
+            onDone: async () => {
+                window.toast?.(t('admin.common.saved'), 'success');
+                await this.loadSchoolVehicles();
+            },
+        });
+    },
+
+    openSchoolForm() {
+        this.openForm({
+            title: t('admin.school.new_school'),
+            fields: [
+                { name: 'name', label: t('admin.common.name'), required: true },
+                { name: 'gender', label: t('admin.school.gender'), type: 'select', options: [
+                    { value: 'mixed', label: t('admin.school.genders.mixed') },
+                    { value: 'girls', label: t('admin.school.genders.girls') },
+                    { value: 'boys', label: t('admin.school.genders.boys') },
+                ] },
+                { name: 'level', label: t('admin.school.level'), type: 'select', options: [
+                    { value: 'primary', label: t('admin.school.levels.primary') },
+                    { value: 'middle', label: t('admin.school.levels.middle') },
+                    { value: 'high', label: t('admin.school.levels.high') },
+                ] },
+                { name: 'address', label: t('admin.forms.stop.address'), wide: true },
+                { name: 'lat', label: t('admin.forms.stop.lat'), type: 'number', step: 'any' },
+                { name: 'lng', label: t('admin.forms.stop.lng'), type: 'number', step: 'any' },
+                { name: 'starts_at', label: t('admin.school.starts_at'), type: 'time' },
+                { name: 'ends_at', label: t('admin.school.ends_at'), type: 'time' },
+                { name: 'phone', label: t('admin.forms.merchant.phone') },
+            ],
+            data: { gender: 'mixed', level: 'primary' },
+            submit: (data) => api.post('/admin/school/schools', data),
+            onDone: async () => {
+                window.toast?.(t('admin.common.saved'), 'success');
+                await this.loadSchools();
+            },
+        });
+    },
+
+    async scheduleSchoolTrips() {
+        this.busy = true;
+
+        try {
+            const { data } = await api.post('/admin/school/trips/schedule');
+            window.toast?.(t('admin.school.runs_created', { count: formatNumber(data.runs_created) }), 'success');
+            await this.loadSchoolTrips();
+        } catch (error) {
+            window.toast?.(error.message, 'error');
+        } finally {
+            this.busy = false;
+        }
     },
 
     // ── session ─────────────────────────────────────────────────────────

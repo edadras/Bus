@@ -35,6 +35,8 @@ return [
         'finance' => 'Finance',
         'merchants' => 'Merchants',
         'complaints' => 'Complaints',
+        'taxis' => 'Taxis',
+        'school' => 'School service',
     ],
 
     'range' => [
@@ -531,6 +533,223 @@ return [
                 'disabled' => 'Veteran / disabled',
                 'child' => 'Child',
             ],
+        ],
+    ],
+
+    /*
+    |----------------------------------------------------------------------
+    | Taxis
+    |----------------------------------------------------------------------
+    | Three products on one fleet. The colour that separates them on the live
+    | board is defined in the panel's JavaScript; these are the words.
+    */
+    'taxi' => [
+        'tabs' => [
+            'fleet' => 'Taxi fleet',
+            'lines' => 'Taxi lines',
+            'tariffs' => 'Tariffs',
+            'live' => 'Live map',
+            'settlements' => 'Driver settlements',
+            'report' => 'Reports',
+        ],
+
+        'search_placeholder' => 'Search taxi number or plate…',
+        'count' => ':count taxis',
+        'empty' => 'No taxis have been registered yet.',
+        'new_taxi' => 'New taxi',
+        'new_hint' => 'Registering a taxi issues its QR code automatically.',
+        'edit_title' => 'Edit taxi :number',
+        'number' => 'Taxi number',
+        'color' => 'Vehicle colour',
+        'allowed_modes' => 'Licensed services',
+        'default_line' => 'Default line',
+        'commission_bps' => 'Commission (per 10,000)',
+        'commission_help' => '1000 means 10% of the fare. Leave empty to use the city default.',
+
+        'line_hint' => 'A taxi line has a fixed origin, destination and flat fare, and the passenger pays exactly that.',
+        'new_line' => 'New line',
+        'line_edit' => 'Edit line :code',
+        'flat_fare' => 'Flat fare (rial)',
+        'no_lines' => 'No taxi lines have been defined yet.',
+
+        'tariff_hint' => 'The highest-priority tariff valid at the time of the ride is the one that applies.',
+        'new_tariff' => 'New tariff',
+        'tariff_edit' => 'Edit tariff :name',
+        'service_type' => 'Service type',
+        'base_fare' => 'Base fare (rial)',
+        'per_km_fare' => 'Per-kilometre fare (rial)',
+        'per_minute_waiting_fare' => 'Per-minute waiting fare (rial)',
+        'waiting_help' => 'Below the waiting speed the fare is charged by time rather than by distance.',
+        'waiting_speed' => 'Waiting speed threshold (km/h)',
+        'waiting_speed_help' => 'Anything slower than this counts as waiting in traffic.',
+        'window' => 'Validity window',
+        'all_day' => 'All day',
+        'no_tariffs' => 'No tariffs have been defined yet.',
+
+        'live_title' => 'Taxis in service',
+        'popup_number' => 'Taxi :number',
+        'popup_plate' => 'Plate: :plate',
+        'popup_load' => ':aboard aboard • :free seats free',
+        'speed' => ':speed km/h',
+        'available' => 'Available',
+        'occupied' => 'On a hire',
+        'none_live' => 'No taxi is on the road right now.',
+
+        'ride_count' => 'Rides',
+        'rides_short' => ':count rides',
+        'no_settlements' => 'No settlement has been requested.',
+        'settlement_confirm' => 'Approve settlement :reference?',
+
+        'unpaid' => 'Unpaid balance',
+        'unpaid_count' => ':count unsettled rides',
+        'by_service_type' => 'By service type',
+        'busiest_lines' => 'Busiest lines',
+        'top_drivers' => 'Top-earning drivers',
+
+        'qr_title' => 'QR code for taxi :number',
+        'qr_warning' => 'The printed code carries only the public id; the payment token rotates every 30 seconds and cannot be forged.',
+        'qr_reason_prompt' => 'Why is the code being reissued? (the old one is void immediately)',
+        'qr_regenerated' => 'A new code has been issued.',
+
+        'assignments_title' => 'Drivers for taxi :number',
+        'assignments_note' => 'Without a current assignment a driver cannot open a shift.',
+    ],
+
+    /*
+    |----------------------------------------------------------------------
+    | School transport
+    |----------------------------------------------------------------------
+    | Shared by a city administrator and a company manager: the same screens,
+    | narrowed on the server to what each may see.
+    */
+    'school' => [
+        'tabs' => [
+            'companies' => 'Service companies',
+            'contracts' => 'Contracts',
+            'routes' => 'Routes',
+            'vehicles' => 'Vehicles',
+            'trips' => 'Today\'s runs',
+            'live' => 'Live map',
+        ],
+
+        'companies_hint' => 'A company is invisible to families until it has been approved.',
+        'license' => 'Licence',
+        'license_expires' => 'Valid until :date',
+        'fleet' => 'Vehicles',
+        'contracts' => 'Contracts',
+        'no_companies' => 'No company has been registered.',
+        'approve_confirm' => 'Approve “:name”? Families will be able to choose them once approved.',
+        'reject_prompt' => 'Why is the company being rejected?',
+        'suspend_prompt' => 'Why is the company being suspended?',
+        'company_approved' => 'Company approved.',
+        'company_suspended' => 'Company suspended.',
+
+        'contracts_hint' => 'The path of a request: family applies → accepted with a fee → given a seat on a route → billed.',
+        'student' => 'Student',
+        'school' => 'School',
+        'pickup' => 'Pick-up point',
+        'direction' => 'Service',
+        'fee_amount' => 'Service fee (rial)',
+        'route' => 'Route',
+        'assign_route' => 'Assign route',
+        'bill' => 'Issue invoice',
+        'no_contracts' => 'No contract has been registered.',
+        'contract_reject_prompt' => 'Why is the contract being rejected?',
+        'contract_accepted' => 'Contract accepted.',
+        'contract_assigned' => 'The student now has a seat.',
+        'invoice_issued' => 'Invoice issued.',
+
+        'accept_title' => 'Accept contract for :student',
+        'accept_hint' => 'The amount named here is what the family sees in their app and pays.',
+        'payment_cycle' => 'Payment cycle',
+        'company_note' => 'Company note',
+        'cycles' => [
+            'termly' => 'Per term',
+            'yearly' => 'Yearly',
+        ],
+
+        'assign_title' => 'Assign a route to :student',
+        'assign_hint' => 'Only routes serving the same school with a free seat are offered.',
+        'no_eligible_route' => 'No route with a free seat serves this school.',
+        'seats_free' => ':count seats free',
+
+        'route_hint' => 'A route has one vehicle, one driver and a fixed capacity; the daily runs are built from it.',
+        'new_route' => 'New route',
+        'new_school' => 'New school',
+        'route_edit' => 'Edit route :name',
+        'company' => 'Service company',
+        'shift' => 'Shift',
+        'shifts' => [
+            'both' => 'Both ways',
+            'morning' => 'To school only',
+            'afternoon' => 'From school only',
+        ],
+        'seats' => 'Seats',
+        'vehicle' => 'Vehicle',
+        'times' => 'Pick-up / drop-off start',
+        'readiness' => 'Readiness',
+        'ready' => 'Ready for service',
+        'crew' => 'Vehicle and driver',
+        'manifest' => 'Student list',
+        'no_routes' => 'No route has been defined.',
+        'pickup_starts_at' => 'Collection starts at',
+        'dropoff_starts_at' => 'Return starts at',
+
+        'crew_title' => 'Vehicle and driver for :name',
+        'crew_hint' => 'Both are set together; a route cannot run without either.',
+
+        'vehicles_hint' => 'A vehicle whose insurance or inspection has lapsed may not carry children.',
+        'new_vehicle' => 'New vehicle',
+        'vehicle_edit' => 'Edit vehicle :plate',
+        'insurance_expires_at' => 'Insurance expires',
+        'insurance_help' => 'Past this date the vehicle is taken out of service automatically.',
+        'inspection_due_at' => 'Inspection due',
+        'safety' => 'Safety',
+        'has_supervisor' => 'Supervisor aboard',
+        'has_seatbelts' => 'Seatbelts',
+        'no_vehicles' => 'No vehicle has been registered.',
+
+        'trips_hint' => 'Runs are created automatically each day; this button builds the same day by hand.',
+        'schedule_runs' => 'Build today\'s runs',
+        'runs_created' => ':count runs created.',
+        'service_date' => 'Date',
+        'attendance' => 'Attendance',
+        'attendance_summary' => ':picked picked up • :dropped dropped off • of :expected',
+        'absent_count' => ':count absent',
+        'no_trips' => 'No run is scheduled for today.',
+
+        'live_title' => 'Runs under way',
+        'popup_aboard' => ':aboard of :expected students',
+        'none_live' => 'No run is under way right now.',
+
+        'manifest_title' => 'Students on :name',
+        'manifest_note' => 'This same list, in collection order, is what the driver app shows.',
+        'manifest_empty' => 'No student has been placed on this route yet.',
+
+        'gender' => 'School gender',
+        'genders' => [
+            'mixed' => 'Mixed',
+            'girls' => 'Girls',
+            'boys' => 'Boys',
+        ],
+        'level' => 'Level',
+        'levels' => [
+            'primary' => 'Primary',
+            'middle' => 'Middle',
+            'high' => 'High',
+        ],
+        'starts_at' => 'School starts at',
+        'ends_at' => 'School ends at',
+
+        'blockers' => [
+            'route_inactive' => 'Route is inactive',
+            'no_vehicle_assigned' => 'No vehicle assigned',
+            'no_driver_assigned' => 'No driver assigned',
+            'vehicle_not_active' => 'Vehicle is not in service',
+            'insurance_expired' => 'Insurance expired',
+            'driver_not_active' => 'Driver is not active',
+            'license_expired' => 'Licence expired',
+            'contract_ended' => 'Driver contract ended',
         ],
     ],
 

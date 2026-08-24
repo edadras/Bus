@@ -52,6 +52,59 @@ export function busIcon({ heading = 0, color = '#12b76a', label = '', stale = fa
     });
 }
 
+/**
+ * A taxi marker.
+ *
+ * The fill is the product — line, charter or meter — not the status, because
+ * "what is this car offering me" is the only question a marker on a taxi map
+ * has to answer. A car that cannot take anyone is dimmed rather than hidden:
+ * knowing a taxi is there and full is still useful.
+ */
+export function taxiIcon({ color = '#f79009', label = '', available = true } = {}) {
+    return L.divIcon({
+        className: 'taxi-marker',
+        iconSize: [30, 30],
+        iconAnchor: [15, 15],
+        html: `
+            <div style="position:relative;width:30px;height:30px;opacity:${available ? 1 : 0.4}">
+              <div style="position:absolute;inset:0;border-radius:9px;background:${color};
+                          border:2px solid rgba(255,255,255,.85);display:flex;align-items:center;
+                          justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,.5)">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="#fff">
+                  <path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11h1v6h-2v2h-2v-2H8v2H6v-2H4v-6h1Zm2.2 0h9.6l-1-3H8.2l-1 3ZM7 13a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Zm10 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Z"/>
+                </svg>
+              </div>
+              ${label ? `<div style="position:absolute;top:-9px;inset-inline-start:50%;transform:translateX(50%);
+                    background:rgba(5,9,11,.9);color:#fff;font-size:10px;font-weight:700;
+                    padding:1px 6px;border-radius:999px;white-space:nowrap;border:1px solid rgba(255,255,255,.15)">${label}</div>` : ''}
+            </div>`,
+    });
+}
+
+/** A school van. Amber while it is collecting, green once it is on its way. */
+export function vanIcon({ color = '#f79009', label = '' } = {}) {
+    return L.divIcon({
+        className: 'van-marker',
+        iconSize: [32, 32],
+        iconAnchor: [16, 16],
+        html: `
+            <div style="position:relative;width:32px;height:32px">
+              <div style="position:absolute;inset:0;border-radius:50%;background:${color};opacity:.2;
+                          animation:ping 2.2s cubic-bezier(0,0,.2,1) infinite"></div>
+              <div style="position:absolute;inset:4px;border-radius:10px;background:${color};
+                          border:2px solid rgba(255,255,255,.85);display:flex;align-items:center;
+                          justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,.5)">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="#fff">
+                  <path d="M3 17V7a2 2 0 0 1 2-2h9l5 5v7h-1.2a2.2 2.2 0 0 1-4.1 0H8.3a2.2 2.2 0 0 1-4.1 0H3Zm11-9v3h3.6L14 8Z"/>
+                </svg>
+              </div>
+              ${label ? `<div style="position:absolute;top:-9px;inset-inline-start:50%;transform:translateX(50%);
+                    background:rgba(5,9,11,.9);color:#fff;font-size:10px;font-weight:700;
+                    padding:1px 6px;border-radius:999px;white-space:nowrap;border:1px solid rgba(255,255,255,.15)">${label}</div>` : ''}
+            </div>`,
+    });
+}
+
 export function stopIcon({ isTerminal = false } = {}) {
     const size = isTerminal ? 16 : 12;
 

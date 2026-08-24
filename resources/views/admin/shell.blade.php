@@ -93,6 +93,8 @@
             @include('admin.views.occupancy')
             @include('admin.views.reports')
             @include('admin.views.complaints')
+            @include('admin.views.taxis')
+            @include('admin.views.school')
         </div>
     </main>
 
