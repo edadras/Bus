@@ -47,8 +47,10 @@ live map is already enough motion.
 | Bus sheet | Line, destination, next stop, ETA, occupancy, speed, staleness |
 | Plan | Origin and destination pickers, transfer tolerance, itineraries with per-leg board/alight rows. **Usable signed-out.** |
 | Lines | Every line, each direction's stop timeline with offsets; tapping a stop opens its arrival board. **Usable signed-out.** |
-| Ride | Active journey with next stop and ETA, or the scan entry point |
+| Ride | Active journey — bus or taxi — with next stop and ETA, or the scan entry point |
 | Scanner | Camera QR with viewfinder; expired and replayed codes are recoverable states, not errors |
+| Fare confirmation | What a scanned taxi ride costs, before it is taken; a meter shows the tariff instead of a total |
+| School service | A parent's children, the arrangement for each, and the live van while it is carrying them |
 | Wallet | Balance, quick top-up amounts, gateway hand-off with status polling, statement |
 | Complaints | List, intake with up to five photos and optional position, threaded replies, and a satisfaction rating once resolved |
 | Notifications | In-app inbox with unread badge; tapping a card marks it read |
@@ -57,6 +59,28 @@ live map is already enough motion.
 The inbox is the durable record of everything the platform has said. Push is
 best-effort — a phone can be off, out of coverage, or have notifications
 switched off entirely — so nothing is ever *only* a push.
+
+**One scanner, both subsystems.** A passenger holding a phone at a code does not
+know whether a bus or a taxi issued it, and should not have to. The public id
+inside the token says which, and a misleading prefix is recovered by trying the
+other rather than shown as a failure.
+
+**The taxi layer is off by default.** A rider looking for a bus should not have
+to pick their line out of a screen full of cars. Turned on, each car is coloured
+by what it is offering — the same three colours as the driver's app and the
+control room — and the legend doubles as the filter, because a colour the rider
+cannot act on is decoration. The sheet carries no plate, no driver and no
+passenger count: the feed behind it does not have them.
+
+**An unpaid metered fare is surfaced on the ride tab**, not buried in a history
+screen. It blocks the next taxi, and a passenger turned away at a car door with
+no explanation would have no idea why.
+
+The school section lives in the account tab rather than a sixth navigation
+slot, because most passengers are not parents; a badge counts the things that
+need doing — a company's answer to read, an invoice to pay — so the ones who
+are can find it. Nothing there names a price: the company answers with the fee
+and the parent sees it before anything is owed.
 
 The map tab is deliberately reachable without an account: a passenger must be
 able to look up a stop and see the next bus before signing up. Tabs that move
@@ -71,7 +95,7 @@ and when there is nothing to offer the screen says which of the two reasons it
 was — no stop within walking distance, or no route between them — because the
 passenger's next move differs.
 
-### Driver app (Flutter)
+### Bus driver app (Flutter)
 
 | Screen | Contents |
 |---|---|
@@ -96,6 +120,48 @@ problems with different remedies.
 The screen keeps itself awake — a till sleeping mid-transaction is the main
 practical failure of these devices.
 
+### Taxi driver app (Flutter)
+
+| Screen | Contents |
+|---|---|
+| Shift | Which car, what it is offering, the live counters, and the rotating fare code |
+| Passengers | Who is aboard, what has been taken, and boarding and alighting counts |
+| Earnings | Gross, commission and net by day and by product, plus settlement requests |
+
+One question dominates the first screen: *what is this car offering right now*.
+It is three buttons, because that is a decision a driver makes at a kerb — and
+only the modes the car is licensed for are offered, since picking one it may not
+run would produce a refusal a moment later. Charter is a number pad with round
+presets, because a driver leaning out of a window will not type six digits. The
+meter needs no interaction at all: it starts when a passenger scans, and the
+running total on the driver's screen is the same one the passenger sees, because
+both come from the car's own position reports.
+
+The fare code carries a countdown for the same reason the merchant till does —
+so a driver can tell a passenger to wait a second rather than wondering why a
+scan failed.
+
+Gross, commission and net are shown separately, and unpaid metered rides sit
+apart from all three. A driver comparing their own count against a payout will
+otherwise find the two disagree.
+
+### School service driver app (Flutter)
+
+| Screen | Contents |
+|---|---|
+| Runs | Today's runs, usually two, with attendance counters and a readiness state |
+| Manifest | The children in collection order: address, medical note, guardian's number, two buttons |
+
+The manifest *is* the app. Each row is a name, a door, and a single wide
+button — pressed one-handed from a driver's seat, where a row of small controls
+would be pressed wrongly. Nothing can be checked before the run starts: a
+pick-up recorded at eight for a van still in the yard is a lie in a record
+parents rely on. Undo is always available on a settled row.
+
+The medical note and the emergency number are on the card rather than in a file
+somebody would have to go and find, because this is the screen a driver is
+looking at when either becomes relevant.
+
 ### Admin panel (web)
 
 Dashboard with eight KPI cards and trend charts; live operations map with
@@ -106,8 +172,13 @@ bus↔driver assignment; a driver dossier with licence, documents, assignments a
 recent shifts; a network editor with route sequences and offset recalculation;
 finance with a filterable transaction list, reversal, wallet adjustment, the
 ledger integrity check, fare rules and settlements; a merchant dossier with
-tills and staff; and a complaint workbench with assignment, attachments,
-internal notes and SLA figures.
+tills and staff; a complaint workbench with assignment, attachments, internal
+notes and SLA figures; a taxi section with fleet, lines, tariffs, settlements, a
+report split by the three products and a live board of every car in the city;
+and a school transport section covering company approval, the contract path
+from a family's request through fee, seat and invoice, routes with their
+readiness answered as one blocker, vehicles with their compliance state, the
+day's runs, and a live board of the vans under way.
 
 Create and edit flows across fleet, drivers, network, merchants and fare rules
 share one schema-driven modal (`admin/partials/form-modal.blade.php`), so a new
@@ -125,6 +196,18 @@ served from a guessable path. The panel requests a ten-minute signed URL and
 opens that. Those download routes are registered *before* the `/admin/{any}`
 catch-all that lets a bookmarked panel URL reload, since first match wins and a
 download registered after it silently returns the panel's HTML instead.
+
+The taxi live board is the operations counterpart of the passenger's "near me"
+feed, and it exists because a dispatcher genuinely needs the plate and the load
+that a rider does not. Cars are coloured by what they are offering rather than
+by their status: a control room has to tell the three products apart at a
+glance, not by reading a table, and the legend is also the filter.
+
+The school section is shared by two audiences. A city administrator holds
+`school.admin` and sees every company; a company manager holds only
+`school.manage` and the server narrows each query to their own. The markup is
+identical either way — the difference is in what comes back, which is the only
+place it is safe for the difference to live.
 
 The occupancy screen is what the specification called a live passenger map. It
 publishes counts per vehicle — "bus 102: 27 of 40" — and never the position or

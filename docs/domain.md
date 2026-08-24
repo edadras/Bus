@@ -159,6 +159,121 @@ vehicle and passengers would board an ambiguous trip.
 Completing a trip closes every passenger still aboard. A passenger left with an
 open ride cannot board anything else.
 
+## Taxi — three products on one fleet
+
+A taxi line, a charter and a metered ride are three different agreements, and
+the difference is entirely about *when the price is known*.
+
+| Mode | Price known | Paid | Passenger confirms |
+|---|---|---|---|
+| Line | published in advance | on boarding | the flat fare |
+| Charter | the driver names it | on boarding | that exact figure |
+| Meter | only at the end | on ending | the tariff, not a total |
+
+**The mode belongs to the shift, not the car.** The same vehicle runs a fixed
+line in the morning and takes charters in the afternoon, so what it is offering
+lives on the driver's open shift and can change mid-shift without ending
+anything. The vehicle carries `allowed_modes` — what it is *licensed* to run —
+and a mode outside that set is refused rather than silently accepted.
+
+**A confirmed amount is what makes a price honest.** For the two priced-up-front
+modes the passenger sends back the figure they were shown. A charter price the
+driver raised in the two seconds since the scan will not match, and the server
+refuses the ride rather than charging the new one. There is no path by which a
+passenger is charged an amount they never saw.
+
+**The meter runs on the car's position, never the passenger's phone.** A phone
+can be switched off, put in a bag, or deliberately spoofed; the fare must not
+depend on any of that. Every sample the car reports is stored — including the
+ones that were discarded, with the reason (`poor_accuracy`, `too_frequent`,
+`gap_too_long`, `implausible_speed`) — so a disputed fare can be reconstructed
+sample by sample rather than argued about.
+
+Distance and waiting are billed separately because they are separate things: a
+car stopped at a light has covered no ground, and billing that time as distance
+is exactly the complaint that destroys trust in a meter. A gap longer than the
+configured maximum is not billed as waiting at all, because nobody can prove
+the car was waiting rather than out of coverage.
+
+**A metered ride is the one charge that can fail.** A wallet that covered the
+minimum fare at the kerb may not cover forty minutes of traffic. That outcome
+is recorded as a *completed ride with an outstanding amount* — a debt that
+blocks the passenger's next taxi until it is settled — rather than an open ride
+nobody can close or a fare quietly written off. A metered ride will not start
+at all unless the wallet holds several times the tariff minimum: refusing at
+the kerb is far better than stopping the car at the destination to argue.
+
+**Nonce scoping differs by mode.** A charter or a metered car takes one hire at
+a time, so its code's nonce is claimed globally. A line taxi takes anyone while
+a seat is free, so its nonce is claimed per passenger — otherwise the second
+person getting into a shared car would find the code already spent.
+
+**Two live feeds, deliberately unequal.** A rider asking "what is near me" gets
+position, mode and distance, from a mandatory position with a server-capped
+radius. The operations room gets every car in the city with the plate, the
+driver and who is aboard. Publishing the second to the first audience would be
+a tracking service for taxi drivers, which is not what a passenger looking for
+a car is owed.
+
+Settlement mirrors the merchant path: a driver claims a fixed set of paid,
+unsettled rides, and the claim makes the payout safe to run twice. Only rides
+where money actually moved are claimable — `fare_amount > 0` — so an unpaid
+metered ride is never counted as something to pay a driver for.
+
+## School transport — a contract, a seat, and a van
+
+Four states, and each transition is somebody's decision:
+
+`requested` → `approved` (the company names the fee) → `active` (the company
+gives the child a seat on a route) → `ended`.
+
+Contracts are **per child**, not per family: two children at two schools are two
+arrangements with two companies and two fees. A company is invisible to families
+until a city administrator approves it, so the list a parent chooses from is
+already vetted.
+
+**The privacy rule is the feature.** A van's position is visible to the families
+it is carrying, while it is carrying them, and to nobody else at any other time.
+Three conditions, all necessary, enforced in one method
+(`SchoolLiveService::assertGuardianMayWatch`) so the callers cannot drift apart:
+
+1. it is this guardian's child;
+2. the run is actually in progress;
+3. the child's own journey on it has not finished.
+
+The third is what stops a parent watching a van drive on to other families'
+houses after their own child is safely home. It is checked against the *run*
+rather than the vehicle, so last week's parent is not still watching this
+week's van. Reporting itself starts when the run starts and stops when it ends:
+outside a run the server rejects position reports, because there is nobody
+entitled to them.
+
+**Attendance is a record, not a claim.** The driver checks each child on and off
+at the door, and the van's position is attached to the check-in — which is what
+turns "the driver said so" into something a parent can verify. Undo exists,
+because a wrong tap at a kerb in the rain happens and a driver who cannot
+correct it stops tapping at all. Completing a run settles everyone still
+unchecked as a no-show rather than leaving them ambiguous: a child nobody
+touched must be visibly unaccounted for, never silently absent.
+
+The collection order defaults to distance from the school — furthest door first
+on the way in, nearest first on the way home. A rough but honest default that a
+company can override, and far better than an arbitrary order that leaves the
+driver to work it out.
+
+**Runs are built ahead of the day** (`school:runs:schedule`), so a driver
+opening the app before dawn already has the morning's manifest and a parent
+reporting an absence the night before has a run to report against. Creation is
+idempotent per (route, date, direction), which is what makes the scheduler and
+the operator's button safe on the same day. A route missing its van, its driver
+or its paperwork is not scheduled at all — an empty manifest in front of nobody
+makes a company's board look staffed when it is not.
+
+Invoicing is idempotent on the billing period, so a family cannot be billed
+twice for one month by a scheduler that ran twice. The fee moves through the
+same wallet and the same double-entry ledger as every fare: a school fee is not
+a special kind of money.
+
 ## Merchant payments and settlement
 
 The commission split happens **inside the same posting** as the payment, so the

@@ -1,9 +1,9 @@
 # Testing
 
 ```bash
-php artisan test          # 300 PHP tests
-make apps-test            # 57 Dart tests
-make apps-analyze         # static analysis across all four Dart packages
+php artisan test          # 408 PHP tests, 3550 assertions
+make apps-test            # 77 Dart tests
+make apps-analyze         # static analysis across all six Dart packages
 ```
 
 PHP tests run against in-memory SQLite. Dart tests run on the VM.
@@ -277,6 +277,81 @@ these test that those offsets stay honest:
 - recalculating reports how many stops it touched
 - a one-stop route is refused; another city's stop and line are out of reach
 
+### Taxi rides — `tests/Feature/Taxi/TaxiRideTest.php` (23)
+
+The three products, tested where they differ: when money moves.
+
+- a line ride charges the published flat fare, on boarding, and seats the
+  passenger while the car keeps taking others
+- a charter charges the amount the driver named — and **only** that amount: a
+  confirmation that does not match the standing price is refused rather than
+  rounded to it, and a price that has gone stale is no price at all
+- a metered ride charges nothing on boarding and everything at the end
+- distance comes from the car's reports; a sample that is too inaccurate, too
+  frequent, too far apart or implausibly fast contributes nothing and is stored
+  with its reason
+- waiting is billed by time and travel by distance, and a car stopped at a
+  light is not billed for ground it did not cover
+- a meter will not start against a wallet that cannot plausibly cover it, and a
+  meter that ends short produces a debt on a completed ride rather than an open
+  ride nobody can close
+- a nonce is claimed globally for a charter and per passenger for a line, so a
+  full shared car boards and a hire does not double-book
+- an outstanding fare blocks the next taxi until it is settled
+
+### Taxi settlement — `tests/Feature/Taxi/TaxiSettlementTest.php` (8)
+
+Claiming rides under a lock, refusing to pay twice, releasing a rejected claim,
+and — the one that matters most — never counting an unpaid metered ride as
+something to pay a driver for.
+
+### Taxi API — `tests/Feature/Taxi/TaxiApiTest.php` (18)
+
+Ability boundaries (a passenger token cannot open a shift, a taxi token cannot
+open a bus one), the two live feeds and what each carries, and that the public
+"near me" response contains no plate, no driver and no passenger count.
+
+### Stale shifts and runaway meters — `tests/Feature/Taxi/StaleShiftReaperTest.php` (6)
+
+`TaxiMeterService::hasOverrun` existed and nothing called it; these tests are
+why it is called now. A meter past its ceiling is ended by the system and
+stamped as such, a shift left open overnight is force-closed and its car freed,
+a shift that started three hours ago is left alone, and closing an abandoned
+shift does not strand the passengers still recorded aboard it.
+
+### School contracts — `tests/Feature/SchoolTransport/SchoolContractTest.php` (12)
+
+The four states and who moves between them: a family requests, a company
+accepts with a fee, the company gives the child a seat, and either side ends it.
+An unapproved company is not choosable; a route serving another school or
+belonging to another company is refused; a full van is refused; leaving does not
+cancel what is already owed.
+
+### A morning's run — `tests/Feature/SchoolTransport/SchoolRunTest.php` (16)
+
+Scheduling builds one run each way with the children on it in collection order —
+furthest door first on the way in. Check-in records who tapped and where. A
+child nobody touched is a no-show when the run completes, visibly unaccounted
+for rather than silently absent.
+
+The privacy rule has its own tests, one per condition: another family's child
+is refused, a run that has not started is refused, and a parent whose child is
+already home is refused while the van drives on to other houses.
+
+### School API — `tests/Feature/SchoolTransport/SchoolApiTest.php` (15)
+
+Guardian scoping on every endpoint, the company/administrator split on the
+shared admin routes, and that `/live` answers `null` with a reason rather than
+an error when there is no run.
+
+### The unattended half — `tests/Feature/SchoolTransport/ScheduledCommandsTest.php` (10)
+
+Nobody clicks a button at two in the morning. The day is built before it
+starts; running the builder twice does not duplicate it; a route missing its van
+or marked inactive is not scheduled; a run left open stops sharing the van; a
+family is billed once however often the scheduler runs; and an invoice past its
+due date ages to overdue.
+
 ### Geometry — `tests/Unit/GeoTest.php` (11)
 
 Tested against known distances rather than against itself: haversine against a
@@ -294,9 +369,9 @@ Mirrors the server's parity checks, plus the one that keeps it that way:
 - money, distance and numerals follow the active locale — English keeps Latin
   digits, because Persian numerals inside an English sentence are unreadable to
   whoever asked for English
-- **no widget in any of the three apps holds an inline Persian string**
+- **no widget in any of the five apps holds an inline Persian string**
 
-### Flutter (57)
+### Flutter (77)
 
 `packages/hamsafar_core` (44) — formatters (rial→toman, Persian digits and
 separator, mobile normalisation across six input forms, ETA never showing zero
@@ -307,7 +382,27 @@ distinction between a QR that needs re-scanning and one that is revoked.
 
 App smoke tests build the real widget tree against an in-memory token store and
 assert the product rules: the passenger map is reachable signed-out, the wallet
-tab is not, and the driver and merchant apps are closed by default.
+tab is not, and every driver app and the merchant app are closed by default.
+
+`apps/passenger/test/taxi_and_school_test.dart` (11) covers the two rules those
+screens exist to keep. Each taxi mode has its own colour and the three are
+distinct, because that colour is the only thing telling a rider what a car is
+offering. A priced ride shows the figure the passenger is agreeing to and a
+metered one shows the tariff instead — quoting a total before the meter runs
+would be a promise it cannot keep — and cancelling returns false rather than
+taking the ride. On the school side: a seat is what turns an agreement into a
+service, a family waiting on the company is distinguishable from one that is
+running, and the arrival estimate always declares itself approximate.
+
+`apps/taxi_driver` (5) pins that an unknown mode degrades to the shared line
+rather than crashing, that only the meter is open-ended and unpriced up front,
+that an unpaid ride carries its debt and not a fare, and that a running meter
+reads its total from the live quote rather than the stored one.
+
+`apps/school_driver` (4) pins that a child is settled once their journey has
+ended however it ended, that a run is settled only when nobody is still waiting
+to be checked, and that the manifest carries the medical note and the emergency
+number a driver may need at a door.
 
 The journey planner screen (`apps/passenger/test/plan_screen_test.dart`) checks
 that an itinerary renders every leg in order with where to board and get off,

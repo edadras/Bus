@@ -3,41 +3,41 @@
 ## 1. System
 
 ```
-                    ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
-                    │ Passenger    │  │ Driver       │  │ Merchant     │
-                    │ Flutter      │  │ Flutter      │  │ Flutter      │
-                    └──────┬───────┘  └──────┬───────┘  └──────┬───────┘
-                           │                 │                 │
-  ┌────────────┐           └────────┬────────┴─────────┬───────┘
-  │ Landing /  │                    │                  │
-  │ Web viewer ├────────────────────┤                  │
-  └────────────┘                    │                  │
-  ┌────────────┐                    │                  │
-  │ Admin (SPA)├────────────────────┤                  │
-  └────────────┘                    │                  │
-                            ┌───────▼──────────────────▼───────┐
-                            │  nginx — TLS, static, WS upgrade │
-                            └───────┬──────────────────┬───────┘
-                                    │                  │
-                          ┌─────────▼────────┐   ┌─────▼─────────┐
-                          │  Laravel (FPM)   │   │ Reverb (WS)   │
-                          │  REST /api/v1    │   │ live channels │
-                          └────┬────────┬────┘   └─────▲─────────┘
-                               │        │              │
-                    ┌──────────▼──┐  ┌──▼──────────────┴──┐
-                    │   MySQL 8   │  │      Redis 7       │
-                    │  durable    │  │ cache · live state │
-                    │  history    │  │ queue · rate limit │
-                    └─────────────┘  └──┬─────────────────┘
-                                        │
-                              ┌─────────▼──────────┐
-                              │ queue · scheduler  │
-                              └────────────────────┘
+  ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌───────────┐
+  │ Passenger │ │Bus driver │ │ Merchant  │ │Taxi driver│ │  School   │
+  │  Flutter  │ │  Flutter  │ │  Flutter  │ │  Flutter  │ │  driver   │
+  └─────┬─────┘ └─────┬─────┘ └─────┬─────┘ └─────┬─────┘ └─────┬─────┘
+        │             │             │             │             │
+  ┌────────────┐      └─────────────┴──────┬──────┴─────────────┘
+  │ Landing /  │                           │
+  │ Web viewer ├───────────────────────────┤
+  └────────────┘                           │
+  ┌────────────┐                           │
+  │ Admin (SPA)├───────────────────────────┤
+  └────────────┘                           │
+                     ┌─────────────────────▼────────────┐
+                     │  nginx — TLS, static, WS upgrade │
+                     └───────┬──────────────────┬───────┘
+                             │                  │
+                   ┌─────────▼────────┐   ┌─────▼─────────┐
+                   │  Laravel (FPM)   │   │ Reverb (WS)   │
+                   │  REST /api/v1    │   │ live channels │
+                   └────┬────────┬────┘   └─────▲─────────┘
+                        │        │              │
+             ┌──────────▼──┐  ┌──▼──────────────┴──┐
+             │   MySQL 8   │  │      Redis 7       │
+             │  durable    │  │ cache · live state │
+             │  history    │  │ queue · rate limit │
+             └─────────────┘  └──┬─────────────────┘
+                                 │
+                       ┌─────────▼──────────┐
+                       │ queue · scheduler  │
+                       └────────────────────┘
 ```
 
-Every client — native, web, admin — speaks the same `/api/v1`. No surface has a
-privileged path, so an authorisation bug cannot hide behind "the admin panel
-does it differently".
+Five native apps, one web viewer and one admin panel — every one of them
+speaks the same `/api/v1`. No surface has a privileged path, so an
+authorisation bug cannot hide behind "the admin panel does it differently".
 
 ## 2. Backend
 
@@ -54,6 +54,8 @@ app/
 │   ├── Fleet/              buses, QR credentials, drivers, shifts
 │   ├── Operations/         trips, GPS ingest, route matching, ETA, live state
 │   ├── Ridership/          boarding, alighting confidence
+│   ├── Taxi/               three products, meter, taxi shifts, settlement
+│   ├── SchoolTransport/    companies, contracts, routes, runs, attendance
 │   ├── Wallet/             double-entry ledger, fare engine
 │   ├── Payment/            gateway abstraction, top-ups
 │   ├── Merchant/           terminals, payments, settlement
@@ -78,17 +80,18 @@ request
   → ResolveTenantCity       binds City into the container
   → throttle:<bucket>       public / auth / otp / financial / telemetry
   → auth:sanctum            token
-  → abilities:<surface>     passenger | driver | merchant | admin
+  → abilities:<surface>     passenger | driver | taxi_driver
+                            | school_driver | merchant | admin
   → permission:<name>       RBAC + city scope (admin routes)
   → controller → service → ApiResponse envelope
 ```
 
 ## 3. Mobile apps
 
-One shared package, three thin apps:
+One shared package, five thin apps:
 
 ```
-packages/hamsafar_core/          apps/passenger      apps/driver     apps/merchant
+packages/hamsafar_core/   apps/{passenger, driver, merchant, taxi_driver, school_driver}
 ├── api/       ApiClient, TransitApi, ApiException
 ├── models/    parsed defensively; a stray null never crashes a screen
 ├── theme/     the design system, mirroring the web tokens
@@ -101,6 +104,11 @@ packages/hamsafar_core/          apps/passenger      apps/driver     apps/mercha
 State is Riverpod. Every live screen has two sources — a socket subscription
 and a timer — because a live map that silently freezes is worse than one that
 updates slowly.
+
+The two driver apps are separate products rather than modes of one app,
+because their jobs share almost nothing: a taxi driver watches a fare code and
+a meter, a school driver works a manifest. They share the package, the design
+system and the API client, and nothing else.
 
 ## 4. Admin panel
 

@@ -96,12 +96,23 @@ and Reverb.
 | Reverb connections | a cliff | clients silently fell back to polling |
 | `pending_alighting` count | growth | alighting thresholds need tuning |
 | Complaint first-response time | rising | support under-staffed |
+| Discarded taxi meter samples | a rising share | bad fixes, a bad build, or spoofing |
+| Rides ended `by system` | any | meters running past their ceiling |
+| Force-closed taxi shifts | a rising count | drivers not closing shifts; cars linger on the map |
+| Unpaid taxi fares | growth | the meter's start-balance guard is set too low |
+| School runs scheduled each night | zero | `school:runs:schedule` failed; drivers wake to no manifest |
+| School runs still open past the cutoff | any | a van is sharing its position with nobody watching |
 
 **Logs.** `stderr` from every container. OTP delivery has its own channel and
 **never logs the code body in production**.
 
 **Ledger integrity** runs nightly at 04:00 and exits non-zero on any drift.
 Treat that as a page, not a warning.
+
+**The school scheduler is the one job whose failure is silent until morning.**
+`school:runs:schedule` runs at 02:00 and builds two days ahead, so a single
+missed night is absorbed — but two are not, and the symptom is a driver opening
+the app to an empty day. Alert on a night that produced zero runs.
 
 ## Backup
 
@@ -125,7 +136,40 @@ php artisan transit:routes:recalculate
 php artisan cache:clear
 ```
 
+## Scheduled work
+
+| When | Command | Why it matters |
+|---|---|---|
+| every 5 min | `transit:rides:close-abandoned` | a stuck ride blocks the next boarding |
+| every 10 min | `transit:trips:close-stale` | dead trips linger on the live map |
+| every minute | `transit:notify:arrivals` | a late arrival alert is a useless one |
+| every 30 min | `school:runs:close-stale` | an open run is a van still sharing its position |
+| hourly | `taxi:shifts:close-stale` | runaway meters keep billing; open shifts keep fare codes live |
+| hourly | payments:expire-stale | an abandoned gateway payment must not complete later |
+| 00:20 | `transit:metrics:rollup --days=2` | dashboard facts, with a self-healing backfill |
+| 02:00 | `school:runs:schedule` | builds the school day before it starts |
+| 03:30 | `transit:prune:locations` | retention |
+| 04:00 | `transit:ledger:audit` | financial integrity — **page on non-zero** |
+| 05:00 | `school:contracts:bill` | the period's invoices, and ageing unpaid ones |
+
+Every one of them is `withoutOverlapping()` and `onOneServer()`, so running
+several app servers does not run them several times. The two that create things
+— run scheduling and invoicing — are idempotent besides, because "it ran twice"
+must never mean a duplicated run or a double-billed family.
+
 ## Runbook
+
+**Taxis missing from the passenger's map.** The public feed needs a position
+from the rider's phone and returns nothing without one, so check that first.
+Then check `TAXI_LIVE_TTL` against the drivers' actual reporting cadence: a car
+whose last report is older than the TTL drops off the map by design.
+
+**A parent says they cannot see the van.** Three conditions have to hold, and
+each has a different remedy: the run must have been *started* by the driver
+(not merely scheduled), the child must not already be dropped off, and the
+child must be on that run's manifest. All three refuse with distinct error
+codes — `trip_not_live`, `child_journey_finished`, `not_your_student` — so the
+one that fired says which.
 
 **Buses missing from the live map.** Check the driver app is reporting
 (`trip_locations` recent rows), then Redis (`live:city:*:trips`), then Reverb.

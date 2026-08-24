@@ -30,6 +30,10 @@ endpoint — the ability gate rejects it before any controller runs.
 Suspending a driver deletes their tokens, so the credential already on their
 phone stops working immediately rather than at expiry.
 
+A bus driver, a taxi driver and a school driver are three separate abilities
+even when the same person holds all three. They are different products with
+different money attached, and a taxi token must not open a bus shift.
+
 ## Authorisation
 
 Two independent layers, both server-side:
@@ -43,9 +47,16 @@ is what makes the panel safe to hand to a city operator. The admin sidebar
 mirrors this by probing the API; it displays authorisation, it never enforces
 it.
 
-Eleven roles ship: super admin, admin, transport manager, fleet manager,
+Thirteen roles ship: super admin, admin, transport manager, fleet manager,
 driver manager, finance manager, support agent, merchant manager, merchant
-staff, driver, passenger.
+staff, school company manager, school company staff, driver, passenger.
+
+The two school company roles are the reason the split matters. A city
+administrator holds `school.admin` and sees every company in the city; a company
+manager holds only `school.manage`, and the same controllers narrow every query
+to the companies they belong to. One panel, one set of endpoints, two very
+different answers — and the narrowing happens on the server, never in the
+markup.
 
 ## QR credentials
 
@@ -117,7 +128,28 @@ person. A test asserts that with exactly one rider aboard, neither their
 identifier nor their number appears in the occupancy response.
 
 **Driver position** is the vehicle's position, reported only while a shift is
-open. Reporting stops the moment the shift ends.
+open. Reporting stops the moment the shift ends, and the scheduler force-closes
+a shift left open so "the driver forgot" is not a way to keep a car on a map
+overnight.
+
+**Taxi positions have two audiences and two payloads.** `GET /taxis/nearby`
+requires a position, caps the radius server-side, and carries no plate, no
+driver and no passenger count. `GET /admin/taxi/live` carries all three and is
+gated on `operations.live_map`. Serving the second to the first audience would
+turn a "find me a car" feature into a tracking service for taxi drivers.
+
+**A school van's position belongs to the families it is carrying.** Three
+conditions, all necessary, enforced in one method: it is this guardian's child,
+the run is in progress, and the child's own journey has not finished. The last
+is what stops a parent watching a van drive on to other families' houses after
+their own child is home — and it is checked against the run, not the vehicle, so
+last term's parent is not still watching this term's van. Outside a run the
+server rejects the driver app's position reports entirely, because there is
+nobody entitled to them.
+
+**A child's medical note and emergency number** reach exactly one screen: the
+manifest of the driver carrying them, on the day they are carried. They are not
+in any list, any report, or any export.
 
 **Public channels carry no identities.** The city bus channel publishes
 position, line and an occupancy ratio. Driver names and passenger counts by
@@ -136,7 +168,10 @@ settlement approval, complaint replies — with actor, IP, before/after, and
 sensitive fields redacted.
 
 **Retention**: passenger pings 24 h, bus traces 30 days (configurable), audit
-logs indefinite.
+logs indefinite. Taxi meter samples are kept with the ride — including the
+discarded ones and why they were discarded — because they are the evidence
+behind a charge, and a fare nobody can reconstruct is a fare nobody can
+dispute.
 
 ## Transport and application hardening
 

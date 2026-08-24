@@ -24,6 +24,21 @@ cities ──┬─ zones ──────────────┐
          │    └─ passenger_trips ─┬─ passenger_boardings
          │                        ├─ passenger_alightings
          │                        └─ passenger_location_pings
+         ├─ taxi_lines                                    │
+         ├─ taxis ─┬─ taxi_qr_codes                        │
+         │         ├─ taxi_assignments ── drivers          │
+         │         └─ taxi_shifts ─── taxi_rides ─┬─ taxi_meter_samples
+         │                    │                   └─ (wallet_transactions)
+         │                    └─ taxi_tariffs
+         ├─ taxi_settlements ── taxi_rides
+         ├─ school_companies ─┬─ school_company_staff
+         │                    ├─ school_vehicles
+         │                    └─ school_service_routes ─┬─ school_trips
+         ├─ schools ─┬─ school_students                 │        │
+         │           └─ school_service_contracts ───────┘        │
+         │                    └─ school_contract_invoices        │
+         │                                                       │
+         │                            school_trip_students ◄─────┘
          ├─ complaints ─┬─ complaint_messages
          │              └─ complaint_attachments
          ├─ fare_rules
@@ -233,6 +248,138 @@ can be revoked without disturbing the others.
 `wallet_transaction_id` · approval chain. Claiming rows by stamping
 `settlement_id` is what makes the payout job safe to re-run.
 
+### Taxis
+
+**`taxi_lines`** — a shared-taxi line, with its own published price. `uuid` ·
+`city_id` · `code` (unique per city) · `name` · `origin_label` ·
+`destination_label` · `color` · **`flat_fare`** · origin and destination
+coordinates · `typical_duration_minutes` · `is_active` · `provenance`.
+
+The fare lives here rather than in `taxi_tariffs` because a line's price is the
+line's own property — two lines in one city routinely differ.
+
+**`taxis`** — `uuid` · `city_id` · `operator_id` · `taxi_number` (unique per
+city) · `plate` · `model` · `color` · `capacity` · **`allowed_modes`** (JSON:
+which of the three it is licensed to run) · `default_taxi_line_id` ·
+`commission_bps` (overrides the city default) · `status` ·
+`current_shift_id` · last position · `inspection_due_at`.
+
+**`taxi_qr_codes`** — the same rotating-credential design as a bus: `public_id`
+(prefixed `X`, so a taxi code is never confusable with a bus sticker) ·
+`secret` (encrypted) · `revoked_at` · `revoked_reason`.
+
+**`taxi_assignments`** — which driver may take which car, and from when.
+Without a current one a driver cannot open a shift.
+
+**`taxi_tariffs`** — `city_id` · `name` · `service_type` · `base_fare` ·
+`per_km_fare` · `per_minute_waiting_fare` · `minimum_fare` · `maximum_fare` ·
+`waiting_speed_kmh` · `multiplier` · `valid_from_time` · `valid_to_time` ·
+`priority` · `is_active`. Highest priority valid at the time of the ride wins.
+
+**`taxi_shifts`** — where the mode actually lives. `uuid` · `driver_id` ·
+`taxi_id` · `city_id` · **`service_type`** · `taxi_line_id` (line mode only) ·
+`pending_charter_amount` + `charter_set_at` (the standing price, and when it
+was named) · `status` · `started_at` / `ended_at` · counters:
+`ride_count`, `boarding_count`, `alighting_count`, `onboard_count`,
+`gross_minor`, `commission_minor`, `net_minor`.
+
+**`taxi_rides`** — `uuid` · `user_id` · `taxi_id` · `driver_id` ·
+`taxi_shift_id` · `taxi_line_id` · `taxi_tariff_id` · `service_type` ·
+`status` · **`fare_amount`** (money that actually moved) · `commission_amount` ·
+`quoted_amount` · `fare_breakdown` (JSON — the arithmetic that ran) ·
+**`outstanding_amount`** (a metered ride the wallet could not cover) ·
+`wallet_transaction_id` · `distance_meters` · `waiting_seconds` ·
+`duration_seconds` · start and end positions · `qr_public_id` · `token_nonce` ·
+`device_fingerprint` · `client_ip` · `ended_by`.
+
+`fare_amount` means money that moved, not a price that was quoted. An unpaid
+metered ride carries zero here and its debt in `outstanding_amount`, which is
+why every earnings figure and every settlement filters on `fare_amount > 0`.
+
+**`taxi_meter_samples`** — one row per position report on a metered ride:
+`lat` · `lng` · `speed_kmh` · `accuracy` · **`distance_delta_meters`** ·
+`elapsed_seconds` · `is_waiting` · **`is_discarded`** + `discard_reason` ·
+`recorded_at`.
+
+The deltas are stored, not only the total, and the discarded samples are kept
+with their reason. A disputed fare is then answerable sample by sample rather
+than a number nobody can reconstruct.
+
+**`taxi_settlements`** — `uuid` · `reference` · `driver_id` · `city_id` ·
+`status` · `period_start` / `period_end` · `ride_count` · `gross_amount` ·
+`commission_amount` · `net_amount` · `payment_reference` · `rejection_reason` ·
+approval and payment timestamps. Rides are claimed by stamping their
+`taxi_settlement_id` inside a lock, exactly as merchant settlement does.
+
+### School transport
+
+**`school_companies`** — `uuid` · `city_id` · `owner_user_id` · `name` ·
+`legal_name` · `code` · `status` · `license_number` · `license_expires_at` ·
+`phone` · `email` · `address` · `description` · `rating` · `contract_count` ·
+`commission_bps` · bank details (hidden on the model) · `approved_by` /
+`approved_at` / `rejection_reason`.
+
+A company is invisible to families until its status is `active`, so the list a
+parent chooses from has already been vetted.
+
+**`school_company_staff`** — who may act for a company, and with what role.
+
+**`schools`** — `uuid` · `city_id` · `name` (unique per city) · `code` ·
+`gender` · `level` · `address` · `lat` / `lng` · `starts_at` / `ends_at` ·
+`phone` · `is_active`.
+
+**`school_vehicles`** — `uuid` · `school_company_id` · `city_id` · `plate` ·
+`model` · `color` · `manufacture_year` · `capacity` · `status` ·
+`has_supervisor` · `has_seatbelts` · `has_air_conditioning` ·
+**`insurance_expires_at`** · **`inspection_due_at`** · last position.
+
+The two dates are not decoration: a lapsed one is a compliance blocker that
+keeps the van off the road, answered by the API as one reason rather than left
+for the panel to compare dates.
+
+**`school_students`** — `uuid` · `guardian_user_id` · `city_id` · `school_id` ·
+`first_name` / `last_name` · `national_code` · `birth_date` · `grade` ·
+`classroom` · `gender` · `pickup_address` + `pickup_lat` / `pickup_lng` ·
+**`medical_notes`** · `emergency_contact_name` / `_phone` · `photo_path` ·
+`is_active`.
+
+**`school_service_routes`** — `uuid` · `school_company_id` · `school_id` ·
+`city_id` · `name` · `code` · `shift` (`morning` | `afternoon` | `both`) ·
+`school_vehicle_id` · `driver_id` · `supervisor_user_id` · `capacity` ·
+`days_of_week` (JSON) · `pickup_starts_at` / `dropoff_starts_at` ·
+`is_active` · `notes`.
+
+**`school_service_contracts`** — the agreement, per child. `uuid` ·
+`reference` · `school_student_id` · `guardian_user_id` · `school_company_id` ·
+`school_id` · `city_id` · **`school_service_route_id`** (null until the child
+has a seat) · `status` · `direction` · `starts_on` / `ends_on` ·
+`days_of_week` · pickup address and position · **`fee_amount`** ·
+`payment_cycle` · `discount_bps` · `guardian_note` · `company_note` ·
+`rejection_reason` · approval, activation and end timestamps. Soft-deleted.
+
+The fee is held on the contract because it is what was *agreed*, not what the
+company's price list happens to say later.
+
+**`school_contract_invoices`** — `uuid` · `reference` · `status` ·
+`period_start` / `period_end` · `due_on` · `amount` · `commission_amount` ·
+`wallet_transaction_id` · `paid_at`. Issuing is idempotent on the period, so a
+scheduler that runs twice cannot bill a family twice.
+
+**`school_trips`** — one run. `uuid` · `school_service_route_id` ·
+`school_company_id` · `school_vehicle_id` · `driver_id` · `city_id` ·
+`service_date` · `direction` · `status` · `started_at` / `ended_at` ·
+`expected_count` · `picked_up_count` · `dropped_off_count` · `absent_count` ·
+`distance_meters` · start and end positions.
+
+**`school_trip_students`** — one child on one run: `uuid` · `school_trip_id` ·
+`school_student_id` · `school_service_contract_id` · **`sequence`** (collection
+order) · `status` · pickup address and position · `picked_up_at` with its own
+position · `dropped_off_at` with its own position · **`recorded_by`** · `note`.
+
+The positions on the check-ins are what turn "the driver said so" into a record
+a parent can verify, and `recorded_by` is there because "the child was marked
+absent" is a claim somebody made and a parent will ask who.
+
 ### Support and platform
 
 **`complaints`** — `uuid` · `reference` · `user_id` · `city_id` · `category` ·
@@ -267,3 +414,11 @@ Every index exists for a query that runs in production:
 | `complaints (assigned_to, status)` | an agent's queue |
 | `merchant_transactions (merchant_id, settlement_id)` | settlement claim |
 | `daily_metrics (city_id, date)` unique | dashboard series |
+| `taxis (city_id, taxi_number)` unique | the fleet list, and no duplicate numbers |
+| `taxi_rides (user_id, status)` | "do I have a ride open" on every scan |
+| `taxi_rides (taxi_shift_id, status)` | who is aboard, on the driver's screen |
+| `taxi_rides (driver_id, created_at)` | earnings and settlement windows |
+| `taxi_meter_samples (taxi_ride_id, recorded_at)` | reconstructing a disputed fare |
+| `school_trips_run_unique` | one run per route, date and direction |
+| `school_trips (driver_id, status)` | a driver's day |
+| `school_service_contracts (school_service_route_id, status)` | seats taken on a van |
