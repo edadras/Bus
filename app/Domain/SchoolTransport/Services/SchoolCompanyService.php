@@ -6,6 +6,7 @@ use App\Domain\Identity\Models\Role;
 use App\Domain\Identity\Models\User;
 use App\Domain\SchoolTransport\Enums\SchoolCompanyStatus;
 use App\Domain\SchoolTransport\Models\SchoolCompany;
+use App\Notifications\SchoolCompanyDecisionNotification;
 use App\Support\Exceptions\DomainException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -57,7 +58,7 @@ class SchoolCompanyService
             'rejection_reason' => null,
         ])->save();
 
-        return $company->fresh();
+        return $this->tellOwner($company->fresh(), 'approved');
     }
 
     public function reject(SchoolCompany $company, User $actor, string $reason): SchoolCompany
@@ -68,7 +69,7 @@ class SchoolCompanyService
             'rejection_reason' => $reason,
         ])->save();
 
-        return $company->fresh();
+        return $this->tellOwner($company->fresh(), 'rejected');
     }
 
     /**
@@ -88,7 +89,16 @@ class SchoolCompanyService
 
         $company->routes()->update(['is_active' => false]);
 
-        return $company->fresh();
+        return $this->tellOwner($company->fresh(), 'suspended');
+    }
+
+    /** The decision reaches the person who registered the company. */
+    private function tellOwner(SchoolCompany $company, string $event): SchoolCompany
+    {
+        $company->loadMissing('owner');
+        $company->owner?->notify(SchoolCompanyDecisionNotification::forCompany($company, $event));
+
+        return $company;
     }
 
     public function addStaff(SchoolCompany $company, User $user, string $role = 'dispatcher'): void

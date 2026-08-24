@@ -8,6 +8,7 @@ use App\Domain\Merchant\Enums\SettlementStatus;
 use App\Domain\Taxi\Models\TaxiRide;
 use App\Domain\Taxi\Models\TaxiSettlement;
 use App\Domain\Wallet\Services\WalletService;
+use App\Notifications\TaxiSettlementNotification;
 use App\Support\Exceptions\DomainException;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
@@ -114,7 +115,7 @@ class TaxiSettlementService
             ]);
         }
 
-        return DB::transaction(function () use ($settlement, $approver): TaxiSettlement {
+        $approved = DB::transaction(function () use ($settlement, $approver): TaxiSettlement {
             $driverUser = $settlement->driver?->user;
 
             if ($driverUser === null) {
@@ -147,6 +148,11 @@ class TaxiSettlementService
 
             return $settlement->fresh();
         });
+
+        // After the commit: an approval that rolled back must not have pinged.
+        $this->tellDriver($approved, 'approved');
+
+        return $approved;
     }
 
     public function markPaid(TaxiSettlement $settlement, string $paymentReference): TaxiSettlement
@@ -161,6 +167,8 @@ class TaxiSettlementService
             'payment_reference' => $paymentReference,
         ])->save();
 
+        $this->tellDriver($settlement, 'paid');
+
         return $settlement;
     }
 
@@ -171,7 +179,7 @@ class TaxiSettlementService
             throw DomainException::make('settlement_already_paid', 422);
         }
 
-        return DB::transaction(function () use ($settlement, $actor, $reason): TaxiSettlement {
+        $rejected = DB::transaction(function () use ($settlement, $actor, $reason): TaxiSettlement {
             TaxiRide::where('taxi_settlement_id', $settlement->id)
                 ->update(['taxi_settlement_id' => null]);
 
@@ -183,6 +191,17 @@ class TaxiSettlementService
 
             return $settlement->fresh();
         });
+
+        $this->tellDriver($rejected, 'rejected');
+
+        return $rejected;
+    }
+
+    /** The decision belongs to the driver, whichever way it went. */
+    private function tellDriver(TaxiSettlement $settlement, string $event): void
+    {
+        $settlement->loadMissing('driver.user');
+        $settlement->driver?->user?->notify(TaxiSettlementNotification::forSettlement($settlement, $event));
     }
 
     /** What a driver could ask to be paid right now. */

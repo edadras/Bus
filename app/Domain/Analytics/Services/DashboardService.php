@@ -12,7 +12,13 @@ use App\Domain\Network\Models\City;
 use App\Domain\Operations\Models\Trip;
 use App\Domain\Operations\Services\LiveStateStore;
 use App\Domain\Ridership\Models\PassengerTrip;
+use App\Domain\SchoolTransport\Enums\SchoolAttendanceStatus;
+use App\Domain\SchoolTransport\Models\SchoolServiceContract;
+use App\Domain\SchoolTransport\Models\SchoolTrip;
+use App\Domain\SchoolTransport\Models\SchoolTripStudent;
 use App\Domain\Support\Models\Complaint;
+use App\Domain\Taxi\Models\TaxiRide;
+use App\Domain\Taxi\Models\TaxiShift;
 use App\Domain\Wallet\Enums\TransactionType;
 use App\Domain\Wallet\Models\WalletTransaction;
 use Carbon\CarbonInterface;
@@ -71,6 +77,19 @@ class DashboardService
                 'open_complaints' => Complaint::forCity($city)->open()->count(),
                 'complaints_today' => Complaint::forCity($city)->where('created_at', '>=', $today)->count(),
                 'lines' => BusLine::forCity($city)->active()->count(),
+                // The city runs more than buses, and an operations dashboard
+                // that ignores the taxis and the school vans reads as calm on
+                // a morning when neither is.
+                'taxis_on_shift' => TaxiShift::forCity($city)->open()->count(),
+                'taxi_rides_today' => TaxiRide::forCity($city)->paid()->where('created_at', '>=', $today)->count(),
+                'taxi_revenue_today' => (int) TaxiRide::forCity($city)->paid()->where('created_at', '>=', $today)->sum('fare_amount'),
+                'school_runs_today' => SchoolTrip::forCity($city)->whereDate('service_date', $today->toDateString())->count(),
+                'school_runs_live' => SchoolTrip::forCity($city)->live()->count(),
+                'school_children_aboard' => SchoolTripStudent::query()
+                    ->where('status', SchoolAttendanceStatus::PickedUp->value)
+                    ->whereHas('trip', fn ($q) => $q->forCity($city)->live())
+                    ->count(),
+                'school_contracts_active' => SchoolServiceContract::forCity($city)->live()->count(),
                 'generated_at' => now()->toIso8601String(),
             ];
         });

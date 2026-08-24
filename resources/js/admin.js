@@ -223,16 +223,23 @@ Alpine.data('adminShell', () => ({
 
     get kpiCards() {
         const k = this.kpis;
+        // By id, not by index: NAV grows as modules are added, and a card
+        // wearing another module's icon is quiet misinformation.
+        const icon = (id) => NAV.find((item) => item.id === id)?.icon ?? NAV[0].icon;
 
         return [
-            { label: t('admin.dashboard.kpi.buses_moving'), value: formatNumber(k.buses_moving), tone: 'brand-500', live: true, icon: NAV[2].icon, caption: t('admin.dashboard.kpi.buses_moving_caption', { total: formatNumber(k.total_buses) }) },
-            { label: t('admin.dashboard.kpi.passengers_on_board'), value: formatNumber(k.passengers_on_board), tone: 'brand-500', live: true, icon: NAV[3].icon },
-            { label: t('admin.dashboard.kpi.trips_today'), value: formatNumber(k.trips_today), tone: 'white/5', icon: NAV[4].icon },
-            { label: t('admin.dashboard.kpi.boardings_today'), value: formatNumber(k.boardings_today), tone: 'white/5', icon: NAV[3].icon, caption: t('admin.dashboard.kpi.boardings_today_caption', { count: formatNumber(k.unique_passengers_today) }) },
-            { label: t('admin.dashboard.kpi.active_drivers'), value: formatNumber(k.active_drivers), tone: 'white/5', icon: NAV[3].icon, caption: t('admin.dashboard.kpi.active_drivers_caption', { count: formatNumber(k.drivers_on_shift) }) },
-            { label: t('admin.dashboard.kpi.fare_revenue_today'), value: this.$money(k.fare_revenue_today), tone: 'brand-500', icon: NAV[5].icon },
-            { label: t('admin.dashboard.kpi.topup_today'), value: this.$money(k.topup_amount_today), tone: 'white/5', icon: NAV[5].icon },
-            { label: t('admin.dashboard.kpi.open_complaints'), value: formatNumber(k.open_complaints), tone: 'white/5', icon: NAV[7].icon, caption: t('admin.dashboard.kpi.open_complaints_caption', { count: formatNumber(k.complaints_today) }) },
+            { label: t('admin.dashboard.kpi.buses_moving'), value: formatNumber(k.buses_moving), tone: 'brand-500', live: true, icon: icon('fleet'), caption: t('admin.dashboard.kpi.buses_moving_caption', { total: formatNumber(k.total_buses) }) },
+            { label: t('admin.dashboard.kpi.passengers_on_board'), value: formatNumber(k.passengers_on_board), tone: 'brand-500', live: true, icon: icon('occupancy') },
+            { label: t('admin.dashboard.kpi.trips_today'), value: formatNumber(k.trips_today), tone: 'white/5', icon: icon('reports') },
+            { label: t('admin.dashboard.kpi.boardings_today'), value: formatNumber(k.boardings_today), tone: 'white/5', icon: icon('occupancy'), caption: t('admin.dashboard.kpi.boardings_today_caption', { count: formatNumber(k.unique_passengers_today) }) },
+            { label: t('admin.dashboard.kpi.active_drivers'), value: formatNumber(k.active_drivers), tone: 'white/5', icon: icon('drivers'), caption: t('admin.dashboard.kpi.active_drivers_caption', { count: formatNumber(k.drivers_on_shift) }) },
+            { label: t('admin.dashboard.kpi.fare_revenue_today'), value: this.$money(k.fare_revenue_today), tone: 'brand-500', icon: icon('finance') },
+            { label: t('admin.dashboard.kpi.topup_today'), value: this.$money(k.topup_amount_today), tone: 'white/5', icon: icon('finance') },
+            { label: t('admin.dashboard.kpi.open_complaints'), value: formatNumber(k.open_complaints), tone: 'white/5', icon: icon('complaints'), caption: t('admin.dashboard.kpi.open_complaints_caption', { count: formatNumber(k.complaints_today) }) },
+            { label: t('admin.dashboard.kpi.taxis_on_shift'), value: formatNumber(k.taxis_on_shift), tone: 'brand-500', live: true, icon: icon('taxis'), caption: t('admin.dashboard.kpi.taxis_on_shift_caption', { count: formatNumber(k.taxi_rides_today) }) },
+            { label: t('admin.dashboard.kpi.taxi_revenue_today'), value: this.$money(k.taxi_revenue_today), tone: 'white/5', icon: icon('taxis') },
+            { label: t('admin.dashboard.kpi.school_runs_live'), value: formatNumber(k.school_runs_live), tone: 'brand-500', live: true, icon: icon('school'), caption: t('admin.dashboard.kpi.school_runs_live_caption', { total: formatNumber(k.school_runs_today) }) },
+            { label: t('admin.dashboard.kpi.school_children_aboard'), value: formatNumber(k.school_children_aboard), tone: 'white/5', live: true, icon: icon('school'), caption: t('admin.dashboard.kpi.school_children_aboard_caption', { count: formatNumber(k.school_contracts_active) }) },
         ];
     },
 

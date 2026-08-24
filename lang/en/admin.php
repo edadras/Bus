@@ -96,6 +96,13 @@ return [
             'topup_today' => 'Top-ups today',
             'open_complaints' => 'Open complaints',
             'open_complaints_caption' => ':count today',
+            'taxis_on_shift' => 'Taxis on shift',
+            'taxis_on_shift_caption' => ':count rides today',
+            'taxi_revenue_today' => 'Taxi revenue today',
+            'school_runs_live' => 'School runs in motion',
+            'school_runs_live_caption' => 'of :total runs today',
+            'school_children_aboard' => 'Children aboard',
+            'school_children_aboard_caption' => ':count active contracts',
         ],
         'series' => [
             'trips' => 'Trips',

@@ -12,6 +12,7 @@ use App\Domain\Wallet\Enums\TransactionType;
 use App\Domain\Wallet\Services\LedgerService;
 use App\Domain\Wallet\Services\SystemAccountRegistry;
 use App\Domain\Wallet\Services\WalletService;
+use App\Notifications\SchoolContractNotification;
 use App\Support\Exceptions\DomainException;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
@@ -72,7 +73,14 @@ class SchoolInvoiceService
                 $contract->payableAmount() * ($contract->company?->commissionBps() ?? 0),
                 10_000,
             ),
-        ]), fn (SchoolContractInvoice $invoice) => $invoice->refresh());
+        ]), function (SchoolContractInvoice $invoice) use ($contract): void {
+            $invoice->refresh();
+
+            // Only on this branch: the early return above is the same invoice
+            // seen again, and a family must not be dunned twice for one month.
+            $contract->loadMissing(['student', 'company', 'guardian']);
+            $contract->guardian?->notify(SchoolContractNotification::forContract($contract, 'invoice_issued'));
+        });
     }
 
     /** The guardian pays. */

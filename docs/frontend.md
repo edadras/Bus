@@ -164,7 +164,11 @@ looking at when either becomes relevant.
 
 ### Admin panel (web)
 
-Dashboard with eight KPI cards and trend charts; live operations map with
+Dashboard with twelve KPI cards — the bus and money figures plus taxis on
+shift, taxi rides and revenue today, school runs in motion and children
+currently aboard, because a city runs three services and a board that counts one
+of them reads as calm on a morning when the others are not — and trend charts;
+live operations map with
 driver detail and a searchable fleet list; **live occupancy** with per-vehicle
 crowding levels; **reports** across transport, drivers, passengers and revenue
 with a selectable period; fleet with rotating QR display, revocation and

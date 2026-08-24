@@ -96,6 +96,13 @@ return [
             'topup_today' => 'شارژ کیف پول امروز',
             'open_complaints' => 'شکایت باز',
             'open_complaints_caption' => ':count امروز',
+            'taxis_on_shift' => 'تاکسی در شیفت',
+            'taxis_on_shift_caption' => ':count سفر امروز',
+            'taxi_revenue_today' => 'درآمد تاکسی امروز',
+            'school_runs_live' => 'سرویس مدرسه در حرکت',
+            'school_runs_live_caption' => 'از :total سرویس امروز',
+            'school_children_aboard' => 'دانش‌آموز در سرویس',
+            'school_children_aboard_caption' => ':count قرارداد فعال',
         ],
         'series' => [
             'trips' => 'سفر',

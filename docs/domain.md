@@ -296,6 +296,27 @@ payment are high. The passenger thread and the internal triage thread are the
 same table separated by `is_internal`, and passenger endpoints only ever return
 the public half.
 
+## Telling people what was decided
+
+Every decision one party makes about another reaches that other party. A parent
+hears when a company accepts their request and at what fee, when it declines and
+why, when their child is given a seat and on which van, and when an invoice is
+issued. A taxi driver hears whether their settlement was approved, paid — with
+the payment reference — or rejected, and why. A company owner hears the
+administrator's verdict on their registration and any suspension.
+
+Two rules shape how these are sent. They go out **after** the transaction
+commits, never inside it: a push about a seat that a rollback then takes away is
+a promise the system never made. And they follow the idempotency of the decision
+itself — re-issuing an invoice that already exists, or approving a company that
+is already active, sends nothing, because being told twice reads as a fault
+rather than as news.
+
+The message is built by a factory on the notification, which loads the relations
+it reads rather than trusting each caller to have done so. The billing job, the
+company panel and the acceptance path all construct the same message, and a
+relation one of them forgot is a crash in the middle of a night run.
+
 ## Mapping
 
 Everything goes through `MapProvider`. Tile configuration is served by the API,

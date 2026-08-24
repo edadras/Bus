@@ -1,7 +1,7 @@
 # Testing
 
 ```bash
-php artisan test          # 409 PHP tests, 3553 assertions
+php artisan test          # 427 PHP tests, 3670 assertions
 make apps-test            # 84 Dart tests
 make apps-analyze         # static analysis across all six Dart packages
 ```
@@ -417,6 +417,25 @@ that an itinerary renders every leg in order with where to board and get off,
 that the walk at each end is placed rather than only totalled, that every figure
 is labelled an estimate, and that "nothing searched yet", "no stop nearby" and
 "no route found" are three distinct states rather than one blank list.
+
+### Decisions that must reach someone — `tests/Feature/Notifications/DecisionNotificationTest.php` (10)
+
+A parent who asked for a school service, a driver who asked to be paid and an
+owner who registered a company are each waiting on somebody else's yes or no.
+These tests hold that every decision notifies its subject, and — just as
+important — that the idempotent paths do not notify twice: re-issuing an
+existing invoice and re-approving an already-approved company both stay silent,
+because a second "you are approved" reads as a glitch rather than good news.
+
+One test runs the real `school:contracts:bill` command over **two** contracts
+rather than calling the service once. Eloquent only arms the lazy-loading guard
+on models hydrated from a result set of more than one row
+(`Builder::hydrate`), so a single-contract test cannot reproduce what the 02:00
+billing run hits — and that is exactly the crash this test was written for.
+
+The same file pins that the dashboard reports the taxi and school figures, not
+only the bus ones: a city runs three services and an operations board that
+counts one of them reads as calm on a morning when the others are not.
 
 ## Conventions
 

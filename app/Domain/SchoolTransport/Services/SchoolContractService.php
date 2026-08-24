@@ -10,6 +10,7 @@ use App\Domain\SchoolTransport\Models\SchoolContractInvoice;
 use App\Domain\SchoolTransport\Models\SchoolServiceContract;
 use App\Domain\SchoolTransport\Models\SchoolServiceRoute;
 use App\Domain\SchoolTransport\Models\SchoolStudent;
+use App\Notifications\SchoolContractNotification;
 use App\Support\Exceptions\DomainException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -125,7 +126,10 @@ class SchoolContractService
             'approved_at' => now(),
         ])->save();
 
-        return $contract->fresh();
+        return tap($contract->fresh(), function (SchoolServiceContract $fresh): void {
+            $fresh->loadMissing(['student', 'company', 'guardian']);
+            $fresh->guardian?->notify(SchoolContractNotification::forContract($fresh, 'accepted'));
+        });
     }
 
     public function reject(SchoolServiceContract $contract, User $actor, string $reason): SchoolServiceContract
@@ -140,7 +144,10 @@ class SchoolContractService
             'approved_by' => $actor->id,
         ])->save();
 
-        return $contract->fresh();
+        return tap($contract->fresh(), function (SchoolServiceContract $fresh): void {
+            $fresh->loadMissing(['student', 'company', 'guardian']);
+            $fresh->guardian?->notify(SchoolContractNotification::forContract($fresh, 'rejected'));
+        });
     }
 
     /**
@@ -169,7 +176,7 @@ class SchoolContractService
             throw DomainException::make('route_serves_another_school', 422);
         }
 
-        return DB::transaction(function () use ($contract, $route, $actor): SchoolServiceContract {
+        $assigned = DB::transaction(function () use ($contract, $route, $actor): SchoolServiceContract {
             $locked = SchoolServiceRoute::whereKey($route->id)->lockForUpdate()->firstOrFail();
 
             $taken = $locked->contracts()
@@ -195,6 +202,13 @@ class SchoolContractService
 
             return $contract->fresh();
         });
+
+        // Told after the commit, not inside it: a push about a seat that a
+        // rollback then takes away would be a promise the system never made.
+        $assigned->loadMissing(['student', 'company', 'guardian', 'route.vehicle']);
+        $assigned->guardian?->notify(SchoolContractNotification::forContract($assigned, 'route_assigned'));
+
+        return $assigned;
     }
 
     /** Take the child off the route without ending the agreement. */
