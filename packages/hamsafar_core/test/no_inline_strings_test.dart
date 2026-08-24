@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 /// Externalising copy once is easy; keeping it externalised is the hard part.
 ///
-/// This walks the whole workspace — the shared package and all three apps —
+/// This walks the whole workspace — the shared package and every app —
 /// and fails the moment a Persian string is typed straight into a widget
 /// instead of a string table. It is the Dart counterpart of the server-side
 /// test that guards the Blade views and the browser scripts.
@@ -23,6 +23,8 @@ void main() {
       Directory('${workspace.path}/apps/passenger/lib'),
       Directory('${workspace.path}/apps/driver/lib'),
       Directory('${workspace.path}/apps/merchant/lib'),
+      Directory('${workspace.path}/apps/taxi_driver/lib'),
+      Directory('${workspace.path}/apps/school_driver/lib'),
     ]) {
       if (!root.existsSync()) continue;
 

@@ -473,6 +473,404 @@ class TransitApi {
     return result.asMap;
   }
 
+  // ── Taxi, from the passenger's side ─────────────────────────────────────
+
+  /// Taxis near a point. The radius is capped by the server, and the payload
+  /// deliberately carries no plate, driver or passenger count.
+  Future<List<NearbyTaxi>> nearbyTaxis({
+    required double lat,
+    required double lng,
+    int radius = 1500,
+    String? serviceType,
+  }) async {
+    final result = await _client.get('/taxis/nearby', query: {
+      'lat': lat,
+      'lng': lng,
+      'radius': radius,
+      if (serviceType != null) 'service_type': serviceType,
+    });
+
+    return result.asList.map(NearbyTaxi.fromJson).toList();
+  }
+
+  Future<List<TaxiLine>> taxiLines({String? query}) async {
+    final result = await _client.get('/taxi/lines', query: {'q': query});
+
+    return result.asList.map(TaxiLine.fromJson).toList();
+  }
+
+  /// What this ride would cost. Commits to nothing — [takeTaxiRide] does.
+  Future<TaxiScanResult> scanTaxi({
+    required String token,
+    double? lat,
+    double? lng,
+  }) async {
+    final result = await _client.post('/taxi/scan', body: {
+      'token': token,
+      if (lat != null) 'lat': lat,
+      if (lng != null) 'lng': lng,
+    });
+
+    return TaxiScanResult.fromJson(result.asMap);
+  }
+
+  /// Take the ride.
+  ///
+  /// [acceptedAmount] is the figure the passenger was actually shown. The
+  /// server refuses anything else, which is what makes a price the passenger
+  /// never saw impossible to charge.
+  Future<TaxiRide> takeTaxiRide({
+    required String token,
+    int? acceptedAmount,
+    double? lat,
+    double? lng,
+    String? deviceId,
+  }) async {
+    final result = await _client.post('/taxi/rides', body: {
+      'token': token,
+      if (acceptedAmount != null) 'accepted_amount': acceptedAmount,
+      if (lat != null) 'lat': lat,
+      if (lng != null) 'lng': lng,
+      if (deviceId != null) 'device_id': deviceId,
+    });
+
+    return TaxiRide.fromJson(result.asMap);
+  }
+
+  Future<TaxiRide?> activeTaxiRide() async {
+    final result = await _client.get('/taxi/rides/active');
+
+    return result.data == null ? null : TaxiRide.fromJson(result.asMap);
+  }
+
+  Future<TaxiRide> endTaxiRide(String uuid, {double? lat, double? lng}) async {
+    final result = await _client.post('/taxi/rides/$uuid/end', body: {
+      if (lat != null) 'lat': lat,
+      if (lng != null) 'lng': lng,
+    });
+
+    return TaxiRide.fromJson(result.asMap);
+  }
+
+  Future<({List<TaxiRide> items, int outstanding})> taxiRideHistory({int page = 1}) async {
+    final result = await _client.get('/taxi/rides', query: {'page': page});
+
+    return (
+      items: result.asList.map(TaxiRide.fromJson).toList(),
+      outstanding: (result.meta?['outstanding'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  /// Pay off a metered ride the wallet could not cover when it ended.
+  Future<TaxiRide> settleTaxiRide(String uuid) async {
+    final result = await _client.post('/taxi/rides/$uuid/settle');
+
+    return TaxiRide.fromJson(result.asMap);
+  }
+
+  // ── Taxi driver ─────────────────────────────────────────────────────────
+
+  Future<Map<String, dynamic>> taxiDriverState() async {
+    final result = await _client.get('/taxi/driver/state');
+
+    return result.asMap;
+  }
+
+  Future<List<TaxiLine>> taxiDriverLines() async {
+    final result = await _client.get('/taxi/driver/lines');
+
+    return result.asList.map(TaxiLine.fromJson).toList();
+  }
+
+  Future<Map<String, dynamic>> startTaxiShift({
+    required String taxiUuid,
+    required String serviceType,
+    int? taxiLineId,
+    double? lat,
+    double? lng,
+  }) async {
+    final result = await _client.post('/taxi/driver/shifts/start', body: {
+      'taxi_uuid': taxiUuid,
+      'service_type': serviceType,
+      if (taxiLineId != null) 'taxi_line_id': taxiLineId,
+      if (lat != null) 'lat': lat,
+      if (lng != null) 'lng': lng,
+    });
+
+    return result.asMap;
+  }
+
+  Future<Map<String, dynamic>> endTaxiShift({double? lat, double? lng}) async {
+    final result = await _client.post('/taxi/driver/shifts/end', body: {
+      if (lat != null) 'lat': lat,
+      if (lng != null) 'lng': lng,
+    });
+
+    return result.asMap;
+  }
+
+  /// Change what the car is offering, mid-shift.
+  Future<Map<String, dynamic>> switchTaxiMode({
+    required String serviceType,
+    int? taxiLineId,
+  }) async {
+    final result = await _client.post('/taxi/driver/shifts/mode', body: {
+      'service_type': serviceType,
+      if (taxiLineId != null) 'taxi_line_id': taxiLineId,
+    });
+
+    return result.asMap;
+  }
+
+  /// Name the price for the charter in front of the driver.
+  Future<Map<String, dynamic>> setCharterAmount(int amount) async {
+    final result = await _client.post('/taxi/driver/charter', body: {'amount': amount});
+
+    return result.asMap;
+  }
+
+  Future<void> clearCharterAmount() => _client.delete('/taxi/driver/charter');
+
+  Future<Map<String, dynamic>> taxiDriverQr() async {
+    final result = await _client.get('/taxi/driver/qr');
+
+    return result.asMap;
+  }
+
+  /// A taxi's position report. One call moves the dot on the live map, stores
+  /// the car's last position and, while a meter runs, advances the fare — the
+  /// distance always comes from the car, never from a passenger's phone.
+  Future<Map<String, dynamic>> reportTaxiLocation({
+    required double lat,
+    required double lng,
+    double? speedKmh,
+    double? accuracy,
+    DateTime? recordedAt,
+  }) async {
+    final result = await _client.post('/taxi/driver/location', body: {
+      'lat': lat,
+      'lng': lng,
+      if (speedKmh != null) 'speed': speedKmh,
+      if (accuracy != null) 'accuracy': accuracy,
+      if (recordedAt != null) 'recorded_at': recordedAt.toUtc().toIso8601String(),
+    });
+
+    return result.asMap;
+  }
+
+  Future<Map<String, dynamic>> taxiDriverRides() async {
+    final result = await _client.get('/taxi/driver/rides');
+
+    return result.asMap;
+  }
+
+  Future<TaxiRide> endTaxiRideAsDriver(String uuid, {double? lat, double? lng}) async {
+    final result = await _client.post('/taxi/driver/rides/$uuid/end', body: {
+      if (lat != null) 'lat': lat,
+      if (lng != null) 'lng': lng,
+    });
+
+    return TaxiRide.fromJson(result.asMap);
+  }
+
+  Future<Map<String, dynamic>> taxiEarnings({String? from, String? to}) async {
+    final result = await _client.get('/taxi/driver/earnings', query: {'from': from, 'to': to});
+
+    return result.asMap;
+  }
+
+  Future<({List<TaxiSettlement> items, int pending})> taxiSettlements({int page = 1}) async {
+    final result = await _client.get('/taxi/driver/settlements', query: {'page': page});
+
+    return (
+      items: result.asList.map(TaxiSettlement.fromJson).toList(),
+      pending: (result.meta?['pending'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  Future<TaxiSettlement> requestTaxiSettlement({String? from, String? to}) async {
+    final result = await _client.post('/taxi/driver/settlements', body: {
+      if (from != null) 'from': from,
+      if (to != null) 'to': to,
+    });
+
+    return TaxiSettlement.fromJson(result.asMap);
+  }
+
+  // ── School service, from the family's side ──────────────────────────────
+
+  Future<List<SchoolCompany>> schoolCompanies({String? query}) async {
+    final result = await _client.get('/school/companies', query: {'q': query});
+
+    return result.asList.map(SchoolCompany.fromJson).toList();
+  }
+
+  Future<List<SchoolSummary>> schoolsList({String? query}) async {
+    final result = await _client.get('/school/schools', query: {'q': query});
+
+    return result.asList.map(SchoolSummary.fromJson).toList();
+  }
+
+  Future<List<SchoolStudent>> schoolStudents() async {
+    final result = await _client.get('/school/students');
+
+    return result.asList.map(SchoolStudent.fromJson).toList();
+  }
+
+  Future<SchoolStudent> saveSchoolStudent(Map<String, dynamic> data, {String? uuid}) async {
+    final result = uuid == null
+        ? await _client.post('/school/students', body: data)
+        : await _client.patch('/school/students/$uuid', body: data);
+
+    return SchoolStudent.fromJson(result.asMap);
+  }
+
+  Future<List<SchoolContract>> schoolContracts() async {
+    final result = await _client.get('/school/contracts');
+
+    return result.asList.map(SchoolContract.fromJson).toList();
+  }
+
+  Future<SchoolContract> requestSchoolContract({
+    required String studentUuid,
+    required String companyUuid,
+    String? direction,
+    String? startsOn,
+    List<int>? daysOfWeek,
+    String? pickupAddress,
+    double? pickupLat,
+    double? pickupLng,
+    String? note,
+  }) async {
+    final result = await _client.post('/school/contracts', body: {
+      'student_uuid': studentUuid,
+      'company_uuid': companyUuid,
+      if (direction != null) 'direction': direction,
+      if (startsOn != null) 'starts_on': startsOn,
+      if (daysOfWeek != null) 'days_of_week': daysOfWeek,
+      if (pickupAddress != null) 'pickup_address': pickupAddress,
+      if (pickupLat != null) 'pickup_lat': pickupLat,
+      if (pickupLng != null) 'pickup_lng': pickupLng,
+      if (note != null) 'guardian_note': note,
+    });
+
+    return SchoolContract.fromJson(result.asMap);
+  }
+
+  Future<SchoolContract> endSchoolContract(String uuid, {String? reason}) async {
+    final result = await _client.post('/school/contracts/$uuid/end', body: {
+      if (reason != null) 'reason': reason,
+    });
+
+    return SchoolContract.fromJson(result.asMap);
+  }
+
+  Future<List<SchoolInvoice>> schoolInvoices({int page = 1}) async {
+    final result = await _client.get('/school/invoices', query: {'page': page});
+
+    return result.asList.map(SchoolInvoice.fromJson).toList();
+  }
+
+  Future<SchoolInvoice> paySchoolInvoice(String uuid) async {
+    final result = await _client.post('/school/invoices/$uuid/pay');
+
+    return SchoolInvoice.fromJson(result.asMap);
+  }
+
+  /// Where my child is right now.
+  ///
+  /// Null is a legitimate answer for most of the day, and the reason comes
+  /// back in the metadata so the app can say "no run under way" rather than
+  /// showing an error.
+  Future<({SchoolLiveView? view, String? reason})> schoolStudentLive(String uuid) async {
+    final result = await _client.get('/school/students/$uuid/live');
+
+    return (
+      view: result.data == null ? null : SchoolLiveView.fromJson(result.asMap),
+      reason: result.meta?['reason'] as String?,
+    );
+  }
+
+  Future<List<SchoolAttendanceRow>> schoolStudentAttendance(String uuid) async {
+    final result = await _client.get('/school/students/$uuid/attendance');
+
+    return result.asList.map(SchoolAttendanceRow.fromJson).toList();
+  }
+
+  Future<int> reportSchoolAbsence(String uuid, {String? note, String? direction}) async {
+    final result = await _client.post('/school/students/$uuid/absence', body: {
+      if (note != null) 'note': note,
+      if (direction != null) 'direction': direction,
+    });
+
+    return (result.asMap['marked'] as num?)?.toInt() ?? 0;
+  }
+
+  // ── School driver ───────────────────────────────────────────────────────
+
+  Future<Map<String, dynamic>> schoolDriverState({String? date}) async {
+    final result = await _client.get('/school/driver/state', query: {'date': date});
+
+    return result.asMap;
+  }
+
+  Future<SchoolTrip> schoolTrip(String uuid) async {
+    final result = await _client.get('/school/driver/trips/$uuid');
+
+    return SchoolTrip.fromJson(result.asMap);
+  }
+
+  Future<SchoolTrip> startSchoolTrip(String uuid, {double? lat, double? lng}) async {
+    final result = await _client.post('/school/driver/trips/$uuid/start', body: {
+      if (lat != null) 'lat': lat,
+      if (lng != null) 'lng': lng,
+    });
+
+    return SchoolTrip.fromJson(result.asMap);
+  }
+
+  Future<SchoolTrip> completeSchoolTrip(String uuid, {double? lat, double? lng}) async {
+    final result = await _client.post('/school/driver/trips/$uuid/complete', body: {
+      if (lat != null) 'lat': lat,
+      if (lng != null) 'lng': lng,
+    });
+
+    return SchoolTrip.fromJson(result.asMap);
+  }
+
+  /// Check a child on or off the van. [action] is `pickup`, `dropoff`,
+  /// `absent` or `reset` — the last because a wrong tap at a kerb in the rain
+  /// is a thing that happens.
+  Future<SchoolTripStudent> checkSchoolStudent(
+    String uuid,
+    String action, {
+    double? lat,
+    double? lng,
+    String? note,
+  }) async {
+    final result = await _client.post('/school/driver/students/$uuid/$action', body: {
+      if (lat != null) 'lat': lat,
+      if (lng != null) 'lng': lng,
+      if (note != null) 'note': note,
+    });
+
+    return SchoolTripStudent.fromJson(result.asMap);
+  }
+
+  Future<Map<String, dynamic>> reportSchoolLocation({
+    required double lat,
+    required double lng,
+    double? speedKmh,
+  }) async {
+    final result = await _client.post('/school/driver/location', body: {
+      'lat': lat,
+      'lng': lng,
+      if (speedKmh != null) 'speed': speedKmh,
+    });
+
+    return result.asMap;
+  }
+
   // ── Merchant ────────────────────────────────────────────────────────────
 
   Future<Map<String, dynamic>> merchantState() async {

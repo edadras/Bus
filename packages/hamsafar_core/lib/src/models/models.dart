@@ -872,3 +872,979 @@ class StopEta extends Equatable {
   @override
   List<Object?> get props => [seconds, stopsAway, isReliable];
 }
+
+// ── Taxi ──────────────────────────────────────────────────────────────────
+
+/// The three products a taxi can be running.
+///
+/// Which one applies belongs to the driver's open shift, not to the car: the
+/// same vehicle offers a fixed line in the morning and a metered ride in the
+/// afternoon. The colour is part of the model because it is how a rider tells
+/// them apart on a map, and it has to be the same colour everywhere.
+enum TaxiServiceType {
+  line('line'),
+  charter('charter'),
+  meter('meter');
+
+  const TaxiServiceType(this.value);
+
+  final String value;
+
+  static TaxiServiceType from(String? value) => switch (value) {
+        'charter' => TaxiServiceType.charter,
+        'meter' => TaxiServiceType.meter,
+        _ => TaxiServiceType.line,
+      };
+
+  String get label => Format.tr('taxi.modes.$value');
+
+  /// A fare that is known before the ride starts, and that the passenger has
+  /// to confirm by sending back the figure they were shown.
+  bool get isPricedUpFront => this != TaxiServiceType.meter;
+
+  /// A meter runs until somebody stops it; the other two do not.
+  bool get isOpenEnded => this == TaxiServiceType.meter;
+}
+
+/// A taxi as it appears on the passenger's map: where it is, what it offers,
+/// and nothing that identifies the person driving it.
+class NearbyTaxi extends Equatable {
+  const NearbyTaxi({
+    required this.uuid,
+    required this.point,
+    required this.serviceType,
+    this.lineCode,
+    this.lineName,
+    this.seatsFree,
+    this.isAvailable = true,
+    this.distanceMeters,
+  });
+
+  final String uuid;
+  final LatLngPoint point;
+  final TaxiServiceType serviceType;
+  final String? lineCode;
+  final String? lineName;
+  final int? seatsFree;
+  final bool isAvailable;
+  final int? distanceMeters;
+
+  factory NearbyTaxi.fromJson(Map<String, dynamic> json) => NearbyTaxi(
+        uuid: _as<String>(json['uuid']) ?? '',
+        point: LatLngPoint(_double(json['lat']) ?? 0, _double(json['lng']) ?? 0),
+        serviceType: TaxiServiceType.from(_as<String>(json['service_type'])),
+        lineCode: json['line_code']?.toString(),
+        lineName: _as<String>(json['line_name']),
+        seatsFree: _int(json['seats_free']),
+        isAvailable: json['is_available'] != false,
+        distanceMeters: _int(json['distance_meters']),
+      );
+
+  @override
+  List<Object?> get props => [uuid, point, serviceType, isAvailable];
+}
+
+/// A shared-taxi line: a fixed origin, a fixed destination and one price.
+class TaxiLine extends Equatable {
+  const TaxiLine({
+    required this.id,
+    required this.code,
+    required this.name,
+    required this.flatFare,
+    required this.formattedFare,
+    required this.isVerifiedData,
+    this.origin,
+    this.destination,
+    this.color,
+    this.typicalDurationMinutes,
+  });
+
+  final int id;
+  final String code;
+  final String name;
+  final int flatFare;
+  final String formattedFare;
+
+  /// False for imported sample geometry, which must never be shown as though
+  /// it were the published network.
+  final bool isVerifiedData;
+  final String? origin;
+  final String? destination;
+  final String? color;
+  final int? typicalDurationMinutes;
+
+  factory TaxiLine.fromJson(Map<String, dynamic> json) => TaxiLine(
+        id: _int(json['id']) ?? 0,
+        code: json['code']?.toString() ?? '',
+        name: _as<String>(json['name']) ?? '',
+        flatFare: _int(json['flat_fare']) ?? 0,
+        formattedFare: _as<String>(json['formatted_fare']) ?? '—',
+        isVerifiedData: json['is_verified_data'] != false,
+        origin: _as<String>(json['origin']),
+        destination: _as<String>(json['destination']),
+        color: _as<String>(json['color']),
+        typicalDurationMinutes: _int(json['typical_duration_minutes']),
+      );
+
+  @override
+  List<Object?> get props => [id];
+}
+
+/// What a scan found: the car, what it is offering, and what it would cost.
+class TaxiScanResult extends Equatable {
+  const TaxiScanResult({
+    required this.serviceType,
+    required this.quote,
+    required this.taxiNumber,
+    required this.requiresAmountConfirmation,
+    this.plate,
+    this.model,
+    this.color,
+    this.line,
+  });
+
+  final TaxiServiceType serviceType;
+  final TaxiFareQuote quote;
+  final String taxiNumber;
+
+  /// True when the passenger must send back the figure they were shown, which
+  /// is what makes charging a price they never saw impossible.
+  final bool requiresAmountConfirmation;
+  final String? plate;
+  final String? model;
+  final String? color;
+  final TaxiLine? line;
+
+  factory TaxiScanResult.fromJson(Map<String, dynamic> json) {
+    final taxi = _as<Map<String, dynamic>>(json['taxi']);
+    final line = _as<Map<String, dynamic>>(json['line']);
+
+    return TaxiScanResult(
+      serviceType: TaxiServiceType.from(_as<String>(json['service_type'])),
+      quote: TaxiFareQuote.fromJson(_as<Map<String, dynamic>>(json['quote']) ?? const {}),
+      taxiNumber: taxi?['taxi_number']?.toString() ?? '—',
+      requiresAmountConfirmation: json['requires_amount_confirmation'] == true,
+      plate: _as<String>(taxi?['plate']),
+      model: _as<String>(taxi?['model']),
+      color: _as<String>(taxi?['color']),
+      line: line == null ? null : TaxiLine.fromJson(line),
+    );
+  }
+
+  @override
+  List<Object?> get props => [taxiNumber, serviceType, quote];
+}
+
+/// A priced fare with its arithmetic attached.
+///
+/// The breakdown travels with the quote rather than being recomputed for
+/// display: a metered fare is the one charge nobody can check in advance, so
+/// the receipt has to be the sum that actually ran.
+class TaxiFareQuote extends Equatable {
+  const TaxiFareQuote({
+    required this.amount,
+    required this.formattedAmount,
+    this.breakdown = const {},
+    this.distanceMeters,
+    this.waitingSeconds,
+  });
+
+  final int amount;
+  final String formattedAmount;
+  final Map<String, dynamic> breakdown;
+  final int? distanceMeters;
+  final int? waitingSeconds;
+
+  factory TaxiFareQuote.fromJson(Map<String, dynamic> json) {
+    final breakdown = _as<Map<String, dynamic>>(json['breakdown']) ?? const {};
+
+    return TaxiFareQuote(
+      amount: _int(json['amount']) ?? 0,
+      formattedAmount: _as<String>(json['formatted']) ?? Format.money(_int(json['amount']) ?? 0),
+      breakdown: breakdown,
+      // The metered breakdown is where these live; a flat or charter fare has
+      // no distance to speak of and leaves them null.
+      distanceMeters: _int(breakdown['distance_meters']),
+      waitingSeconds: _int(breakdown['waiting_seconds']),
+    );
+  }
+
+  @override
+  List<Object?> get props => [amount, distanceMeters, waitingSeconds];
+}
+
+/// One taxi ride, from either side of the transaction.
+class TaxiRide extends Equatable {
+  const TaxiRide({
+    required this.uuid,
+    required this.serviceType,
+    required this.status,
+    required this.statusLabel,
+    required this.statusColor,
+    required this.isOpen,
+    required this.fareAmount,
+    required this.formattedFare,
+    required this.outstandingAmount,
+    this.breakdown = const {},
+    this.distanceMeters = 0,
+    this.waitingSeconds = 0,
+    this.durationSeconds = 0,
+    this.taxiNumber,
+    this.plate,
+    this.lineCode,
+    this.lineName,
+    this.driverName,
+    this.startedAt,
+    this.endedAt,
+    this.currentFare,
+  });
+
+  final String uuid;
+  final TaxiServiceType serviceType;
+  final String status;
+  final String statusLabel;
+  final String statusColor;
+  final bool isOpen;
+
+  /// Money that actually moved. An unpaid metered ride carries nothing here —
+  /// the debt is in [outstandingAmount] instead, so a driver's own figures
+  /// never disagree with their payout.
+  final int fareAmount;
+  final String formattedFare;
+  final int outstandingAmount;
+  final Map<String, dynamic> breakdown;
+  final int distanceMeters;
+  final int waitingSeconds;
+  final int durationSeconds;
+  final String? taxiNumber;
+  final String? plate;
+  final String? lineCode;
+  final String? lineName;
+  final String? driverName;
+  final DateTime? startedAt;
+  final DateTime? endedAt;
+
+  /// Present while a meter is running: the total as it stands right now, so
+  /// the price is something the passenger watches rather than a surprise at
+  /// the destination.
+  final TaxiFareQuote? currentFare;
+
+  bool get isUnpaid => status == 'unpaid';
+
+  factory TaxiRide.fromJson(Map<String, dynamic> json) {
+    final taxi = _as<Map<String, dynamic>>(json['taxi']);
+    final line = _as<Map<String, dynamic>>(json['line']);
+    final current = _as<Map<String, dynamic>>(json['current_fare']);
+
+    return TaxiRide(
+      uuid: _as<String>(json['uuid']) ?? '',
+      serviceType: TaxiServiceType.from(_as<String>(json['service_type'])),
+      status: _as<String>(json['status']) ?? 'active',
+      statusLabel: _as<String>(json['status_label']) ?? '',
+      statusColor: _as<String>(json['status_color']) ?? 'neutral',
+      isOpen: json['is_open'] == true,
+      fareAmount: _int(json['fare_amount']) ?? 0,
+      formattedFare: _as<String>(json['formatted_fare']) ?? '—',
+      outstandingAmount: _int(json['outstanding_amount']) ?? 0,
+      breakdown: _as<Map<String, dynamic>>(json['fare_breakdown']) ?? const {},
+      distanceMeters: _int(json['distance_meters']) ?? 0,
+      waitingSeconds: _int(json['waiting_seconds']) ?? 0,
+      durationSeconds: _int(json['duration_seconds']) ?? 0,
+      taxiNumber: taxi?['taxi_number']?.toString(),
+      plate: _as<String>(taxi?['plate']),
+      lineCode: line?['code']?.toString(),
+      lineName: _as<String>(line?['name']),
+      driverName: _as<String>(json['driver_name']),
+      startedAt: _date(json['started_at']),
+      endedAt: _date(json['ended_at']),
+      currentFare: current == null ? null : TaxiFareQuote.fromJson(current),
+    );
+  }
+
+  @override
+  List<Object?> get props => [uuid, status, fareAmount, outstandingAmount, currentFare];
+}
+
+/// A driver's payout request.
+class TaxiSettlement extends Equatable {
+  const TaxiSettlement({
+    required this.uuid,
+    required this.reference,
+    required this.status,
+    required this.statusLabel,
+    required this.statusColor,
+    required this.rideCount,
+    required this.netAmount,
+    required this.formattedNet,
+    this.grossAmount = 0,
+    this.commissionAmount = 0,
+    this.periodStart,
+    this.periodEnd,
+    this.paymentReference,
+    this.rejectionReason,
+    this.createdAt,
+    this.paidAt,
+  });
+
+  final String uuid;
+  final String reference;
+  final String status;
+  final String statusLabel;
+  final String statusColor;
+  final int rideCount;
+  final int netAmount;
+  final String formattedNet;
+  final int grossAmount;
+  final int commissionAmount;
+  final String? periodStart;
+  final String? periodEnd;
+  final String? paymentReference;
+  final String? rejectionReason;
+  final DateTime? createdAt;
+  final DateTime? paidAt;
+
+  factory TaxiSettlement.fromJson(Map<String, dynamic> json) => TaxiSettlement(
+        uuid: _as<String>(json['uuid']) ?? '',
+        reference: _as<String>(json['reference']) ?? '',
+        status: _as<String>(json['status']) ?? 'requested',
+        statusLabel: _as<String>(json['status_label']) ?? '',
+        statusColor: _as<String>(json['status_color']) ?? 'neutral',
+        rideCount: _int(json['ride_count']) ?? 0,
+        netAmount: _int(json['net_amount']) ?? 0,
+        formattedNet: _as<String>(json['formatted_net']) ?? '—',
+        grossAmount: _int(json['gross_amount']) ?? 0,
+        commissionAmount: _int(json['commission_amount']) ?? 0,
+        periodStart: _as<String>(json['period_start']),
+        periodEnd: _as<String>(json['period_end']),
+        paymentReference: _as<String>(json['payment_reference']),
+        rejectionReason: _as<String>(json['rejection_reason']),
+        createdAt: _date(json['created_at']),
+        paidAt: _date(json['paid_at']),
+      );
+
+  @override
+  List<Object?> get props => [uuid, status];
+}
+
+// ── School transport ──────────────────────────────────────────────────────
+
+/// A school service company a family may choose between.
+///
+/// Only approved companies ever reach the app, so [isApproved] is a display
+/// detail here rather than a filter: the server has already decided.
+class SchoolCompany extends Equatable {
+  const SchoolCompany({
+    required this.uuid,
+    required this.name,
+    required this.isApproved,
+    this.legalName,
+    this.phone,
+    this.description,
+    this.rating,
+    this.contractCount = 0,
+    this.vehicleCount,
+    this.routeCount,
+    this.licenseNumber,
+  });
+
+  final String uuid;
+  final String name;
+  final bool isApproved;
+  final String? legalName;
+  final String? phone;
+  final String? description;
+  final double? rating;
+  final int contractCount;
+  final int? vehicleCount;
+  final int? routeCount;
+  final String? licenseNumber;
+
+  factory SchoolCompany.fromJson(Map<String, dynamic> json) => SchoolCompany(
+        uuid: _as<String>(json['uuid']) ?? '',
+        name: _as<String>(json['name']) ?? '',
+        isApproved: json['is_approved'] == true,
+        legalName: _as<String>(json['legal_name']),
+        phone: _as<String>(json['phone']),
+        description: _as<String>(json['description']),
+        rating: _double(json['rating']),
+        contractCount: _int(json['contract_count']) ?? 0,
+        vehicleCount: _int(json['vehicle_count']),
+        routeCount: _int(json['route_count']),
+        licenseNumber: _as<String>(json['license_number']),
+      );
+
+  @override
+  List<Object?> get props => [uuid];
+}
+
+class SchoolSummary extends Equatable {
+  const SchoolSummary({
+    required this.uuid,
+    required this.name,
+    this.gender,
+    this.level,
+    this.address,
+    this.point,
+    this.startsAt,
+    this.endsAt,
+  });
+
+  final String uuid;
+  final String name;
+  final String? gender;
+  final String? level;
+  final String? address;
+  final LatLngPoint? point;
+  final String? startsAt;
+  final String? endsAt;
+
+  factory SchoolSummary.fromJson(Map<String, dynamic> json) => SchoolSummary(
+        uuid: _as<String>(json['uuid']) ?? '',
+        name: _as<String>(json['name']) ?? '',
+        gender: _as<String>(json['gender']),
+        level: _as<String>(json['level']),
+        address: _as<String>(json['address']),
+        point: _double(json['lat']) == null || _double(json['lng']) == null
+            ? null
+            : LatLngPoint(_double(json['lat'])!, _double(json['lng'])!),
+        startsAt: _as<String>(json['starts_at']),
+        endsAt: _as<String>(json['ends_at']),
+      );
+
+  @override
+  List<Object?> get props => [uuid];
+}
+
+/// A child. Contracts are per child rather than per family, because two
+/// children at two schools are two arrangements.
+class SchoolStudent extends Equatable {
+  const SchoolStudent({
+    required this.uuid,
+    required this.name,
+    required this.isActive,
+    this.firstName,
+    this.lastName,
+    this.grade,
+    this.classroom,
+    this.gender,
+    this.pickupAddress,
+    this.pickupPoint,
+    this.medicalNotes,
+    this.emergencyContactName,
+    this.emergencyContactPhone,
+    this.schoolUuid,
+    this.schoolName,
+  });
+
+  final String uuid;
+  final String name;
+  final bool isActive;
+  final String? firstName;
+  final String? lastName;
+  final String? grade;
+  final String? classroom;
+  final String? gender;
+  final String? pickupAddress;
+  final LatLngPoint? pickupPoint;
+
+  /// Carried so a driver has it in the moment it matters rather than in a file
+  /// somebody would have to go and find.
+  final String? medicalNotes;
+  final String? emergencyContactName;
+  final String? emergencyContactPhone;
+  final String? schoolUuid;
+  final String? schoolName;
+
+  factory SchoolStudent.fromJson(Map<String, dynamic> json) {
+    final school = _as<Map<String, dynamic>>(json['school']);
+
+    return SchoolStudent(
+      uuid: _as<String>(json['uuid']) ?? '',
+      name: _as<String>(json['name']) ?? '',
+      isActive: json['is_active'] != false,
+      firstName: _as<String>(json['first_name']),
+      lastName: _as<String>(json['last_name']),
+      grade: _as<String>(json['grade']),
+      classroom: _as<String>(json['classroom']),
+      gender: _as<String>(json['gender']),
+      pickupAddress: _as<String>(json['pickup_address']),
+      pickupPoint: _double(json['pickup_lat']) == null || _double(json['pickup_lng']) == null
+          ? null
+          : LatLngPoint(_double(json['pickup_lat'])!, _double(json['pickup_lng'])!),
+      medicalNotes: _as<String>(json['medical_notes']),
+      emergencyContactName: _as<String>(json['emergency_contact_name']),
+      emergencyContactPhone: _as<String>(json['emergency_contact_phone']),
+      schoolUuid: _as<String>(school?['uuid']),
+      schoolName: _as<String>(school?['name']),
+    );
+  }
+
+  @override
+  List<Object?> get props => [uuid, name, isActive];
+}
+
+/// A school service arrangement, in one of four states: requested, approved
+/// with a fee named, active with a seat on a route, or ended.
+class SchoolContract extends Equatable {
+  const SchoolContract({
+    required this.uuid,
+    required this.reference,
+    required this.status,
+    required this.statusLabel,
+    required this.statusColor,
+    required this.direction,
+    required this.directionLabel,
+    required this.feeAmount,
+    required this.formattedFee,
+    this.paymentCycle,
+    this.startsOn,
+    this.endsOn,
+    this.pickupAddress,
+    this.companyName,
+    this.companyPhone,
+    this.schoolName,
+    this.studentUuid,
+    this.studentName,
+    this.routeName,
+    this.vehiclePlate,
+    this.driverName,
+    this.rejectionReason,
+    this.companyNote,
+  });
+
+  final String uuid;
+  final String reference;
+  final String status;
+  final String statusLabel;
+  final String statusColor;
+  final String direction;
+  final String directionLabel;
+  final int feeAmount;
+  final String formattedFee;
+  final String? paymentCycle;
+  final String? startsOn;
+  final String? endsOn;
+  final String? pickupAddress;
+  final String? companyName;
+  final String? companyPhone;
+  final String? schoolName;
+  final String? studentUuid;
+  final String? studentName;
+
+  /// Null until the company places the child on a van, which is the step that
+  /// turns an agreement into a seat.
+  final String? routeName;
+  final String? vehiclePlate;
+  final String? driverName;
+  final String? rejectionReason;
+  final String? companyNote;
+
+  bool get isActive => status == 'active';
+
+  bool get awaitingCompany => status == 'requested';
+
+  bool get hasSeat => routeName != null;
+
+  factory SchoolContract.fromJson(Map<String, dynamic> json) {
+    final company = _as<Map<String, dynamic>>(json['company']);
+    final school = _as<Map<String, dynamic>>(json['school']);
+    final student = _as<Map<String, dynamic>>(json['student']);
+    final route = _as<Map<String, dynamic>>(json['route']);
+
+    return SchoolContract(
+      uuid: _as<String>(json['uuid']) ?? '',
+      reference: _as<String>(json['reference']) ?? '',
+      status: _as<String>(json['status']) ?? 'requested',
+      statusLabel: _as<String>(json['status_label']) ?? '',
+      statusColor: _as<String>(json['status_color']) ?? 'neutral',
+      direction: _as<String>(json['direction']) ?? 'both',
+      directionLabel: _as<String>(json['direction_label']) ?? '',
+      feeAmount: _int(json['payable_amount']) ?? _int(json['fee_amount']) ?? 0,
+      formattedFee: _as<String>(json['formatted_fee']) ?? '—',
+      paymentCycle: _as<String>(json['payment_cycle']),
+      startsOn: _as<String>(json['starts_on']),
+      endsOn: _as<String>(json['ends_on']),
+      pickupAddress: _as<String>(json['pickup_address']),
+      companyName: _as<String>(company?['name']),
+      companyPhone: _as<String>(company?['phone']),
+      schoolName: _as<String>(school?['name']),
+      studentUuid: _as<String>(student?['uuid']),
+      studentName: _as<String>(student?['name']),
+      routeName: _as<String>(route?['name']),
+      vehiclePlate: _as<String>(route?['vehicle_plate']),
+      driverName: _as<String>(route?['driver_name']),
+      rejectionReason: _as<String>(json['rejection_reason']),
+      companyNote: _as<String>(json['company_note']),
+    );
+  }
+
+  @override
+  List<Object?> get props => [uuid, status, routeName];
+}
+
+class SchoolInvoice extends Equatable {
+  const SchoolInvoice({
+    required this.uuid,
+    required this.reference,
+    required this.status,
+    required this.statusLabel,
+    required this.statusColor,
+    required this.isPayable,
+    required this.isOverdue,
+    required this.amount,
+    required this.formattedAmount,
+    this.periodStart,
+    this.periodEnd,
+    this.dueOn,
+    this.studentName,
+    this.paidAt,
+  });
+
+  final String uuid;
+  final String reference;
+  final String status;
+  final String statusLabel;
+  final String statusColor;
+  final bool isPayable;
+  final bool isOverdue;
+  final int amount;
+  final String formattedAmount;
+  final String? periodStart;
+  final String? periodEnd;
+  final String? dueOn;
+  final String? studentName;
+  final DateTime? paidAt;
+
+  factory SchoolInvoice.fromJson(Map<String, dynamic> json) => SchoolInvoice(
+        uuid: _as<String>(json['uuid']) ?? '',
+        reference: _as<String>(json['reference']) ?? '',
+        status: _as<String>(json['status']) ?? 'pending',
+        statusLabel: _as<String>(json['status_label']) ?? '',
+        statusColor: _as<String>(json['status_color']) ?? 'neutral',
+        isPayable: json['is_payable'] == true,
+        isOverdue: json['is_overdue'] == true,
+        amount: _int(json['amount']) ?? 0,
+        formattedAmount: _as<String>(json['formatted_amount']) ?? '—',
+        periodStart: _as<String>(json['period_start']),
+        periodEnd: _as<String>(json['period_end']),
+        dueOn: _as<String>(json['due_on']),
+        studentName:
+            _as<String>(_as<Map<String, dynamic>>(json['contract'])?['student_name']),
+        paidAt: _date(json['paid_at']),
+      );
+
+  @override
+  List<Object?> get props => [uuid, status];
+}
+
+/// One run of a school service route, as the driver app reads it.
+class SchoolTrip extends Equatable {
+  const SchoolTrip({
+    required this.uuid,
+    required this.direction,
+    required this.directionLabel,
+    required this.status,
+    required this.statusLabel,
+    required this.statusColor,
+    required this.isLive,
+    required this.expectedCount,
+    required this.pickedUpCount,
+    required this.droppedOffCount,
+    required this.absentCount,
+    this.serviceDate,
+    this.routeName,
+    this.schoolName,
+    this.schoolAddress,
+    this.schoolPoint,
+    this.vehiclePlate,
+    this.pickupStartsAt,
+    this.dropoffStartsAt,
+    this.startedAt,
+    this.endedAt,
+    this.students = const [],
+  });
+
+  final String uuid;
+  final String direction;
+  final String directionLabel;
+  final String status;
+  final String statusLabel;
+  final String statusColor;
+  final bool isLive;
+  final int expectedCount;
+  final int pickedUpCount;
+  final int droppedOffCount;
+  final int absentCount;
+  final String? serviceDate;
+  final String? routeName;
+  final String? schoolName;
+  final String? schoolAddress;
+  final LatLngPoint? schoolPoint;
+  final String? vehiclePlate;
+  final String? pickupStartsAt;
+  final String? dropoffStartsAt;
+  final DateTime? startedAt;
+  final DateTime? endedAt;
+
+  /// The manifest, already in collection order.
+  final List<SchoolTripStudent> students;
+
+  bool get isMorning => direction == 'to_school';
+
+  bool get isScheduled => status == 'scheduled';
+
+  /// Everyone accounted for: nobody is still waiting to be checked.
+  bool get isSettled => students.every((student) => student.isSettled);
+
+  factory SchoolTrip.fromJson(Map<String, dynamic> json) {
+    final route = _as<Map<String, dynamic>>(json['route']);
+    final school = _as<Map<String, dynamic>>(route?['school']);
+    final vehicle = _as<Map<String, dynamic>>(json['vehicle']);
+
+    return SchoolTrip(
+      uuid: _as<String>(json['uuid']) ?? '',
+      direction: _as<String>(json['direction']) ?? 'to_school',
+      directionLabel: _as<String>(json['direction_label']) ?? '',
+      status: _as<String>(json['status']) ?? 'scheduled',
+      statusLabel: _as<String>(json['status_label']) ?? '',
+      statusColor: _as<String>(json['status_color']) ?? 'neutral',
+      isLive: json['is_live'] == true,
+      expectedCount: _int(json['expected_count']) ?? 0,
+      pickedUpCount: _int(json['picked_up_count']) ?? 0,
+      droppedOffCount: _int(json['dropped_off_count']) ?? 0,
+      absentCount: _int(json['absent_count']) ?? 0,
+      serviceDate: _as<String>(json['service_date']),
+      routeName: _as<String>(route?['name']),
+      schoolName: _as<String>(school?['name']),
+      schoolAddress: _as<String>(school?['address']),
+      schoolPoint: _double(school?['lat']) == null || _double(school?['lng']) == null
+          ? null
+          : LatLngPoint(_double(school!['lat'])!, _double(school['lng'])!),
+      vehiclePlate: _as<String>(vehicle?['plate']),
+      pickupStartsAt: _as<String>(route?['pickup_starts_at']),
+      dropoffStartsAt: _as<String>(route?['dropoff_starts_at']),
+      startedAt: _date(json['started_at']),
+      endedAt: _date(json['ended_at']),
+      students: ((json['students'] as List<dynamic>?) ?? const [])
+          .whereType<Map<String, dynamic>>()
+          .map(SchoolTripStudent.fromJson)
+          .toList(),
+    );
+  }
+
+  @override
+  List<Object?> get props => [uuid, status, pickedUpCount, droppedOffCount, absentCount];
+}
+
+/// One child on one run: where to collect them, and whether that has happened.
+class SchoolTripStudent extends Equatable {
+  const SchoolTripStudent({
+    required this.uuid,
+    required this.sequence,
+    required this.status,
+    required this.statusLabel,
+    required this.statusColor,
+    required this.name,
+    this.grade,
+    this.pickupAddress,
+    this.pickupPoint,
+    this.medicalNotes,
+    this.emergencyContactName,
+    this.emergencyContactPhone,
+    this.guardianPhone,
+    this.pickedUpAt,
+    this.droppedOffAt,
+    this.note,
+  });
+
+  final String uuid;
+  final int sequence;
+  final String status;
+  final String statusLabel;
+  final String statusColor;
+  final String name;
+  final String? grade;
+  final String? pickupAddress;
+  final LatLngPoint? pickupPoint;
+  final String? medicalNotes;
+  final String? emergencyContactName;
+  final String? emergencyContactPhone;
+  final String? guardianPhone;
+  final DateTime? pickedUpAt;
+  final DateTime? droppedOffAt;
+  final String? note;
+
+  bool get isPending => status == 'pending';
+
+  bool get isAboard => status == 'picked_up';
+
+  /// Their journey is over, one way or another: home, or never boarded.
+  bool get isSettled => status == 'dropped_off' || status == 'absent' || status == 'no_show';
+
+  factory SchoolTripStudent.fromJson(Map<String, dynamic> json) {
+    final student = _as<Map<String, dynamic>>(json['student']);
+
+    return SchoolTripStudent(
+      uuid: _as<String>(json['uuid']) ?? '',
+      sequence: _int(json['sequence']) ?? 0,
+      status: _as<String>(json['status']) ?? 'pending',
+      statusLabel: _as<String>(json['status_label']) ?? '',
+      statusColor: _as<String>(json['status_color']) ?? 'neutral',
+      name: _as<String>(student?['name']) ?? '',
+      grade: _as<String>(student?['grade']),
+      pickupAddress: _as<String>(json['pickup_address']),
+      pickupPoint: _double(json['pickup_lat']) == null || _double(json['pickup_lng']) == null
+          ? null
+          : LatLngPoint(_double(json['pickup_lat'])!, _double(json['pickup_lng'])!),
+      medicalNotes: _as<String>(student?['medical_notes']),
+      emergencyContactName: _as<String>(student?['emergency_contact_name']),
+      emergencyContactPhone: _as<String>(student?['emergency_contact_phone']),
+      guardianPhone: _as<String>(student?['guardian_phone']),
+      pickedUpAt: _date(json['picked_up_at']),
+      droppedOffAt: _date(json['dropped_off_at']),
+      note: _as<String>(json['note']),
+    );
+  }
+
+  @override
+  List<Object?> get props => [uuid, status, sequence];
+}
+
+/// What a guardian is allowed to see while their child's run is under way.
+///
+/// Not a raw position: the useful answer is how far away, how long, and how
+/// many doors before this one — all of it scoped to this one child, and only
+/// while the child is actually on the journey.
+class SchoolLiveView extends Equatable {
+  const SchoolLiveView({
+    required this.tripUuid,
+    required this.status,
+    required this.statusLabel,
+    required this.direction,
+    required this.directionLabel,
+    required this.childStatus,
+    required this.childStatusLabel,
+    required this.stopsAhead,
+    this.position,
+    this.reportedAt,
+    this.plate,
+    this.model,
+    this.color,
+    this.driverName,
+    this.driverPhone,
+    this.distanceMeters,
+    this.etaMinutes,
+    this.isArriving = false,
+    this.etaIsApproximate = true,
+    this.startedAt,
+    this.pickedUpAt,
+    this.droppedOffAt,
+  });
+
+  final String tripUuid;
+  final String status;
+  final String statusLabel;
+  final String direction;
+  final String directionLabel;
+  final String childStatus;
+  final String childStatusLabel;
+  final int stopsAhead;
+  final LatLngPoint? position;
+  final DateTime? reportedAt;
+  final String? plate;
+  final String? model;
+  final String? color;
+  final String? driverName;
+
+  /// A parent standing on a pavement with a van that has not arrived needs to
+  /// reach somebody.
+  final String? driverPhone;
+  final int? distanceMeters;
+  final int? etaMinutes;
+  final bool isArriving;
+
+  /// Always true. A straight line is not a road, and saying so is the
+  /// difference between a useful estimate and a broken promise.
+  final bool etaIsApproximate;
+  final DateTime? startedAt;
+  final DateTime? pickedUpAt;
+  final DateTime? droppedOffAt;
+
+  bool get isAboard => childStatus == 'picked_up';
+
+  factory SchoolLiveView.fromJson(Map<String, dynamic> json) {
+    final vehicle = _as<Map<String, dynamic>>(json['vehicle']);
+    final position = _as<Map<String, dynamic>>(json['position']);
+    final eta = _as<Map<String, dynamic>>(json['eta']);
+
+    return SchoolLiveView(
+      tripUuid: _as<String>(json['trip_uuid']) ?? '',
+      status: _as<String>(json['status']) ?? '',
+      statusLabel: _as<String>(json['status_label']) ?? '',
+      direction: _as<String>(json['direction']) ?? '',
+      directionLabel: _as<String>(json['direction_label']) ?? '',
+      childStatus: _as<String>(json['child_status']) ?? 'pending',
+      childStatusLabel: _as<String>(json['child_status_label']) ?? '',
+      stopsAhead: _int(json['stops_ahead']) ?? 0,
+      position: position == null
+          ? null
+          : LatLngPoint(_double(position['lat']) ?? 0, _double(position['lng']) ?? 0),
+      reportedAt: _date(position?['reported_at']),
+      plate: _as<String>(vehicle?['plate']),
+      model: _as<String>(vehicle?['model']),
+      color: _as<String>(vehicle?['color']),
+      driverName: _as<String>(json['driver_name']),
+      driverPhone: _as<String>(json['driver_phone']),
+      distanceMeters: _int(json['distance_meters']),
+      etaMinutes: _int(eta?['minutes']),
+      isArriving: eta?['is_arriving'] == true,
+      etaIsApproximate: eta?['is_approximate'] != false,
+      startedAt: _date(json['started_at']),
+      pickedUpAt: _date(json['picked_up_at']),
+      droppedOffAt: _date(json['dropped_off_at']),
+    );
+  }
+
+  @override
+  List<Object?> get props => [tripUuid, childStatus, position, distanceMeters, etaMinutes];
+}
+
+/// One day of a child's attendance, as the family's history shows it.
+class SchoolAttendanceRow extends Equatable {
+  const SchoolAttendanceRow({
+    required this.uuid,
+    required this.status,
+    required this.statusLabel,
+    this.serviceDate,
+    this.direction,
+    this.directionLabel,
+    this.pickedUpAt,
+    this.droppedOffAt,
+    this.note,
+  });
+
+  final String uuid;
+  final String status;
+  final String statusLabel;
+  final String? serviceDate;
+  final String? direction;
+  final String? directionLabel;
+  final DateTime? pickedUpAt;
+  final DateTime? droppedOffAt;
+  final String? note;
+
+  factory SchoolAttendanceRow.fromJson(Map<String, dynamic> json) => SchoolAttendanceRow(
+        uuid: _as<String>(json['uuid']) ?? '',
+        status: _as<String>(json['status']) ?? 'pending',
+        statusLabel: _as<String>(json['status_label']) ?? '',
+        serviceDate: _as<String>(json['service_date']),
+        direction: _as<String>(json['direction']),
+        directionLabel: _as<String>(json['direction_label']),
+        pickedUpAt: _date(json['picked_up_at']),
+        droppedOffAt: _date(json['dropped_off_at']),
+        note: _as<String>(json['note']),
+      );
+
+  @override
+  List<Object?> get props => [uuid, status];
+}
