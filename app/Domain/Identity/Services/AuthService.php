@@ -24,6 +24,10 @@ class AuthService
 
     public const ABILITY_DRIVER = 'driver';
 
+    public const ABILITY_TAXI_DRIVER = 'taxi_driver';
+
+    public const ABILITY_SCHOOL_DRIVER = 'school_driver';
+
     public const ABILITY_MERCHANT = 'merchant';
 
     public const ABILITY_ADMIN = 'admin';
@@ -99,6 +103,18 @@ class AuthService
                 ? [self::ABILITY_DRIVER, self::ABILITY_PASSENGER]
                 : [],
 
+            // A separate ability rather than a second use of `driver`: the taxi
+            // app and the bus app are different products, and a token minted
+            // for one should not reach the other's endpoints even though the
+            // same person may legitimately hold both.
+            'taxi_driver' => $user->driver !== null && $user->driver->status->canDrive()
+                ? [self::ABILITY_TAXI_DRIVER, self::ABILITY_PASSENGER]
+                : [],
+
+            'school_driver' => $user->driver !== null && $user->driver->status->canDrive()
+                ? [self::ABILITY_SCHOOL_DRIVER, self::ABILITY_PASSENGER]
+                : [],
+
             'merchant' => $user->merchantStaff()->where('is_active', true)->exists()
                 || $user->hasRole(Role::MERCHANT_MANAGER)
                 ? [self::ABILITY_MERCHANT]
@@ -118,7 +134,7 @@ class AuthService
         return match ($client) {
             'admin' => now()->addHours(12),
             'merchant' => now()->addDays(7),
-            'driver' => now()->addDays(30),
+            'driver', 'taxi_driver', 'school_driver' => now()->addDays(30),
             default => now()->addDays(180),
         };
     }

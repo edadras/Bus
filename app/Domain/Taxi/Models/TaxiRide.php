@@ -114,6 +114,19 @@ class TaxiRide extends Model
         return $query->where('status', TaxiRideStatus::Unpaid->value);
     }
 
+    /**
+     * Rides where money actually moved.
+     *
+     * Not "completed": a line passenger pays on boarding and may sit in the car
+     * for another twenty minutes, and their fare is revenue the moment it is
+     * taken. `fare_amount` is only ever written by the settlement of a real
+     * posting, so this is the honest filter for every report and every payout.
+     */
+    public function scopePaid(Builder $query): Builder
+    {
+        return $query->where('fare_amount', '>', 0);
+    }
+
     public function isOpen(): bool
     {
         return $this->status->isOpen();

@@ -118,7 +118,9 @@ class TaxiSettlementTest extends TestCase
     {
         $this->completedRide(1_000_000, 100_000);
 
-        $unpaid = $this->completedRide(400_000, 40_000);
+        // An unpaid ride carries no fare, only a debt: `fare_amount` means
+        // money that moved, and nothing moved here.
+        $unpaid = $this->completedRide(0, 0);
         $unpaid->forceFill(['status' => TaxiRideStatus::Unpaid, 'outstanding_amount' => 400_000])->save();
 
         $settlement = $this->settlements->request($this->driver, $this->driver->user);

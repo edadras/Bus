@@ -5,7 +5,6 @@ namespace App\Domain\Taxi\Services;
 use App\Domain\Fleet\Models\Driver;
 use App\Domain\Identity\Models\User;
 use App\Domain\Merchant\Enums\SettlementStatus;
-use App\Domain\Taxi\Enums\TaxiRideStatus;
 use App\Domain\Taxi\Models\TaxiRide;
 use App\Domain\Taxi\Models\TaxiSettlement;
 use App\Domain\Wallet\Services\WalletService;
@@ -59,9 +58,8 @@ class TaxiSettlementService
             // Locked so two taps cannot claim the same rides into two payouts.
             $claimable = TaxiRide::query()
                 ->where('driver_id', $driver->id)
-                ->where('status', TaxiRideStatus::Completed->value)
+                ->paid()
                 ->whereNull('taxi_settlement_id')
-                ->where('fare_amount', '>', 0)
                 ->whereBetween('created_at', [$from->copy()->startOfDay(), $to->copy()->endOfDay()])
                 ->lockForUpdate()
                 ->get();
@@ -192,9 +190,8 @@ class TaxiSettlementService
     {
         $row = TaxiRide::query()
             ->where('driver_id', $driver->id)
-            ->where('status', TaxiRideStatus::Completed->value)
+            ->paid()
             ->whereNull('taxi_settlement_id')
-            ->where('fare_amount', '>', 0)
             ->selectRaw('COUNT(*) as cnt, COALESCE(SUM(fare_amount),0) as gross, COALESCE(SUM(commission_amount),0) as commission')
             ->first();
 

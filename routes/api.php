@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\Admin\NetworkAdminController;
 use App\Http\Controllers\Api\V1\Admin\OccupancyController;
 use App\Http\Controllers\Api\V1\Admin\ReportController;
 use App\Http\Controllers\Api\V1\Admin\SupportAdminController;
+use App\Http\Controllers\Api\V1\Admin\TaxiAdminController;
 use App\Http\Controllers\Api\V1\Admin\UserLookupController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\ComplaintController;
@@ -19,6 +20,8 @@ use App\Http\Controllers\Api\V1\NetworkController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\PassengerController;
 use App\Http\Controllers\Api\V1\PushSubscriptionController;
+use App\Http\Controllers\Api\V1\TaxiController;
+use App\Http\Controllers\Api\V1\TaxiDriverController;
 use App\Http\Controllers\Api\V1\WalletController;
 use Illuminate\Support\Facades\Route;
 
@@ -57,6 +60,11 @@ Route::prefix('v1')->group(function (): void {
         Route::get('lines/{line}', [NetworkController::class, 'line']);
         Route::get('routes/{route}', [NetworkController::class, 'route']);
         Route::get('journey/plan', [NetworkController::class, 'plan']);
+
+        // A "taxis near me" feed and nothing more: a position is required, the
+        // radius is capped server-side, and the payload names nobody.
+        Route::get('taxis/nearby', [TaxiController::class, 'nearby']);
+        Route::get('taxi/lines', [TaxiController::class, 'lines']);
 
         Route::get('buses/live', [LiveController::class, 'buses']);
         Route::get('trips/{trip}', [LiveController::class, 'trip']);
@@ -127,6 +135,18 @@ Route::prefix('v1')->group(function (): void {
 
         Route::post('merchant/charge', [MerchantController::class, 'charge'])->middleware('throttle:financial');
 
+        Route::prefix('taxi')->group(function (): void {
+            // Priced by the server, confirmed by the passenger. `scan` shows
+            // what a ride would cost and commits to nothing; `rides` takes it.
+            Route::post('scan', [TaxiController::class, 'scan']);
+            Route::post('rides', [TaxiController::class, 'store'])->middleware('throttle:financial');
+            Route::get('rides/active', [TaxiController::class, 'active']);
+            Route::get('rides', [TaxiController::class, 'history']);
+            Route::post('rides/{taxiRide}/end', [TaxiController::class, 'end']);
+            Route::post('rides/{taxiRide}/settle', [TaxiController::class, 'settle'])
+                ->middleware('throttle:financial');
+        });
+
         Route::prefix('complaints')->group(function (): void {
             Route::get('categories', [ComplaintController::class, 'categories']);
             Route::get('/', [ComplaintController::class, 'index']);
@@ -155,6 +175,32 @@ Route::prefix('v1')->group(function (): void {
         Route::post('location', [DriverController::class, 'location'])->middleware('throttle:telemetry');
         Route::get('passengers', [DriverController::class, 'passengers']);
         Route::get('route', [DriverController::class, 'currentRoute']);
+    });
+
+    /*
+    | Taxi driver — a separate ability from the bus driver, because the two
+    | apps are different products even when the same person holds both.
+    */
+    Route::prefix('taxi/driver')->middleware(['auth:sanctum', 'abilities:taxi_driver'])->group(function (): void {
+        Route::get('state', [TaxiDriverController::class, 'state']);
+        Route::get('lines', [TaxiDriverController::class, 'lines']);
+
+        Route::post('shifts/start', [TaxiDriverController::class, 'startShift']);
+        Route::post('shifts/end', [TaxiDriverController::class, 'endShift']);
+        Route::post('shifts/mode', [TaxiDriverController::class, 'switchMode']);
+
+        Route::post('charter', [TaxiDriverController::class, 'setCharterAmount']);
+        Route::delete('charter', [TaxiDriverController::class, 'clearCharterAmount']);
+
+        Route::get('qr', [TaxiDriverController::class, 'qr']);
+        Route::post('location', [TaxiDriverController::class, 'location'])->middleware('throttle:telemetry');
+
+        Route::get('rides', [TaxiDriverController::class, 'rides']);
+        Route::post('rides/{taxiRide}/end', [TaxiDriverController::class, 'endRide']);
+
+        Route::get('earnings', [TaxiDriverController::class, 'earnings']);
+        Route::get('settlements', [TaxiDriverController::class, 'settlements']);
+        Route::post('settlements', [TaxiDriverController::class, 'requestSettlement']);
     });
 
     /*
@@ -245,6 +291,43 @@ Route::prefix('v1')->group(function (): void {
             Route::post('settlements/{settlement}/approve', [FinanceController::class, 'approveSettlement']);
             Route::post('settlements/{settlement}/pay', [FinanceController::class, 'paySettlement']);
             Route::post('settlements/{settlement}/reject', [FinanceController::class, 'rejectSettlement']);
+        });
+
+        Route::prefix('taxi')->group(function (): void {
+            Route::middleware('permission:taxi.manage')->group(function (): void {
+                Route::get('taxis', [TaxiAdminController::class, 'index']);
+                Route::post('taxis', [TaxiAdminController::class, 'store']);
+                Route::patch('taxis/{taxi}', [TaxiAdminController::class, 'update']);
+                Route::get('taxis/{taxi}/qr', [TaxiAdminController::class, 'qrCode']);
+                Route::post('taxis/{taxi}/qr/regenerate', [TaxiAdminController::class, 'regenerateQr']);
+                Route::get('taxis/{taxi}/assignments', [TaxiAdminController::class, 'assignments']);
+                Route::post('taxis/{taxi}/assignments', [TaxiAdminController::class, 'assignDriver']);
+                Route::delete('assignments/{assignment}', [TaxiAdminController::class, 'revokeAssignment']);
+
+                Route::get('lines', [TaxiAdminController::class, 'lines']);
+                Route::post('lines', [TaxiAdminController::class, 'storeLine']);
+                Route::patch('lines/{taxiLine}', [TaxiAdminController::class, 'updateLine']);
+
+                Route::get('tariffs', [TaxiAdminController::class, 'tariffs']);
+                Route::post('tariffs', [TaxiAdminController::class, 'storeTariff']);
+                Route::patch('tariffs/{taxiTariff}', [TaxiAdminController::class, 'updateTariff']);
+
+                Route::get('rides', [TaxiAdminController::class, 'rides']);
+                Route::get('report', [TaxiAdminController::class, 'report']);
+            });
+
+            // The dispatcher's view of the whole city, which is a different
+            // question from managing the fleet and is permissioned as one.
+            Route::get('live', [TaxiAdminController::class, 'liveMap'])
+                ->middleware('permission:operations.live_map');
+
+            // Paying a driver is finance work; running the fleet is not.
+            Route::middleware('permission:finance.manage,taxi.manage')->group(function (): void {
+                Route::get('settlements', [TaxiAdminController::class, 'settlements']);
+                Route::post('settlements/{taxiSettlement}/approve', [TaxiAdminController::class, 'approveSettlement']);
+                Route::post('settlements/{taxiSettlement}/pay', [TaxiAdminController::class, 'paySettlement']);
+                Route::post('settlements/{taxiSettlement}/reject', [TaxiAdminController::class, 'rejectSettlement']);
+            });
         });
 
         // Wallet adjustments and audits are addressed by user UUID; this is

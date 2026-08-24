@@ -365,9 +365,13 @@ class TaxiRideService
             // The ride is over either way. The debt is recorded against it and
             // blocks the next ride, which is a far better outcome than a ride
             // that can never be closed.
+            //
+            // `fare_amount` stays at zero on purpose: it means money that
+            // actually moved, and every report, every earnings figure and every
+            // payout is built on that meaning. What was owed lives in
+            // `outstanding_amount` and in the breakdown until it is paid.
             $ride->forceFill([
                 'status' => TaxiRideStatus::Unpaid,
-                'fare_amount' => $quote->amount,
                 'outstanding_amount' => $quote->amount,
             ])->save();
         }

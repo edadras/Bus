@@ -27,6 +27,9 @@ class RbacSeeder extends Seeder
         'fleet' => [
             'fleet.manage' => 'مدیریت اتوبوس‌ها، کد QR و تخصیص راننده',
         ],
+        'taxi' => [
+            'taxi.manage' => 'مدیریت تاکسی‌ها، خطوط، تعرفه و تسویه رانندگان',
+        ],
         'drivers' => [
             'drivers.manage' => 'مدیریت رانندگان، مدارک و وضعیت فعالیت',
         ],
@@ -68,7 +71,7 @@ class RbacSeeder extends Seeder
             'level' => 9,
             'permissions' => [
                 'dashboard.view', 'operations.live_map', 'operations.trips.manage',
-                'fleet.manage', 'drivers.manage', 'network.manage', 'network.import',
+                'fleet.manage', 'taxi.manage', 'drivers.manage', 'network.manage', 'network.import',
                 'finance.manage', 'merchants.manage', 'support.manage',
                 'users.manage', 'system.audit_log',
             ],
@@ -78,13 +81,13 @@ class RbacSeeder extends Seeder
             'level' => 7,
             'permissions' => [
                 'dashboard.view', 'operations.live_map', 'operations.trips.manage',
-                'network.manage', 'network.import', 'fleet.manage',
+                'network.manage', 'network.import', 'fleet.manage', 'taxi.manage',
             ],
         ],
         Role::FLEET_MANAGER => [
             'label' => 'مدیر ناوگان',
             'level' => 6,
-            'permissions' => ['dashboard.view', 'operations.live_map', 'fleet.manage'],
+            'permissions' => ['dashboard.view', 'operations.live_map', 'fleet.manage', 'taxi.manage'],
         ],
         Role::DRIVER_MANAGER => [
             'label' => 'مدیر رانندگان',

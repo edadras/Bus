@@ -88,7 +88,11 @@ class TaxiShiftService
                 'status' => TaxiStatus::Active,
             ])->save();
 
-            return $shift;
+            // Refreshed so the counters the database defaulted to zero are
+            // actually on the model: an unrefreshed insert carries nulls for
+            // every column it did not write, and the first thing that formats
+            // one of them as money blows up.
+            return $shift->refresh();
         });
     }
 
