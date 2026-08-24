@@ -194,4 +194,42 @@ return [
         'unpaid' => 'پرداخت‌نشده',
         'cancelled' => 'لغوشده',
     ],
+    'schoolcompanystatus' => [
+        'pending_approval' => 'در انتظار تأیید',
+        'active' => 'تأییدشده',
+        'suspended' => 'تعلیق‌شده',
+        'rejected' => 'ردشده',
+    ],
+    'schoolcontractstatus' => [
+        'requested' => 'درخواست‌شده',
+        'approved' => 'تأییدشده',
+        'active' => 'فعال',
+        'suspended' => 'تعلیق‌شده',
+        'ended' => 'پایان‌یافته',
+        'rejected' => 'ردشده',
+    ],
+    'schooltripstatus' => [
+        'scheduled' => 'برنامه‌ریزی‌شده',
+        'in_progress' => 'در حال انجام',
+        'completed' => 'پایان‌یافته',
+        'cancelled' => 'لغوشده',
+    ],
+    'schoolattendancestatus' => [
+        'pending' => 'در انتظار',
+        'picked_up' => 'سوار شد',
+        'dropped_off' => 'پیاده شد',
+        'absent' => 'غایب',
+        'no_show' => 'حاضر نشد',
+    ],
+    'schoolservicedirection' => [
+        'to_school' => 'رفت به مدرسه',
+        'from_school' => 'برگشت از مدرسه',
+        'both' => 'رفت و برگشت',
+    ],
+    'schoolinvoicestatus' => [
+        'pending' => 'در انتظار پرداخت',
+        'paid' => 'پرداخت‌شده',
+        'overdue' => 'معوق',
+        'cancelled' => 'لغوشده',
+    ],
 ];

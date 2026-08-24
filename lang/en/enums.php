@@ -194,4 +194,42 @@ return [
         'unpaid' => 'Unpaid',
         'cancelled' => 'Cancelled',
     ],
+    'schoolcompanystatus' => [
+        'pending_approval' => 'Awaiting approval',
+        'active' => 'Approved',
+        'suspended' => 'Suspended',
+        'rejected' => 'Rejected',
+    ],
+    'schoolcontractstatus' => [
+        'requested' => 'Requested',
+        'approved' => 'Accepted',
+        'active' => 'Active',
+        'suspended' => 'Suspended',
+        'ended' => 'Ended',
+        'rejected' => 'Rejected',
+    ],
+    'schooltripstatus' => [
+        'scheduled' => 'Scheduled',
+        'in_progress' => 'Under way',
+        'completed' => 'Completed',
+        'cancelled' => 'Cancelled',
+    ],
+    'schoolattendancestatus' => [
+        'pending' => 'Not yet aboard',
+        'picked_up' => 'Picked up',
+        'dropped_off' => 'Dropped off',
+        'absent' => 'Absent',
+        'no_show' => 'Did not appear',
+    ],
+    'schoolservicedirection' => [
+        'to_school' => 'To school',
+        'from_school' => 'Home from school',
+        'both' => 'Both ways',
+    ],
+    'schoolinvoicestatus' => [
+        'pending' => 'Due',
+        'paid' => 'Paid',
+        'overdue' => 'Overdue',
+        'cancelled' => 'Cancelled',
+    ],
 ];
